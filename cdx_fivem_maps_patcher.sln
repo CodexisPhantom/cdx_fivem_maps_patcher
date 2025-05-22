@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdx_fivem_maps_patcher", "cdx_fivem_maps_patcher\cdx_fivem_maps_patcher.csproj", "{042E4743-1012-4E77-A05A-167409CFAEA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeWalker.Core", "CodeWalker.Core\CodeWalker.Core.csproj", "{928D297F-D1EF-4EEA-A121-99A3B7E773EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{042E4743-1012-4E77-A05A-167409CFAEA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{042E4743-1012-4E77-A05A-167409CFAEA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{042E4743-1012-4E77-A05A-167409CFAEA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{042E4743-1012-4E77-A05A-167409CFAEA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{928D297F-D1EF-4EEA-A121-99A3B7E773EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{928D297F-D1EF-4EEA-A121-99A3B7E773EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{928D297F-D1EF-4EEA-A121-99A3B7E773EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{928D297F-D1EF-4EEA-A121-99A3B7E773EF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
