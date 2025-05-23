@@ -1,4 +1,6 @@
 ﻿using cdx_fivem_maps_patcher.Classes;
+using cdx_fivem_maps_patcher.Pages;
+using cdx_fivem_maps_patcher.Patcher;
 using CodeWalker.GameFiles;
 
 const double cacheTime = 60.0;
@@ -24,36 +26,38 @@ gameFileCache.Init(
 
 Console.Clear();
 Backups backups = new(serverPath);
-Patcher patcher = new(gameFileCache, serverPath);
+Patcher patcher = new YmapPatcher(gameFileCache, serverPath);
 
 while (true)
 {
     PrintMainMenu();
-    string input = Console.ReadLine();
+    string? input;
+    do { input = Console.ReadLine(); } 
+    while (input == null);
     Console.Clear();
     switch (input)
     {
         case "1":
-            backups.Init();
+            backups.Show();
             break;
         case "2":
-            patcher.Init();
+            patcher.Show();
             break;
         case "3":
-            Console.WriteLine("Au revoir !");
+            Console.WriteLine(Messages.Get("goodbye"));
             return;
         default:
-            Console.WriteLine("Entrée invalide. Veuillez réessayer.");
+            Console.WriteLine(Messages.Get("invalid_entry"));
             break;
     }
 }
 
 void PrintMainMenu()
 {
-    Console.WriteLine("\n=== CDX | Fivem Maps Patcher Menu ===");
-    Console.WriteLine("[1] Backups options");
-    Console.WriteLine("[2] Patch maps");
-    Console.WriteLine("[3] Quitter");
+    Console.WriteLine(Messages.Get("main_menu_title"));
+    Console.WriteLine(Messages.Get("main_menu_backups"));
+    Console.WriteLine(Messages.Get("main_menu_patch"));
+    Console.WriteLine(Messages.Get("main_menu_quit"));
 }
 
 string PromptPath(string message)

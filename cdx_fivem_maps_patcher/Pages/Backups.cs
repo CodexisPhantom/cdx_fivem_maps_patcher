@@ -1,15 +1,10 @@
-﻿namespace cdx_fivem_maps_patcher.Classes;
+﻿using cdx_fivem_maps_patcher.Classes;
 
-public class Backups
+namespace cdx_fivem_maps_patcher.Pages;
+
+public class Backups(string path):Page
 {
-    private readonly string _serverPath;
-
-    public Backups(string path)
-    {
-        _serverPath = path;
-    }
-
-    public void Init()
+    public void Show()
     {
         while (true)
         {
@@ -33,7 +28,7 @@ public class Backups
         }
     }
 
-    private void PrintMenu()
+    private static void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));
         Console.WriteLine(Messages.Get("backups_menu_list"));
@@ -48,7 +43,7 @@ public class Backups
             Console.WriteLine(Messages.Get("no_backups_found"));
         else
             for (int i = 0; i < backups.Count; i++)
-                Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(_serverPath, "")}");
+                Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(path, "")}");
     }
 
     private void RemoveBackupMenu()
@@ -62,7 +57,7 @@ public class Backups
 
         Console.WriteLine(Messages.Get("select_backup_to_remove"));
         for (int i = 0; i < backups.Count; i++)
-            Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(_serverPath, "")}");
+            Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(path, "")}");
 
         Console.Write(Messages.Get("backup_number_prompt"));
         if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= backups.Count)
@@ -122,7 +117,7 @@ public class Backups
     {
         try
         {
-            return Directory.GetFiles(_serverPath, "*.backup", SearchOption.AllDirectories).ToList();
+            return Directory.GetFiles(path, "*.backup", SearchOption.AllDirectories).ToList();
         }
         catch
         {
