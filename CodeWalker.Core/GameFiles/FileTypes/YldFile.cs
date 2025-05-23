@@ -10,20 +10,20 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YldFile : GameFile, PackedFile
     {
+        public YldFile() : base(null, GameFileType.Yld)
+        {
+        }
+
+        public YldFile(RpfFileEntry entry) : base(entry, GameFileType.Yld)
+        {
+        }
+
         public ClothDictionary ClothDictionary { get; set; }
 
         public Dictionary<uint, CharacterCloth> Dict { get; set; }
 
 
         public string LoadException { get; set; }
-
-
-        public YldFile() : base(null, GameFileType.Yld)
-        {
-        }
-        public YldFile(RpfFileEntry entry) : base(entry, GameFileType.Yld)
-        {
-        }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -33,10 +33,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = null;
             try
@@ -76,32 +73,24 @@ namespace CodeWalker.GameFiles
 
             return data;
         }
-
     }
-
 
 
     public class YldXml : MetaXmlBase
     {
-
         public static string GetXml(YldFile yld, string outputFolder = "")
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if (yld?.ClothDictionary != null)
-            {
-                ClothDictionary.WriteXmlNode(yld.ClothDictionary, sb, 0);
-            }
+            if (yld?.ClothDictionary != null) ClothDictionary.WriteXmlNode(yld.ClothDictionary, sb, 0);
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYld
     {
-
         public static YldFile GetYld(string xml, string inputFolder = "")
         {
             XmlDocument doc = new XmlDocument();
@@ -116,16 +105,11 @@ namespace CodeWalker.GameFiles
             string ddsfolder = inputFolder;
 
             XmlElement node = doc.DocumentElement;
-            if (node != null)
-            {
-                r.ClothDictionary = ClothDictionary.ReadXmlNode(node);
-            }
+            if (node != null) r.ClothDictionary = ClothDictionary.ReadXmlNode(node);
 
             r.Name = Path.GetFileName(inputFolder);
 
             return r;
         }
-
     }
-
 }

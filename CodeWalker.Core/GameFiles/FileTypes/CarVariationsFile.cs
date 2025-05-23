@@ -2,24 +2,26 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-
 using TC = System.ComponentModel.TypeConverterAttribute;
 using EXP = System.ComponentModel.ExpandableObjectConverter;
 
 namespace CodeWalker.GameFiles
 {
-    [TC(typeof(EXP))] public class CarVariationsFile : GameFile, PackedFile
+    [TC(typeof(EXP))]
+    public class CarVariationsFile : GameFile, PackedFile
     {
+        public CarVariationsFile() : base(null, GameFileType.CarVariations)
+        {
+        }
+
+        public CarVariationsFile(RpfFileEntry entry) : base(entry, GameFileType.CarVariations)
+        {
+        }
+
         public PsoFile Pso { get; set; }
         public string Xml { get; set; }
 
         public CVehicleModelInfoVariation VehicleModelInfo { get; set; }
-
-        public CarVariationsFile() : base(null, GameFileType.CarVariations)
-        { }
-        public CarVariationsFile(RpfFileEntry entry) : base(entry, GameFileType.CarVariations)
-        {
-        }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -43,7 +45,6 @@ namespace CodeWalker.GameFiles
 
             XmlDocument xdoc = new XmlDocument();
             if (!string.IsNullOrEmpty(Xml))
-            {
                 try
                 {
                     xdoc.LoadXml(Xml);
@@ -52,25 +53,18 @@ namespace CodeWalker.GameFiles
                 {
                     string msg = ex.Message;
                 }
-            }
-            else
-            { }
 
 
-            if (xdoc.DocumentElement != null)
-            {
-                VehicleModelInfo = new CVehicleModelInfoVariation(xdoc.DocumentElement);
-            }
+            if (xdoc.DocumentElement != null) VehicleModelInfo = new CVehicleModelInfoVariation(xdoc.DocumentElement);
 
 
             Loaded = true;
         }
     }
 
-    [TC(typeof(EXP))] public class CVehicleModelInfoVariation
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVariation
     {
-        public CVehicleModelInfoVariation_418053801[] variationData { get; set; }
-
         public CVehicleModelInfoVariation(XmlNode node)
         {
             XmlNode cnode;
@@ -82,23 +76,17 @@ namespace CodeWalker.GameFiles
                 {
                     variationData = new CVehicleModelInfoVariation_418053801[items.Count];
                     for (int i = 0; i < items.Count; i++)
-                    {
                         variationData[i] = new CVehicleModelInfoVariation_418053801(items[i]);
-                    }
                 }
             }
         }
-    }
-    [TC(typeof(EXP))] public class CVehicleModelInfoVariation_418053801
-    {
-        public string modelName { get; set; }
-        public CVehicleModelInfoVariation_2575850962[] colors { get; set; }
-        public MetaHash[] kits { get; set; }
-        public MetaHash[] windowsWithExposedEdges { get; set; }
-        public PlateProbabilities plateProbabilities { get; set; }
-        public byte lightSettings { get; set; }
-        public byte sirenSettings { get; set; }
 
+        public CVehicleModelInfoVariation_418053801[] variationData { get; set; }
+    }
+
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVariation_418053801
+    {
         public CVehicleModelInfoVariation_418053801(XmlNode node)
         {
             modelName = Xml.GetChildInnerText(node, "modelName");
@@ -111,11 +99,10 @@ namespace CodeWalker.GameFiles
                 {
                     colors = new CVehicleModelInfoVariation_2575850962[items.Count];
                     for (int i = 0; i < items.Count; i++)
-                    {
                         colors[i] = new CVehicleModelInfoVariation_2575850962(items[i]);
-                    }
                 }
             }
+
             cnode = node.SelectSingleNode("kits");
             if (cnode != null)
             {
@@ -123,12 +110,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     kits = new MetaHash[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        kits[i] = XmlMeta.GetHash(items[i].InnerText);
-                    }
+                    for (int i = 0; i < items.Count; i++) kits[i] = XmlMeta.GetHash(items[i].InnerText);
                 }
             }
+
             cnode = node.SelectSingleNode("windowsWithExposedEdges");
             if (cnode != null)
             {
@@ -137,30 +122,33 @@ namespace CodeWalker.GameFiles
                 {
                     windowsWithExposedEdges = new MetaHash[items.Count];
                     for (int i = 0; i < items.Count; i++)
-                    {
                         windowsWithExposedEdges[i] = XmlMeta.GetHash(items[i].InnerText);
-                    }
                 }
             }
+
             cnode = node.SelectSingleNode("plateProbabilities");
-            if (cnode != null)
-            {
-                plateProbabilities = new PlateProbabilities(cnode);
-            }
-            lightSettings = (byte)Xml.GetChildIntAttribute(node, "lightSettings", "value");
-            sirenSettings = (byte)Xml.GetChildIntAttribute(node, "sirenSettings", "value");
+            if (cnode != null) plateProbabilities = new PlateProbabilities(cnode);
+            lightSettings = (byte)Xml.GetChildIntAttribute(node, "lightSettings");
+            sirenSettings = (byte)Xml.GetChildIntAttribute(node, "sirenSettings");
         }
+
+        public string modelName { get; set; }
+        public CVehicleModelInfoVariation_2575850962[] colors { get; set; }
+        public MetaHash[] kits { get; set; }
+        public MetaHash[] windowsWithExposedEdges { get; set; }
+        public PlateProbabilities plateProbabilities { get; set; }
+        public byte lightSettings { get; set; }
+        public byte sirenSettings { get; set; }
 
         public override string ToString()
         {
             return modelName;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModelInfoVariation_2575850962
-    {
-        public byte[] indices { get; set; }
-        public bool[] liveries { get; set; }
 
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVariation_2575850962
+    {
         public CVehicleModelInfoVariation_2575850962(XmlNode node)
         {
             XmlNode cnode;
@@ -174,13 +162,12 @@ namespace CodeWalker.GameFiles
                 {
                     string titem = item.Trim();
                     byte v;
-                    if (byte.TryParse(titem, out v))
-                    {
-                        alist.Add(v);
-                    }
+                    if (byte.TryParse(titem, out v)) alist.Add(v);
                 }
+
                 indices = alist.ToArray();
             }
+
             cnode = node.SelectSingleNode("liveries");
             if (cnode != null)
             {
@@ -188,10 +175,7 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     liveries = new bool[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        liveries[i] = Xml.GetBoolAttribute(items[i], "value");
-                    }
+                    for (int i = 0; i < items.Count; i++) liveries[i] = Xml.GetBoolAttribute(items[i], "value");
                 }
                 else
                 {
@@ -202,22 +186,21 @@ namespace CodeWalker.GameFiles
                     {
                         string titem = item.Trim();
                         byte v;
-                        if (byte.TryParse(titem, out v))
-                        {
-                            alist.Add(v > 0);
-                        }
+                        if (byte.TryParse(titem, out v)) alist.Add(v > 0);
                     }
+
                     liveries = alist.ToArray();
                 }
             }
-
-
         }
-    }
-    [TC(typeof(EXP))] public class PlateProbabilities
-    {
-        public PlateProbabilities_938618322[] Probabilities { get; set; }
 
+        public byte[] indices { get; set; }
+        public bool[] liveries { get; set; }
+    }
+
+    [TC(typeof(EXP))]
+    public class PlateProbabilities
+    {
         public PlateProbabilities(XmlNode node)
         {
             XmlNode cnode;
@@ -228,29 +211,29 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     Probabilities = new PlateProbabilities_938618322[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        Probabilities[i] = new PlateProbabilities_938618322(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) Probabilities[i] = new PlateProbabilities_938618322(items[i]);
                 }
             }
         }
-    }
-    [TC(typeof(EXP))] public class PlateProbabilities_938618322
-    {
-        public MetaHash Name { get; set; }
-        public uint Value { get; set; }
 
+        public PlateProbabilities_938618322[] Probabilities { get; set; }
+    }
+
+    [TC(typeof(EXP))]
+    public class PlateProbabilities_938618322
+    {
         public PlateProbabilities_938618322(XmlNode node)
         {
             Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "Name"));
-            Value = Xml.GetChildUIntAttribute(node, "Value", "value");
+            Value = Xml.GetChildUIntAttribute(node, "Value");
         }
+
+        public MetaHash Name { get; set; }
+        public uint Value { get; set; }
 
         public override string ToString()
         {
-            return Name.ToString() + ": " + Value.ToString();
+            return Name + ": " + Value;
         }
     }
-
 }

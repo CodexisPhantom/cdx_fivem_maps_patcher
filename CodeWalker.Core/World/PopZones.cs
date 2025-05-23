@@ -1,32 +1,33 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class PopZones : BasePathData
     {
-        public volatile bool Inited;
         public GameFileCache GameFileCache;
 
         public Dictionary<string, PopZone> Groups = new Dictionary<string, PopZone>();
+        public volatile bool Inited;
+
+        public EditorVertex[] TriangleVerts;
 
         public Vector4[] GetNodePositions()
         {
             return null;
         }
+
         public EditorVertex[] GetPathVertices()
         {
             return null;
         }
+
         public EditorVertex[] GetTriangleVertices()
         {
             return TriangleVerts;
         }
-
-        public EditorVertex[] TriangleVerts;
-
 
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus)
@@ -38,17 +39,11 @@ namespace CodeWalker.World
             RpfManager rpfman = gameFileCache.RpfMan;
 
             string filename = "common.rpf\\data\\levels\\gta5\\popzone.ipl";
-            if (gameFileCache.EnableDlc)
-            {
-                filename = "update\\update.rpf\\common\\data\\levels\\gta5\\popzone.ipl";
-            }
+            if (gameFileCache.EnableDlc) filename = "update\\update.rpf\\common\\data\\levels\\gta5\\popzone.ipl";
 
             string ipltext = rpfman.GetFileUTF8Text(filename);
 
-            if (string.IsNullOrEmpty(ipltext))
-            {
-                ipltext = "";
-            }
+            if (string.IsNullOrEmpty(ipltext)) ipltext = "";
 
             Groups.Clear();
 
@@ -96,10 +91,8 @@ namespace CodeWalker.World
         }
 
 
-
         public void BuildVertices()
         {
-
             List<EditorVertex> vlist = new List<EditorVertex>();
             EditorVertex v1 = new EditorVertex();
             EditorVertex v2 = new EditorVertex();
@@ -139,19 +132,11 @@ namespace CodeWalker.World
             }
 
             if (vlist.Count > 0)
-            {
                 TriangleVerts = vlist.ToArray();
-            }
             else
-            {
                 TriangleVerts = null;
-            }
-
         }
-
     }
-
-
 
 
     public class PopZone
@@ -196,8 +181,7 @@ namespace CodeWalker.World
 
         public override string ToString()
         {
-            return ID + ": " + NameLabel + ": " + Box.ToString();
+            return ID + ": " + NameLabel + ": " + Box;
         }
     }
-
 }

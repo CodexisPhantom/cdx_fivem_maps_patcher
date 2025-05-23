@@ -38,6 +38,7 @@ namespace CodeWalker.GameFiles
 
                     return;
                 }
+
                 if (PsoFile.IsPSO(ms))
                 {
                     Pso = new PsoFile();
@@ -46,36 +47,21 @@ namespace CodeWalker.GameFiles
                     //PsoTypes.EnsurePsoTypes(Pso);
 
                     ProcessPSO();
-
-                    return;
                 }
-                else
-                {
 
-                }
                 return;
             }
-            else
-            { }//doesn't get here
 
 
-
-
-
+            //doesn't get here
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
             Meta = rd.ReadBlock<Meta>();
-
-
-
-
-
         }
 
 
         private void ProcessPSO()
         {
-
             //See x64m.rpf\levels\gta5\_cityw\venice_01\venice_metadata.rpf\_manifest.ymf
             //for TIMED YMAP stuff!!!!
             //check CMapDataGroup.HoursOnOff
@@ -87,25 +73,26 @@ namespace CodeWalker.GameFiles
 
             imapDependencies = PsoTypes.GetItemArray<CImapDependency>(Pso, d.imapDependencies);
 
-            imapDependencies2 = PsoTypes.GetObjectArray<YmfImapDependency2, CImapDependencies>(Pso, d.imapDependencies_2);
+            imapDependencies2 =
+                PsoTypes.GetObjectArray<YmfImapDependency2, CImapDependencies>(Pso, d.imapDependencies_2);
 
-            itypDependencies2 = PsoTypes.GetObjectArray<YmfItypDependency2, CItypDependencies>(Pso, d.itypDependencies_2);
+            itypDependencies2 =
+                PsoTypes.GetObjectArray<YmfItypDependency2, CItypDependencies>(Pso, d.itypDependencies_2);
 
             HDTxdAssetBindings = PsoTypes.GetItemArray<CHDTxdAssetBinding>(Pso, d.HDTxdBindingArray);
 
             Interiors = PsoTypes.GetObjectArray<YmfInterior, CInteriorBoundsFiles>(Pso, d.Interiors);
-
-
         }
 
 
         public override string ToString()
         {
-            return (FileEntry != null) ? FileEntry.Path : string.Empty;
+            return FileEntry != null ? FileEntry.Path : string.Empty;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YmfMapDataGroup : PsoClass<CMapDataGroup>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YmfMapDataGroup : PsoClass<CMapDataGroup>
     {
         public CMapDataGroup DataGroup { get; set; } //ymap name
         public MetaHash[] Bounds { get; set; }
@@ -130,10 +117,11 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YmfImapDependency2 : PsoClass<CImapDependencies>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YmfImapDependency2 : PsoClass<CImapDependencies>
     {
         public CImapDependencies Dep { get; set; }
-        public MetaHash[] itypDepArray { get; set; }//ybn hashes?
+        public MetaHash[] itypDepArray { get; set; } //ybn hashes?
 
         public override void Init(PsoFile pso, ref CImapDependencies v)
         {
@@ -147,10 +135,11 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YmfItypDependency2 : PsoClass<CItypDependencies>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YmfItypDependency2 : PsoClass<CItypDependencies>
     {
         public CItypDependencies Dep { get; set; }
-        public MetaHash[] itypDepArray { get; set; }//ytyp hashes?
+        public MetaHash[] itypDepArray { get; set; } //ytyp hashes?
 
         public override void Init(PsoFile pso, ref CItypDependencies v)
         {
@@ -164,10 +153,11 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YmfInterior : PsoClass<CInteriorBoundsFiles>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YmfInterior : PsoClass<CInteriorBoundsFiles>
     {
         public CInteriorBoundsFiles Interior { get; set; }
-        public MetaHash[] Bounds { get; set; }//ybn hashes?
+        public MetaHash[] Bounds { get; set; } //ybn hashes?
 
         public override string ToString()
         {
@@ -180,5 +170,4 @@ namespace CodeWalker.GameFiles
             Bounds = PsoTypes.GetHashArray(pso, v.Bounds);
         }
     }
-
 }

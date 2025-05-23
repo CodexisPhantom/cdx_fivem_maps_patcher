@@ -8,8 +8,11 @@ const bool enableMods = false;
 const string dlc = "";
 const string excludeFolders = "";
 
-string gtaPath = PromptPath("Veuillez entrer le chemin d'installation de GTA V : ");
-string serverPath = PromptPath("Veuillez entrer le chemin du server : ");
+string
+    gtaPath =
+        "C:\\Program Files\\Rockstar Games\\Grand Theft Auto V"; // PromptPath("Veuillez entrer le chemin d'installation de GTA V : ");
+string serverPath =
+    "C:\\Codexis\\FiveM\\servers\\starling\\resources\\[streamings]"; // PromptPath("Veuillez entrer le chemin du server : ");
 
 GTA5Keys.LoadFromPath(gtaPath);
 GameFileCache gameFileCache = new(cacheSize, cacheTime, gtaPath, isGen9, dlc, enableMods, excludeFolders);
@@ -34,7 +37,7 @@ while (true)
             backups.Init();
             break;
         case "2":
-                patcher.Init();
+            patcher.Init();
             break;
         case "3":
             Console.WriteLine("Au revoir !");
@@ -64,6 +67,7 @@ string PromptPath(string message)
         Console.WriteLine("Chemin invalide. Veuillez réessayer.");
         path = null;
     }
+
     Console.WriteLine($"Chemin utilisé : {path}");
     return path;
 }

@@ -1,17 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Xml;
+using SharpDX;
 using TC = System.ComponentModel.TypeConverterAttribute;
 using EXP = System.ComponentModel.ExpandableObjectConverter;
-using SharpDX;
-using System.IO;
-using System.Xml;
 
 namespace CodeWalker.GameFiles
 {
     [TC(typeof(EXP))]
     public class HeightmapFile : GameFile, PackedFile
     {
+        public HeightmapFile() : base(null, GameFileType.Heightmap)
+        {
+        }
+
+        public HeightmapFile(RpfFileEntry entry) : base(entry, GameFileType.Heightmap)
+        {
+            RpfFileEntry = entry;
+        }
+
         public byte[] RawFileData { get; set; }
         public Endianess Endianess { get; set; } = Endianess.BigEndian;
 
@@ -29,14 +38,6 @@ namespace CodeWalker.GameFiles
         public byte[] MaxHeights { get; set; }
         public byte[] MinHeights { get; set; }
 
-        public HeightmapFile() : base(null, GameFileType.Heightmap)
-        {
-        }
-        public HeightmapFile(RpfFileEntry entry) : base(entry, GameFileType.Heightmap)
-        {
-            RpfFileEntry = entry;
-        }
-
         public void Load(byte[] data, RpfFileEntry entry)
         {
             RawFileData = data;
@@ -46,10 +47,7 @@ namespace CodeWalker.GameFiles
                 Name = entry.Name;
             }
 
-            if (BitConverter.ToUInt32(data, 0) == Magic)
-            {
-                Endianess = Endianess.LittleEndian;
-            }
+            if (BitConverter.ToUInt32(data, 0) == Magic) Endianess = Endianess.LittleEndian;
 
             using (MemoryStream ms = new MemoryStream(data))
             {
@@ -59,7 +57,6 @@ namespace CodeWalker.GameFiles
             }
 
             //var pgm = GetPGM();
-
         }
 
         public byte[] Save()
@@ -89,28 +86,28 @@ namespace CodeWalker.GameFiles
             Length = r.ReadUInt32();
 
 
-            if (Length != (r.Length - r.Position))
-            { }
+            if (Length != r.Length - r.Position)
+            {
+            }
 
 
             int dlen = (int)Length;
             if (Compressed > 0)
             {
                 CompHeaders = new CompHeader[Height];
-                for (int i = 0; i < Height; i++)
-                {
-                    CompHeaders[i].Read(r);
-                }
-                dlen -= (Height * 8);
+                for (int i = 0; i < Height; i++) CompHeaders[i].Read(r);
+                dlen -= Height * 8;
             }
 
-            if ((r.Length - r.Position) != dlen)
-            { }
+            if (r.Length - r.Position != dlen)
+            {
+            }
 
             byte[] d = r.ReadBytes(dlen);
 
-            if ((r.Length - r.Position) != 0)
-            { }
+            if (r.Length - r.Position != 0)
+            {
+            }
 
             if (Compressed > 0)
             {
@@ -127,13 +124,15 @@ namespace CodeWalker.GameFiles
                         MaxHeights[y * Width + x] = d[o];
                         MinHeights[y * Width + x] = d[o + h2off];
                     }
+
                     for (int x = 0; x < Width; x++)
                     {
                         byte hm1v = MaxHeights[y * Width + x];
                         byte hm2v = MinHeights[y * Width + x];
                         int diff = hm1v - hm2v;
-                        if ((diff <= 0) && (hm1v != 0))
-                        { }
+                        if (diff <= 0 && hm1v != 0)
+                        {
+                        }
                     }
                 }
             }
@@ -142,8 +141,8 @@ namespace CodeWalker.GameFiles
                 MaxHeights = d; //no way to test this as vanilla heightmaps are compressed...
                 MinHeights = d; //this won't work anyway.
             }
-
         }
+
         private void Write(DataWriter w)
         {
             byte[] d = MaxHeights;
@@ -157,15 +156,21 @@ namespace CodeWalker.GameFiles
                     int start = 0;
                     int end = 0;
                     for (int x = 0; x < Width; x++)
-                    {
-                        if (MaxHeights[y * Width + x] != 0) { start = x; break; }
-                    }
+                        if (MaxHeights[y * Width + x] != 0)
+                        {
+                            start = x;
+                            break;
+                        }
+
                     for (int x = Width - 1; x >= 0; x--)
-                    {
-                        if (MaxHeights[y * Width + x] != 0) { end = x + 1; break; }
-                    }
+                        if (MaxHeights[y * Width + x] != 0)
+                        {
+                            end = x + 1;
+                            break;
+                        }
+
                     int count = end - start;
-                    int offset = (count > 0) ? d1.Count - start : 0;
+                    int offset = count > 0 ? d1.Count - start : 0;
                     for (int i = 0; i < count; i++)
                     {
                         int x = start + i;
@@ -173,10 +178,12 @@ namespace CodeWalker.GameFiles
                         d1.Add(MaxHeights[n]);
                         d2.Add(MinHeights[n]);
                     }
-                    CompHeader h = new CompHeader() { Start = (ushort)start, Count = (ushort)count, DataOffset = offset };
+
+                    CompHeader h = new CompHeader { Start = (ushort)start, Count = (ushort)count, DataOffset = offset };
                     ch[y] = h;
                 }
-                d1.AddRange(d2);//the 2 sets of compressed data are just smushed together
+
+                d1.AddRange(d2); //the 2 sets of compressed data are just smushed together
                 d = d1.ToArray();
                 CompHeaders = ch;
                 Length = (uint)(d.Length + Height * 8);
@@ -198,29 +205,26 @@ namespace CodeWalker.GameFiles
             w.Write(BBMax);
             w.Write(Length);
             if (Compressed > 0)
-            {
                 for (int i = 0; i < Height; i++)
-                {
                     CompHeaders[i].Write(w);
-                }
-            }
+
             w.Write(d);
         }
 
 
         public void WriteXml(StringBuilder sb, int indent)
         {
-            if (Endianess != Endianess.BigEndian)
-            {
-                HmapXml.StringTag(sb, indent, "Endianess", Endianess.ToString());
-            }
+            if (Endianess != Endianess.BigEndian) HmapXml.StringTag(sb, indent, "Endianess", Endianess.ToString());
             HmapXml.ValueTag(sb, indent, "Width", Width.ToString());
             HmapXml.ValueTag(sb, indent, "Height", Height.ToString());
             HmapXml.SelfClosingTag(sb, indent, "BBMin " + FloatUtil.GetVector3XmlString(BBMin));
             HmapXml.SelfClosingTag(sb, indent, "BBMax " + FloatUtil.GetVector3XmlString(BBMax));
-            HmapXml.WriteRawArray(sb, InvertImage(MaxHeights, Width, Height), indent, "MaxHeights", "", HmapXml.FormatHexByte, Width);
-            HmapXml.WriteRawArray(sb, InvertImage(MinHeights, Width, Height), indent, "MinHeights", "", HmapXml.FormatHexByte, Width);
+            HmapXml.WriteRawArray(sb, InvertImage(MaxHeights, Width, Height), indent, "MaxHeights", "",
+                HmapXml.FormatHexByte, Width);
+            HmapXml.WriteRawArray(sb, InvertImage(MinHeights, Width, Height), indent, "MinHeights", "",
+                HmapXml.FormatHexByte, Width);
         }
+
         public void ReadXml(XmlNode node)
         {
             string endianess = Xml.GetChildInnerText(node, "Endianess");
@@ -230,6 +234,7 @@ namespace CodeWalker.GameFiles
                 Enum.TryParse(endianess, out end);
                 Endianess = end;
             }
+
             Width = (ushort)Xml.GetChildUIntAttribute(node, "Width");
             Height = (ushort)Xml.GetChildUIntAttribute(node, "Height");
             BBMin = Xml.GetChildVector3Attributes(node, "BBMin");
@@ -237,10 +242,6 @@ namespace CodeWalker.GameFiles
             MaxHeights = InvertImage(Xml.GetChildRawByteArray(node, "MaxHeights"), Width, Height);
             MinHeights = InvertImage(Xml.GetChildRawByteArray(node, "MinHeights"), Width, Height);
         }
-
-
-
-
 
 
         private byte[] InvertImage(byte[] i, int w, int h)
@@ -253,11 +254,9 @@ namespace CodeWalker.GameFiles
                 int oo = (h - y - 1) * w;
                 Buffer.BlockCopy(i, io, o, oo, w);
             }
+
             return o;
         }
-
-
-
 
 
         public string GetPGM()
@@ -275,12 +274,12 @@ namespace CodeWalker.GameFiles
                     sb.Append(h.ToString());
                     sb.Append(" ");
                 }
+
                 sb.Append("\n");
             }
 
             return sb.ToString();
         }
-
 
 
         public struct CompHeader
@@ -295,6 +294,7 @@ namespace CodeWalker.GameFiles
                 Count = r.ReadUInt16();
                 DataOffset = r.ReadInt32();
             }
+
             public void Write(DataWriter w)
             {
                 w.Write(Start);
@@ -304,22 +304,20 @@ namespace CodeWalker.GameFiles
 
             public override string ToString()
             {
-                return Start.ToString() + ", " + Count.ToString() + ", " + DataOffset.ToString();
+                return Start + ", " + Count + ", " + DataOffset;
             }
         }
-
     }
 
 
     public class HmapXml : MetaXmlBase
     {
-
         public static string GetXml(HeightmapFile hmf)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if ((hmf != null) && (hmf.MaxHeights != null))
+            if (hmf != null && hmf.MaxHeights != null)
             {
                 string name = "Heightmap";
 
@@ -332,14 +330,11 @@ namespace CodeWalker.GameFiles
 
             return sb.ToString();
         }
-
-
     }
 
 
     public class XmlHmap
     {
-
         public static HeightmapFile GetHeightmap(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -353,10 +348,5 @@ namespace CodeWalker.GameFiles
             hmf.ReadXml(doc.DocumentElement);
             return hmf;
         }
-
-
     }
-
-
-
 }

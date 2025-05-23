@@ -4,18 +4,13 @@
     {
         public volatile bool Loaded = false;
         public volatile bool LoadQueued = false;
-        public RpfFileEntry RpfFileEntry { get; set; }
-        public string Name { get; set; }
-        public string FilePath { get; set; } //used by the project form.
-        public GameFileType Type { get; set; }
-
 
 
         public GameFile(RpfFileEntry entry, GameFileType type)
         {
             RpfFileEntry = entry;
             Type = type;
-            MemoryUsage = (entry != null) ? entry.GetFileSize() : 0;
+            MemoryUsage = entry != null ? entry.GetFileSize() : 0;
             if (entry is RpfResourceFileEntry)
             {
                 RpfResourceFileEntry resent = entry as RpfResourceFileEntry;
@@ -26,26 +21,23 @@
             {
                 RpfBinaryFileEntry binent = entry as RpfBinaryFileEntry;
                 uint newuse = binent.FileUncompressedSize;
-                if (newuse > MemoryUsage)
-                {
-                    MemoryUsage = newuse;
-                }
-            }
-            else
-            {
+                if (newuse > MemoryUsage) MemoryUsage = newuse;
             }
         }
+
+        public RpfFileEntry RpfFileEntry { get; set; }
+        public string Name { get; set; }
+        public string FilePath { get; set; } //used by the project form.
+        public GameFileType Type { get; set; }
 
         public override string ToString()
         {
-            return (string.IsNullOrEmpty(Name)) ? JenkIndex.GetString(Key.Hash) : Name;
+            return string.IsNullOrEmpty(Name) ? JenkIndex.GetString(Key.Hash) : Name;
         }
-
-
     }
 
 
-    public enum GameFileType : int
+    public enum GameFileType
     {
         Ydd = 0,
         Ydr = 1,
@@ -78,11 +70,8 @@
         Watermap = 28,
         Mrf = 29,
         DistantLights = 30,
-        Ypdb = 31,
+        Ypdb = 31
     }
-
-
-
 
 
     public struct GameFileCacheKey
@@ -96,7 +85,4 @@
             Type = type;
         }
     }
-
-
-
 }

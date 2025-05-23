@@ -1,20 +1,20 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Threading;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Weapon
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Weapon
     {
+        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
         public string Name { get; set; } = string.Empty;
-        public MetaHash NameHash { get; set; } = 0;//base weapon name hash
-        public MetaHash ModelHash { get; set; } = 0;//weapon model name hash, can be _hi
+        public MetaHash NameHash { get; set; } = 0; //base weapon name hash
+        public MetaHash ModelHash { get; set; } = 0; //weapon model name hash, can be _hi
 
         public YdrFile Ydr { get; set; }
         public Drawable Drawable { get; set; }
-
-        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
 
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
@@ -39,16 +39,13 @@ namespace CodeWalker.World
                 Ydr = gfc.GetYdr(NameHash);
             }
 
-            while ((Ydr != null) && (!Ydr.Loaded))
+            while (Ydr != null && !Ydr.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Ydr = gfc.GetYdr(useHash);
             }
 
-            if (Ydr != null)
-            {
-                Drawable = Ydr.Drawable?.ShallowCopy() as Drawable;
-            }
+            if (Ydr != null) Drawable = Ydr.Drawable?.ShallowCopy() as Drawable;
 
 
             UpdateEntity();
@@ -60,6 +57,5 @@ namespace CodeWalker.World
             RenderEntity.SetPosition(Position);
             RenderEntity.SetOrientation(Rotation);
         }
-
     }
 }

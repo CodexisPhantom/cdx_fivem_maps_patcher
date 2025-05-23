@@ -27,17 +27,7 @@ namespace CodeWalker.GameFiles
                 if (root != null)
                 {
                 }
-                return;
             }
-            else
-            {
-
-            }
-
-
-
-
         }
-
     }
 }

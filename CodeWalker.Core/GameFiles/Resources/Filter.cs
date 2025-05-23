@@ -29,8 +29,8 @@ using System.Xml;
 
 namespace CodeWalker.GameFiles
 {
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FrameFilterDictionary : ResourceFileBase
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FrameFilterDictionary : ResourceFileBase
     {
         // pgDictionaryBase
         // pgDictionary<crFrameFilter>
@@ -45,52 +45,50 @@ namespace CodeWalker.GameFiles
         public ResourcePointerList64<FrameFilterBase> Filters { get; set; }
 
         /// <summary>
-        /// Reads the data-block from a stream.
+        ///     Reads the data-block from a stream.
         /// </summary>
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_10h = reader.ReadUInt32();
-            this.Unknown_14h = reader.ReadUInt32();
-            this.Unknown_18h = reader.ReadUInt32();
-            this.Unknown_1Ch = reader.ReadUInt32();
-            this.FilterNameHashes = reader.ReadBlock<ResourceSimpleList64_s<MetaHash>>();
-            this.Filters = reader.ReadBlock<ResourcePointerList64<FrameFilterBase>>();
+            Unknown_10h = reader.ReadUInt32();
+            Unknown_14h = reader.ReadUInt32();
+            Unknown_18h = reader.ReadUInt32();
+            Unknown_1Ch = reader.ReadUInt32();
+            FilterNameHashes = reader.ReadBlock<ResourceSimpleList64_s<MetaHash>>();
+            Filters = reader.ReadBlock<ResourcePointerList64<FrameFilterBase>>();
 
             if (Filters?.data_items != null)
-            {
                 for (int i = 0; i < Filters.data_items.Length; i++)
                 {
-                    MetaHash h = ((FilterNameHashes?.data_items != null) && (i < FilterNameHashes.data_items.Length)) ? FilterNameHashes.data_items[i] : 0;
-                    if (Filters.data_items[i] != null)
-                    {
-                        Filters.data_items[i].NameHash = h;
-                    }
+                    MetaHash h = FilterNameHashes?.data_items != null && i < FilterNameHashes.data_items.Length
+                        ? FilterNameHashes.data_items[i]
+                        : 0;
+                    if (Filters.data_items[i] != null) Filters.data_items[i].NameHash = h;
                 }
-            }
         }
 
         /// <summary>
-        /// Writes the data-block to a stream.
+        ///     Writes the data-block to a stream.
         /// </summary>
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // write structure data
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_1Ch);
-            writer.WriteBlock(this.FilterNameHashes);
-            writer.WriteBlock(this.Filters);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_1Ch);
+            writer.WriteBlock(FilterNameHashes);
+            writer.WriteBlock(Filters);
         }
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x20, FilterNameHashes),
                 new Tuple<long, IResourceBlock>(0x30, Filters)
             };
@@ -99,23 +97,20 @@ namespace CodeWalker.GameFiles
         public void WriteXml(StringBuilder sb, int indent)
         {
             if (Filters?.data_items != null)
-            {
                 foreach (FrameFilterBase filter in Filters.data_items)
                 {
                     YfdXml.OpenTag(sb, indent, "Item");
                     filter.WriteXml(sb, indent + 1);
                     YfdXml.CloseTag(sb, indent, "Item");
                 }
-            }
-
         }
+
         public void ReadXml(XmlNode node)
         {
             List<FrameFilterBase> filters = new List<FrameFilterBase>();
 
             XmlNodeList inodes = node.SelectNodes("Item");
             if (inodes != null)
-            {
                 foreach (XmlNode inode in inodes)
                 {
                     // frame filters are polymorphic but this is the only type used in the files
@@ -123,14 +118,15 @@ namespace CodeWalker.GameFiles
                     filter.ReadXml(inode);
                     filters.Add(filter);
                 }
-            }
 
             BuildFromFilterList(filters);
         }
-        public static void WriteXmlNode(FrameFilterDictionary d, StringBuilder sb, int indent, string name = "FrameFilterDictionary")
+
+        public static void WriteXmlNode(FrameFilterDictionary d, StringBuilder sb, int indent,
+            string name = "FrameFilterDictionary")
         {
             if (d == null) return;
-            if ((d.Filters?.data_items == null) || (d.Filters.data_items.Length == 0))
+            if (d.Filters?.data_items == null || d.Filters.data_items.Length == 0)
             {
                 YfdXml.SelfClosingTag(sb, indent, name);
             }
@@ -147,10 +143,7 @@ namespace CodeWalker.GameFiles
             filters.Sort((a, b) => a.NameHash.Hash.CompareTo(b.NameHash.Hash));
 
             List<MetaHash> namehashes = new List<MetaHash>();
-            foreach (FrameFilterBase f in filters)
-            {
-                namehashes.Add(f.NameHash);
-            }
+            foreach (FrameFilterBase f in filters) namehashes.Add(f.NameHash);
 
             FilterNameHashes = new ResourceSimpleList64_s<MetaHash>();
             FilterNameHashes.data_items = namehashes.ToArray();
@@ -166,108 +159,12 @@ namespace CodeWalker.GameFiles
         BoneMultiWeight = 3,
         MultiWeight = 4, // only type used in .yfd files
         TrackMultiWeight = 5,
-        Mover = 6,
+        Mover = 6
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FrameFilterBase : ResourceSystemBlock, IResourceXXSystemBlock//, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FrameFilterBase : ResourceSystemBlock, IResourceXXSystemBlock //, IMetaXmlItem
     {
-        // rage::crFrameFilter
-        public override long BlockLength => 0x18;
-
-        // structure data
-        public uint VFT { get; set; }
-        public uint Unknown_04h { get; set; } // 0x00000001
-        public uint RefCount { get; set; } = 1; // 0x00000001
-        public uint Signature { get; set; }
-        public FrameFilterType Type { get; set; }
-        public uint Unknown_14h { get; set; } // 0x00000000
-
-
-        public MetaHash NameHash { get; set; }
-
-        /// <summary>
-        /// Reads the data-block from a stream.
-        /// </summary>
-        public override void Read(ResourceDataReader reader, params object[] parameters)
-        {
-            // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.RefCount = reader.ReadUInt32();
-            this.Signature = reader.ReadUInt32();
-            this.Type = (FrameFilterType)reader.ReadUInt32();
-            this.Unknown_14h = reader.ReadUInt32();
-        }
-
-        /// <summary>
-        /// Writes the data-block to a stream.
-        /// </summary>
-        public override void Write(ResourceDataWriter writer, params object[] parameters)
-        {
-            // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.RefCount);
-            writer.Write(this.Signature);
-            writer.Write((uint)this.Type);
-            writer.Write(this.Unknown_14h);
-        }
-
-        public override Tuple<long, IResourceBlock>[] GetParts()
-        {
-            return Array.Empty<Tuple<long, IResourceBlock>>();
-        }
-
-        public IResourceSystemBlock GetType(ResourceDataReader reader, params object[] parameters)
-        {
-            reader.Position += 0x10;
-            uint type = reader.ReadUInt32();
-            reader.Position -= 0x14;
-
-            return ConstructFilter((FrameFilterType)type);
-        }
-
-        public static FrameFilterBase ConstructFilter(FrameFilterType type)
-        {
-            switch (type)
-            {
-                case FrameFilterType.MultiWeight: return new FrameFilterMultiWeight();
-                default: return null; // throw new Exception("Unknown type");
-            }
-        }
-
-        public virtual void WriteXml(StringBuilder sb, int indent)
-        {
-            YfdXml.StringTag(sb, indent, "Name", YfdXml.HashString(NameHash));
-        }
-
-        public virtual void ReadXml(XmlNode node)
-        {
-            NameHash = XmlMeta.GetHash(Xml.GetChildInnerText(node, "Name"));
-        }
-
-        public virtual uint CalculateSignature()
-        {
-            return 0;
-        }
-
-        public override string ToString()
-        {
-            return NameHash + " (" + Type + ")";
-        }
-
-        // used to calculate filter signatures
-        public static uint Crc32Hash(byte[] data, uint seed = 0)
-        {
-            if (data == null) return 0;
-            uint h = ~seed;
-            for (int i = 0; i < data.Length; i++)
-            {
-                h = Crc32Table[data[i] ^ (h & 0xFF)] ^ (h >> 8);
-            }
-            return ~h;
-        }
-
         private static readonly uint[] Crc32Table = new uint[256]
         {
             0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419,
@@ -323,48 +220,145 @@ namespace CodeWalker.GameFiles
             0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B,
             0x2D02EF8D
         };
-    }
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FrameFilterMultiWeight : FrameFilterBase
-    {
-        // rage::crFrameFilterMultiWeight
-        public override long BlockLength => 0x40;
-        
-        public ResourceSimpleList64_s<TrackIdIndex> Entries { get; set; } // sorted by (BoneId | (Track << 16))
-        public ResourceSimpleList64_float Weights { get; set; }
-        public ulong Unknown_38h { get; set; } // 0
 
+        // structure data
+        public uint VFT { get; set; }
+        public uint Unknown_04h { get; set; } // 0x00000001
+        public uint RefCount { get; set; } = 1; // 0x00000001
+        public uint Signature { get; set; }
+        public FrameFilterType Type { get; set; }
+        public uint Unknown_14h { get; set; } // 0x00000000
+
+
+        public MetaHash NameHash { get; set; }
+
+        // rage::crFrameFilter
+        public override long BlockLength => 0x18;
+
+        /// <summary>
+        ///     Reads the data-block from a stream.
+        /// </summary>
+        public override void Read(ResourceDataReader reader, params object[] parameters)
+        {
+            // read structure data
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            RefCount = reader.ReadUInt32();
+            Signature = reader.ReadUInt32();
+            Type = (FrameFilterType)reader.ReadUInt32();
+            Unknown_14h = reader.ReadUInt32();
+        }
+
+        /// <summary>
+        ///     Writes the data-block to a stream.
+        /// </summary>
+        public override void Write(ResourceDataWriter writer, params object[] parameters)
+        {
+            // write structure data
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(RefCount);
+            writer.Write(Signature);
+            writer.Write((uint)Type);
+            writer.Write(Unknown_14h);
+        }
+
+        public override Tuple<long, IResourceBlock>[] GetParts()
+        {
+            return Array.Empty<Tuple<long, IResourceBlock>>();
+        }
+
+        public IResourceSystemBlock GetType(ResourceDataReader reader, params object[] parameters)
+        {
+            reader.Position += 0x10;
+            uint type = reader.ReadUInt32();
+            reader.Position -= 0x14;
+
+            return ConstructFilter((FrameFilterType)type);
+        }
+
+        public static FrameFilterBase ConstructFilter(FrameFilterType type)
+        {
+            switch (type)
+            {
+                case FrameFilterType.MultiWeight: return new FrameFilterMultiWeight();
+                default: return null; // throw new Exception("Unknown type");
+            }
+        }
+
+        public virtual void WriteXml(StringBuilder sb, int indent)
+        {
+            YfdXml.StringTag(sb, indent, "Name", YfdXml.HashString(NameHash));
+        }
+
+        public virtual void ReadXml(XmlNode node)
+        {
+            NameHash = XmlMeta.GetHash(Xml.GetChildInnerText(node, "Name"));
+        }
+
+        public virtual uint CalculateSignature()
+        {
+            return 0;
+        }
+
+        public override string ToString()
+        {
+            return NameHash + " (" + Type + ")";
+        }
+
+        // used to calculate filter signatures
+        public static uint Crc32Hash(byte[] data, uint seed = 0)
+        {
+            if (data == null) return 0;
+            uint h = ~seed;
+            for (int i = 0; i < data.Length; i++) h = Crc32Table[data[i] ^ (h & 0xFF)] ^ (h >> 8);
+            return ~h;
+        }
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FrameFilterMultiWeight : FrameFilterBase
+    {
         public FrameFilterMultiWeight()
         {
             Type = FrameFilterType.MultiWeight;
         }
 
+        // rage::crFrameFilterMultiWeight
+        public override long BlockLength => 0x40;
+
+        public ResourceSimpleList64_s<TrackIdIndex> Entries { get; set; } // sorted by (BoneId | (Track << 16))
+        public ResourceSimpleList64_float Weights { get; set; }
+        public ulong Unknown_38h { get; set; } // 0
+
         /// <summary>
-        /// Reads the data-block from a stream.
+        ///     Reads the data-block from a stream.
         /// </summary>
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             base.Read(reader, parameters);
             // read structure data
-            this.Entries = reader.ReadBlock<ResourceSimpleList64_s<TrackIdIndex>>();
-            this.Weights = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_38h = reader.ReadUInt64();
+            Entries = reader.ReadBlock<ResourceSimpleList64_s<TrackIdIndex>>();
+            Weights = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_38h = reader.ReadUInt64();
         }
 
         /// <summary>
-        /// Writes the data-block to a stream.
+        ///     Writes the data-block to a stream.
         /// </summary>
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
             // write structure data
-            writer.WriteBlock(this.Entries);
-            writer.WriteBlock(this.Weights);
-            writer.Write(this.Unknown_38h);
+            writer.WriteBlock(Entries);
+            writer.WriteBlock(Weights);
+            writer.Write(Unknown_38h);
         }
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x18, Entries),
                 new Tuple<long, IResourceBlock>(0x28, Weights)
             };
@@ -394,10 +388,7 @@ namespace CodeWalker.GameFiles
 
         public void SortEntries()
         {
-            if (Entries?.data_items == null)
-            {
-                return;
-            }
+            if (Entries?.data_items == null) return;
 
             Array.Sort(Entries.data_items, (x, y) => x.GetSortKey().CompareTo(y.GetSortKey()));
         }
@@ -411,11 +402,13 @@ namespace CodeWalker.GameFiles
                 byte[] data = MetaTypes.ConvertArrayToBytes(Entries.data_items);
                 s = Crc32Hash(data, s);
             }
+
             if (Weights?.data_items != null && Weights?.data_items.Length > 0)
             {
                 byte[] data = MetaTypes.ConvertArrayToBytes(Weights.data_items);
                 s = Crc32Hash(data, s);
             }
+
             return s;
         }
 
@@ -431,7 +424,10 @@ namespace CodeWalker.GameFiles
                 return BoneId + ", " + Track + ": " + WeightIndex;
             }
 
-            public uint GetSortKey() => (uint)(BoneId | (Track << 16));
+            public uint GetSortKey()
+            {
+                return (uint)(BoneId | (Track << 16));
+            }
 
             public void WriteXml(StringBuilder sb, int indent)
             {

@@ -7,14 +7,15 @@ namespace CodeWalker.GameFiles
 {
     public class YwrFile : GameFile, PackedFile
     {
-        public WaypointRecordList Waypoints { get; set; }
-
         public YwrFile() : base(null, GameFileType.Ywr)
         {
         }
+
         public YwrFile(RpfFileEntry entry) : base(entry, GameFileType.Ywr)
         {
         }
+
+        public WaypointRecordList Waypoints { get; set; }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -23,10 +24,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
@@ -35,7 +33,6 @@ namespace CodeWalker.GameFiles
             try
             {
                 Waypoints = rd.ReadBlock<WaypointRecordList>();
-
             }
             catch (Exception ex)
             {
@@ -43,9 +40,7 @@ namespace CodeWalker.GameFiles
             }
 
 
-
             Loaded = true;
-
         }
 
         public byte[] Save()
@@ -54,32 +49,24 @@ namespace CodeWalker.GameFiles
 
             return data;
         }
-
-
     }
 
 
     public class YwrXml : MetaXmlBase
     {
-
         public static string GetXml(YwrFile ywr)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if (ywr?.Waypoints != null)
-            {
-                WaypointRecordList.WriteXmlNode(ywr.Waypoints, sb, 0);
-            }
+            if (ywr?.Waypoints != null) WaypointRecordList.WriteXmlNode(ywr.Waypoints, sb, 0);
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYwr
     {
-
         public static YwrFile GetYwr(string xml, string inputFolder = "")
         {
             XmlDocument doc = new XmlDocument();
@@ -92,17 +79,11 @@ namespace CodeWalker.GameFiles
             YwrFile r = new YwrFile();
 
             XmlElement node = doc.DocumentElement;
-            if (node != null)
-            {
-                r.Waypoints = WaypointRecordList.ReadXmlNode(node);
-            }
+            if (node != null) r.Waypoints = WaypointRecordList.ReadXmlNode(node);
 
             r.Name = Path.GetFileName(inputFolder);
 
             return r;
         }
-
     }
-
-
 }

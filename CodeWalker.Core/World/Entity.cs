@@ -1,55 +1,54 @@
-﻿using CodeWalker.GameFiles;
+﻿using System;
+using CodeWalker.GameFiles;
 using SharpDX;
-using System;
 
 namespace CodeWalker.World
 {
     public class Entity
     {
-        public Space Space;
+        public float Age;
+        public Vector3 AngularMomentum;
+        public Vector3 AngularVelocity;
+        public Vector3 Center;
+
+        public bool EnableCollisions;
+        public bool Enabled;
         public YmapEntityDef EntityDef;
 
-        public float Radius;
-        public Vector3 Center;
-        public Vector3 Position;
-        public Quaternion Orientation = Quaternion.Identity;
-        public Quaternion OrientationInv = Quaternion.Identity;
+        public float Lifetime;
 
         public float Mass;
         public Matrix MomentOfInertia;
         public Vector3 Momentum;
+        public Quaternion Orientation = Quaternion.Identity;
+        public Quaternion OrientationInv = Quaternion.Identity;
+        public Vector3 Position;
+
+        public float Radius;
+        public Space Space;
         public Vector3 Velocity;
-        public Vector3 AngularMomentum;
-        public Vector3 AngularVelocity;
 
         public bool WasColliding;
-
-        public bool EnableCollisions;
-        public bool Enabled;
-
-        public float Lifetime;
-        public float Age;
 
         //public CollisionShape ..
 
         public virtual void PreUpdate(float elapsed)
-        { }
-
+        {
+        }
     }
-
 
 
     public class PedEntity : Entity
     {
-
-        public Vector2 ControlMovement;
-        public bool ControlJump;
-        public bool ControlBoost;
-
-        public Vector3 ForwardVec;
+        public Entity CameraEntity = new Entity();
 
         public Quaternion CameraOrientation = Quaternion.LookAtLH(Vector3.Zero, Vector3.Up, Vector3.ForwardLH);
-        public Entity CameraEntity = new Entity();
+        public bool ControlBoost;
+        public bool ControlJump;
+
+        public Vector2 ControlMovement;
+
+        public Vector3 ForwardVec;
 
         public bool OnGround;
 
@@ -68,7 +67,6 @@ namespace CodeWalker.World
 
         public override void PreUpdate(float elapsed)
         {
-
             //float rotspd = 0.5f;
             float movspd = 10.0f;
             float velspd = 10.0f;
@@ -76,12 +74,12 @@ namespace CodeWalker.World
             float boostmult = 10.0f;
             if (ControlBoost) movspd *= boostmult;
 
-            Quaternion rot = Quaternion.Identity;// .RotationAxis(Vector3.UnitZ, -ControlMovement.X * rotspd * elapsed);
+            Quaternion rot = Quaternion.Identity; // .RotationAxis(Vector3.UnitZ, -ControlMovement.X * rotspd * elapsed);
             Quaternion ori = Quaternion.Multiply(Orientation, rot);
             SetOrientation(ori);
 
 
-            float jmpamt = (ControlJump ? jmpvel : 0);
+            float jmpamt = ControlJump ? jmpvel : 0;
             Vector3 curvel = Velocity;
             Vector3 controlvel = new Vector3(ControlMovement * movspd, jmpamt);
             Vector3 targetvel = controlvel + new Vector3(0, 0, curvel.Z);
@@ -99,7 +97,7 @@ namespace CodeWalker.World
                 //////BoundingSphere sph = new BoundingSphere(targetpos + Center, Radius);
                 //////r.SphereHit = SphereIntersect(sph);
 
-                if ((disp.Z > -0.25f))/* && (displ < Radius * 2.0f)*/
+                if (disp.Z > -0.25f) /* && (displ < Radius * 2.0f)*/
                 {
                     Vector3 raydir = new Vector3(0.0f, 0.0f, -1.0f);
                     Vector3 rayoff = new Vector3(0.0f, 0.0f, 0.0f);
@@ -108,19 +106,15 @@ namespace CodeWalker.World
                     if (rayhit.Hit)
                     {
                         if (rayhit.HitDist > 0)
-                        {
                             Position = rayhit.Position - Center + new Vector3(0, 0, Radius);
-                            //collpos = Position;//targetpos;// 
-                        }
+                        //collpos = Position;//targetpos;// 
                         else
-                        {
                             //the start of the ray was a collision... can't move here
                             Position = collpos;
-                        }
                     }
                     else //might happen when about to go off a big drop?
                     {
-                        Position = targetpos;// collpos;
+                        Position = targetpos; // collpos;
                         //collpos = targetpos;
                     }
                 }
@@ -131,9 +125,8 @@ namespace CodeWalker.World
                 //Position = collpos; //last known ok position
 
 
-
                 bool wasOnGround = OnGround;
-                OnGround = (Vector3.Dot(coll.SphereHit.Normal, Vector3.UnitZ) > 0.8f);
+                OnGround = Vector3.Dot(coll.SphereHit.Normal, Vector3.UnitZ) > 0.8f;
                 if (OnGround)
                 {
                 }
@@ -151,7 +144,6 @@ namespace CodeWalker.World
                 //Velocity = veldir * vellen;
 
                 //Velocity = (Position - oldpos) / Math.Max(elapsed, 0.0001f);
-
             }
             else
             {
@@ -160,19 +152,18 @@ namespace CodeWalker.World
 
                 Vector3 raydir = new Vector3(0.0f, 0.0f, -1.0f);
                 Ray ray = new Ray(Position, raydir);
-                SpaceRayIntersectResult rayhit = Space.RayIntersect(ray, float.MaxValue);
+                SpaceRayIntersectResult rayhit = Space.RayIntersect(ray);
                 if (!rayhit.Hit && rayhit.TestComplete)
                 {
                     //must be under the map? try to find the ground...
                     ray.Position = Position + new Vector3(0.0f, 0.0f, 1000.0f);
-                    rayhit = Space.RayIntersect(ray, float.MaxValue);
+                    rayhit = Space.RayIntersect(ray);
                     if (rayhit.Hit)
                     {
                         Position = rayhit.Position + new Vector3(0.0f, 0.0f, Radius) - Center;
                         OnGround = true;
                     }
-                    else
-                    { }//didn't find the ground, what to do now?
+                    //didn't find the ground, what to do now?
                 }
             }
 
@@ -187,8 +178,5 @@ namespace CodeWalker.World
             CameraEntity.Orientation = Quaternion.Multiply(Orientation, CameraOrientation);
             CameraEntity.OrientationInv = Quaternion.Invert(Orientation);
         }
-
     }
-
-
 }

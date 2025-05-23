@@ -29,12 +29,11 @@ namespace CodeWalker.GameFiles
 {
     public class GTACrypto
     {
-
-
         public static byte[] DecryptAES(byte[] data)
         {
             return DecryptAESData(data, GTA5Keys.PC_AES_KEY);
         }
+
         public static byte[] EncryptAES(byte[] data)
         {
             return EncryptAESData(data, GTA5Keys.PC_AES_KEY);
@@ -62,6 +61,7 @@ namespace CodeWalker.GameFiles
 
             return buffer;
         }
+
         public static byte[] EncryptAESData(byte[] data, byte[] key, int rounds = 1)
         {
             Rijndael rijndael = Rijndael.Create();
@@ -84,9 +84,6 @@ namespace CodeWalker.GameFiles
 
             return buffer;
         }
-
-
-
 
 
         public static byte[] GetNGKey(string name, uint length)
@@ -189,7 +186,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         // round 3-15
         public static byte[] DecryptNGRoundB(byte[] data, uint[] key, uint[][] table)
         {
@@ -246,21 +242,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public static byte[] EncryptNG(byte[] data, string name, uint length)
         {
             byte[] key = GetNGKey(name, length);
@@ -269,10 +250,8 @@ namespace CodeWalker.GameFiles
 
         public static byte[] EncryptNG(byte[] data, byte[] key)
         {
-            if ((GTA5Keys.PC_NG_ENCRYPT_TABLES == null) || (GTA5Keys.PC_NG_ENCRYPT_LUTs == null))
-            {
+            if (GTA5Keys.PC_NG_ENCRYPT_TABLES == null || GTA5Keys.PC_NG_ENCRYPT_LUTs == null)
                 throw new Exception("Unable to encrypt - tables not loaded.");
-            }
 
             byte[] encryptedData = new byte[data.Length];
 
@@ -362,29 +341,27 @@ namespace CodeWalker.GameFiles
             // apply xor to data first...
             byte[] xorbuf = new byte[16];
             Buffer.BlockCopy(key, 0, xorbuf, 0, 16);
-            for (int y = 0; y < 16; y++)
-            {
-                data[y] ^= xorbuf[y];
-            }
+            for (int y = 0; y < 16; y++) data[y] ^= xorbuf[y];
 
-            return new byte[] {
-                lut[0].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[1].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[2].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[3].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[4].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[5].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[6].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[7].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[8].LookUp(BitConverter.ToUInt32( new byte[] {  data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[9].LookUp(BitConverter.ToUInt32( new byte[] {  data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[10].LookUp(BitConverter.ToUInt32( new byte[] { data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[11].LookUp(BitConverter.ToUInt32( new byte[] { data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[12].LookUp(BitConverter.ToUInt32( new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-                lut[13].LookUp(BitConverter.ToUInt32( new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-                lut[14].LookUp(BitConverter.ToUInt32( new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-                lut[15].LookUp(BitConverter.ToUInt32( new byte[] { data[12], data[13], data[14], data[15] }, 0))
-             };
+            return new[]
+            {
+                lut[0].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[1].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[2].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[3].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[4].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[5].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[6].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[7].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[8].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[9].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[10].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[11].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[12].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[13].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[14].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[15].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0))
+            };
         }
 
         public static byte[] EncryptRoundB_LUT(byte[] dataOld, uint[] key, GTA5NGLUT[] lut)
@@ -394,32 +371,27 @@ namespace CodeWalker.GameFiles
             // apply xor to data first...
             byte[] xorbuf = new byte[16];
             Buffer.BlockCopy(key, 0, xorbuf, 0, 16);
-            for (int y = 0; y < 16; y++)
+            for (int y = 0; y < 16; y++) data[y] ^= xorbuf[y];
+
+            return new[]
             {
-                data[y] ^= xorbuf[y];
-            }
-
-            return new byte[] {
-                lut[0].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[1].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[2].LookUp(BitConverter.ToUInt32( new byte[] {  data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[3].LookUp(BitConverter.ToUInt32( new byte[] {  data[12], data[13], data[14], data[15] }, 0)),
-                lut[4].LookUp(BitConverter.ToUInt32( new byte[] {  data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[5].LookUp(BitConverter.ToUInt32( new byte[] {  data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[6].LookUp(BitConverter.ToUInt32( new byte[] {  data[12], data[13], data[14], data[15] }, 0)),
-                lut[7].LookUp(BitConverter.ToUInt32( new byte[] {  data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[8].LookUp(BitConverter.ToUInt32( new byte[] {  data[8],  data[9],  data[10], data[11] }, 0)),
-                lut[9].LookUp(BitConverter.ToUInt32( new byte[] {  data[12], data[13], data[14], data[15] }, 0)),
-                lut[10].LookUp(BitConverter.ToUInt32( new byte[] { data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[11].LookUp(BitConverter.ToUInt32( new byte[] { data[4],  data[5],  data[6],  data[7]  }, 0)),
-                lut[12].LookUp(BitConverter.ToUInt32( new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-                lut[13].LookUp(BitConverter.ToUInt32( new byte[] { data[0],  data[1],  data[2],  data[3]  }, 0)),
-                lut[14].LookUp(BitConverter.ToUInt32( new byte[] { data[4],  data[5], data[6],   data[7]  }, 0)),
-                lut[15].LookUp(BitConverter.ToUInt32( new byte[] { data[8],  data[9], data[10], data[11]  }, 0))};
+                lut[0].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[1].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[2].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[3].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[4].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[5].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[6].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[7].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[8].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0)),
+                lut[9].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[10].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[11].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[12].LookUp(BitConverter.ToUInt32(new[] { data[12], data[13], data[14], data[15] }, 0)),
+                lut[13].LookUp(BitConverter.ToUInt32(new[] { data[0], data[1], data[2], data[3] }, 0)),
+                lut[14].LookUp(BitConverter.ToUInt32(new[] { data[4], data[5], data[6], data[7] }, 0)),
+                lut[15].LookUp(BitConverter.ToUInt32(new[] { data[8], data[9], data[10], data[11] }, 0))
+            };
         }
-
-
-
-
     }
 }

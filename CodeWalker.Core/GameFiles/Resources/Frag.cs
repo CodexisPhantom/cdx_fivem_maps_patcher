@@ -23,38 +23,27 @@
 //shamelessly stolen and mangled
 
 
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Xml;
+using SharpDX;
 
 namespace CodeWalker.GameFiles
 {
-
-
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragType : ResourceFileBase
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragType : ResourceFileBase
     {
-        public override long BlockLength
-        {
-            get { return 304; }
-        }
+        private string_r NameBlock; //only used for saving
+        public ulong Unknown_100h; // 0x0000000000000000
+        public ulong Unknown_108h; // 0x0000000000000000
 
         // structure data
         public ulong Unknown_10h; // 0x0000000000000000
+        public ulong Unknown_128h; // 0x0000000000000000
         public ulong Unknown_18h; // 0x0000000000000000
-        public Vector3 BoundingSphereCenter { get; set; }
-        public float BoundingSphereRadius { get; set; }
-        public ulong DrawablePointer { get; set; }
-        public ulong DrawableArrayPointer { get; set; }
-        public ulong DrawableArrayNamesPointer { get; set; }
-        public uint DrawableArrayCount { get; set; }
-        public int DrawableArrayFlag { get; set; }  // 0, -1   (DrawableArray flag: 0 when ArrayCount>0, -1 when not)
         public ulong Unknown_50h; // 0x0000000000000000
-        public ulong NamePointer { get; set; }
-        public ResourcePointerList64<EnvironmentCloth> Cloths { get; set; }
         public ulong Unknown_70h; // 0x0000000000000000
         public ulong Unknown_78h; // 0x0000000000000000
         public ulong Unknown_80h; // 0x0000000000000000
@@ -62,30 +51,37 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_90h; // 0x0000000000000000
         public ulong Unknown_98h; // 0x0000000000000000
         public ulong Unknown_A0h; // 0x0000000000000000
+        public int Unknown_B4h; //0x00000000
+        public int Unknown_C8h = -1; // -1
+        public byte Unknown_D8h; // 0x00
+        public ushort Unknown_DAh; // 0x0000
+        public uint Unknown_DCh; // 0x00000000
+        public ulong Unknown_E8h; // 0x0000000000000000
+        public override long BlockLength => 304;
+        public Vector3 BoundingSphereCenter { get; set; }
+        public float BoundingSphereRadius { get; set; }
+        public ulong DrawablePointer { get; set; }
+        public ulong DrawableArrayPointer { get; set; }
+        public ulong DrawableArrayNamesPointer { get; set; }
+        public uint DrawableArrayCount { get; set; }
+        public int DrawableArrayFlag { get; set; } // 0, -1   (DrawableArray flag: 0 when ArrayCount>0, -1 when not)
+        public ulong NamePointer { get; set; }
+        public ResourcePointerList64<EnvironmentCloth> Cloths { get; set; }
         public ulong BoneTransformsPointer { get; set; }
         public int Unknown_B0h { get; set; } // 0, 944, 1088, 1200
-        public int Unknown_B4h; //0x00000000
         public int Unknown_B8h { get; set; } // -364 to 16976, multiple of 16!
         public int Unknown_BCh { get; set; } // 0, -1
         public int Unknown_C0h { get; set; } // 0, 256, 512, 768, 1024, 65280
         public int Unknown_C4h { get; set; } // 1, 3, 65, 67
-        public int Unknown_C8h = -1; // -1
         public float Unknown_CCh { get; set; }
         public float GravityFactor { get; set; }
         public float BuoyancyFactor { get; set; }
-        public byte Unknown_D8h; // 0x00
         public byte GlassWindowsCount { get; set; }
-        public ushort Unknown_DAh; // 0x0000
-        public uint Unknown_DCh; // 0x00000000
         public ulong GlassWindowsPointer { get; set; }
-        public ulong Unknown_E8h; // 0x0000000000000000
         public ulong PhysicsLODGroupPointer { get; set; }
         public ulong DrawableClothPointer { get; set; }
-        public ulong Unknown_100h; // 0x0000000000000000
-        public ulong Unknown_108h; // 0x0000000000000000
         public ResourceSimpleList64<LightAttributes> LightAttributes { get; set; }
         public ulong VehicleGlassWindowsPointer { get; set; }
-        public ulong Unknown_128h; // 0x0000000000000000
 
         // reference data
         public FragDrawable Drawable { get; set; }
@@ -98,9 +94,6 @@ namespace CodeWalker.GameFiles
         public FragDrawable DrawableCloth { get; set; }
         public FragVehicleGlassWindows VehicleGlassWindows { get; set; }
 
-
-        private string_r NameBlock; //only used for saving
-
         public YftFile Yft { get; set; }
 
 #if DEBUG
@@ -112,86 +105,87 @@ namespace CodeWalker.GameFiles
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.BoundingSphereCenter = reader.ReadVector3();
-            this.BoundingSphereRadius = reader.ReadSingle();
-            this.DrawablePointer = reader.ReadUInt64();
-            this.DrawableArrayPointer = reader.ReadUInt64();
-            this.DrawableArrayNamesPointer = reader.ReadUInt64();
-            this.DrawableArrayCount = reader.ReadUInt32();
-            this.DrawableArrayFlag = reader.ReadInt32();
-            this.Unknown_50h = reader.ReadUInt64();
-            this.NamePointer = reader.ReadUInt64();
-            this.Cloths = reader.ReadBlock<ResourcePointerList64<EnvironmentCloth>>();
-            this.Unknown_70h = reader.ReadUInt64();
-            this.Unknown_78h = reader.ReadUInt64();
-            this.Unknown_80h = reader.ReadUInt64();
-            this.Unknown_88h = reader.ReadUInt64();
-            this.Unknown_90h = reader.ReadUInt64();
-            this.Unknown_98h = reader.ReadUInt64();
-            this.Unknown_A0h = reader.ReadUInt64();
-            this.BoneTransformsPointer = reader.ReadUInt64();
-            this.Unknown_B0h = reader.ReadInt32();
-            this.Unknown_B4h = reader.ReadInt32();
-            this.Unknown_B8h = reader.ReadInt32();
-            this.Unknown_BCh = reader.ReadInt32();
-            this.Unknown_C0h = reader.ReadInt32();
-            this.Unknown_C4h = reader.ReadInt32();
-            this.Unknown_C8h = reader.ReadInt32();
-            this.Unknown_CCh = reader.ReadSingle();
-            this.GravityFactor = reader.ReadSingle();
-            this.BuoyancyFactor = reader.ReadSingle();
-            this.Unknown_D8h = reader.ReadByte();
-            this.GlassWindowsCount = reader.ReadByte();
-            this.Unknown_DAh = reader.ReadUInt16();
-            this.Unknown_DCh = reader.ReadUInt32();
-            this.GlassWindowsPointer = reader.ReadUInt64();
-            this.Unknown_E8h = reader.ReadUInt64();
-            this.PhysicsLODGroupPointer = reader.ReadUInt64();
-            this.DrawableClothPointer = reader.ReadUInt64();
-            this.Unknown_100h = reader.ReadUInt64();
-            this.Unknown_108h = reader.ReadUInt64();
-            this.LightAttributes = reader.ReadBlock<ResourceSimpleList64<LightAttributes>>();
-            this.VehicleGlassWindowsPointer = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h = reader.ReadUInt64();
+            BoundingSphereCenter = reader.ReadVector3();
+            BoundingSphereRadius = reader.ReadSingle();
+            DrawablePointer = reader.ReadUInt64();
+            DrawableArrayPointer = reader.ReadUInt64();
+            DrawableArrayNamesPointer = reader.ReadUInt64();
+            DrawableArrayCount = reader.ReadUInt32();
+            DrawableArrayFlag = reader.ReadInt32();
+            Unknown_50h = reader.ReadUInt64();
+            NamePointer = reader.ReadUInt64();
+            Cloths = reader.ReadBlock<ResourcePointerList64<EnvironmentCloth>>();
+            Unknown_70h = reader.ReadUInt64();
+            Unknown_78h = reader.ReadUInt64();
+            Unknown_80h = reader.ReadUInt64();
+            Unknown_88h = reader.ReadUInt64();
+            Unknown_90h = reader.ReadUInt64();
+            Unknown_98h = reader.ReadUInt64();
+            Unknown_A0h = reader.ReadUInt64();
+            BoneTransformsPointer = reader.ReadUInt64();
+            Unknown_B0h = reader.ReadInt32();
+            Unknown_B4h = reader.ReadInt32();
+            Unknown_B8h = reader.ReadInt32();
+            Unknown_BCh = reader.ReadInt32();
+            Unknown_C0h = reader.ReadInt32();
+            Unknown_C4h = reader.ReadInt32();
+            Unknown_C8h = reader.ReadInt32();
+            Unknown_CCh = reader.ReadSingle();
+            GravityFactor = reader.ReadSingle();
+            BuoyancyFactor = reader.ReadSingle();
+            Unknown_D8h = reader.ReadByte();
+            GlassWindowsCount = reader.ReadByte();
+            Unknown_DAh = reader.ReadUInt16();
+            Unknown_DCh = reader.ReadUInt32();
+            GlassWindowsPointer = reader.ReadUInt64();
+            Unknown_E8h = reader.ReadUInt64();
+            PhysicsLODGroupPointer = reader.ReadUInt64();
+            DrawableClothPointer = reader.ReadUInt64();
+            Unknown_100h = reader.ReadUInt64();
+            Unknown_108h = reader.ReadUInt64();
+            LightAttributes = reader.ReadBlock<ResourceSimpleList64<LightAttributes>>();
+            VehicleGlassWindowsPointer = reader.ReadUInt64();
+            Unknown_128h = reader.ReadUInt64();
 
             // read reference data
-            Drawable = reader.ReadBlockAt<FragDrawable>(this.DrawablePointer);
-            DrawableArray = reader.ReadBlockAt<ResourcePointerArray64<FragDrawable>>(DrawableArrayPointer, DrawableArrayCount);
-            DrawableArrayNames = reader.ReadBlockAt<ResourcePointerArray64<string_r>>(DrawableArrayNamesPointer, DrawableArrayCount);
+            Drawable = reader.ReadBlockAt<FragDrawable>(DrawablePointer);
+            DrawableArray =
+                reader.ReadBlockAt<ResourcePointerArray64<FragDrawable>>(DrawableArrayPointer, DrawableArrayCount);
+            DrawableArrayNames =
+                reader.ReadBlockAt<ResourcePointerArray64<string_r>>(DrawableArrayNamesPointer, DrawableArrayCount);
             Name = reader.ReadStringAt(NamePointer);
             BoneTransforms = reader.ReadBlockAt<FragBoneTransforms>(BoneTransformsPointer);
-            GlassWindows = reader.ReadBlockAt<ResourcePointerArray64<FragGlassWindow>>(GlassWindowsPointer, GlassWindowsCount);
+            GlassWindows =
+                reader.ReadBlockAt<ResourcePointerArray64<FragGlassWindow>>(GlassWindowsPointer, GlassWindowsCount);
             PhysicsLODGroup = reader.ReadBlockAt<FragPhysicsLODGroup>(PhysicsLODGroupPointer);
             DrawableCloth = reader.ReadBlockAt<FragDrawable>(DrawableClothPointer);
             VehicleGlassWindows = reader.ReadBlockAt<FragVehicleGlassWindows>(VehicleGlassWindowsPointer);
 
-            if (Drawable != null)
-            {
-                Drawable.OwnerFragment = this;
-            }
+            if (Drawable != null) Drawable.OwnerFragment = this;
             if (DrawableCloth != null)
             {
                 DrawableCloth.OwnerFragment = this;
                 if (DrawableCloth.OwnerCloth == null)
-                { }//no hit!
+                {
+                } //no hit!
             }
+
             if (DrawableArray?.data_items != null)
-            {
                 for (int i = 0; i < DrawableArray.data_items.Length; i++)
                 {
                     FragDrawable drwbl = DrawableArray.data_items[i];
-                    if (drwbl != null)
-                    {
-                        drwbl.OwnerFragment = this;
-                    }
+                    if (drwbl != null) drwbl.OwnerFragment = this;
                 }
-            }
+
             if (GlassWindows != null)
-            { }
+            {
+            }
+
             if (VehicleGlassWindows != null)
-            { }
+            {
+            }
 
 
             AssignChildrenShaders();
@@ -307,73 +301,76 @@ namespace CodeWalker.GameFiles
             //        break;//no hit
             //}
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // update structure data
-            this.DrawablePointer = (ulong)(this.Drawable != null ? this.Drawable.FilePosition : 0);
-            this.DrawableArrayPointer = (ulong)(this.DrawableArray != null ? this.DrawableArray.FilePosition : 0);
-            this.DrawableArrayNamesPointer = (ulong)(this.DrawableArrayNames != null ? this.DrawableArrayNames.FilePosition : 0);
-            this.DrawableArrayCount = (uint)(this.DrawableArray != null ? this.DrawableArray.Count : 0);
-            this.DrawableArrayFlag = ((this.DrawableArray?.data_items?.Length ?? 0) > 0) ? 0 : -1;
-            this.NamePointer = (ulong)(this.NameBlock != null ? this.NameBlock.FilePosition : 0);
-            this.BoneTransformsPointer = (ulong)(this.BoneTransforms != null ? this.BoneTransforms.FilePosition : 0);
-            this.GlassWindowsCount = (byte)(this.GlassWindows != null ? this.GlassWindows.Count : 0);
-            this.GlassWindowsPointer = (ulong)(this.GlassWindows != null ? this.GlassWindows.FilePosition : 0);
-            this.PhysicsLODGroupPointer = (ulong)(this.PhysicsLODGroup != null ? this.PhysicsLODGroup.FilePosition : 0);
-            this.DrawableClothPointer = (ulong)(this.DrawableCloth != null ? this.DrawableCloth.FilePosition : 0);
-            this.VehicleGlassWindowsPointer = (ulong)(this.VehicleGlassWindows != null ? this.VehicleGlassWindows.FilePosition : 0);
+            DrawablePointer = (ulong)(Drawable != null ? Drawable.FilePosition : 0);
+            DrawableArrayPointer = (ulong)(DrawableArray != null ? DrawableArray.FilePosition : 0);
+            DrawableArrayNamesPointer = (ulong)(DrawableArrayNames != null ? DrawableArrayNames.FilePosition : 0);
+            DrawableArrayCount = (uint)(DrawableArray != null ? DrawableArray.Count : 0);
+            DrawableArrayFlag = (DrawableArray?.data_items?.Length ?? 0) > 0 ? 0 : -1;
+            NamePointer = (ulong)(NameBlock != null ? NameBlock.FilePosition : 0);
+            BoneTransformsPointer = (ulong)(BoneTransforms != null ? BoneTransforms.FilePosition : 0);
+            GlassWindowsCount = (byte)(GlassWindows != null ? GlassWindows.Count : 0);
+            GlassWindowsPointer = (ulong)(GlassWindows != null ? GlassWindows.FilePosition : 0);
+            PhysicsLODGroupPointer = (ulong)(PhysicsLODGroup != null ? PhysicsLODGroup.FilePosition : 0);
+            DrawableClothPointer = (ulong)(DrawableCloth != null ? DrawableCloth.FilePosition : 0);
+            VehicleGlassWindowsPointer = (ulong)(VehicleGlassWindows != null ? VehicleGlassWindows.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.BoundingSphereCenter);
-            writer.Write(this.BoundingSphereRadius);
-            writer.Write(this.DrawablePointer);
-            writer.Write(this.DrawableArrayPointer);
-            writer.Write(this.DrawableArrayNamesPointer);
-            writer.Write(this.DrawableArrayCount);
-            writer.Write(this.DrawableArrayFlag);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.NamePointer);
-            writer.WriteBlock(this.Cloths);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.Unknown_78h);
-            writer.Write(this.Unknown_80h);
-            writer.Write(this.Unknown_88h);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_98h);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.BoneTransformsPointer);
-            writer.Write(this.Unknown_B0h);
-            writer.Write(this.Unknown_B4h);
-            writer.Write(this.Unknown_B8h);
-            writer.Write(this.Unknown_BCh);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_C4h);
-            writer.Write(this.Unknown_C8h);
-            writer.Write(this.Unknown_CCh);
-            writer.Write(this.GravityFactor);
-            writer.Write(this.BuoyancyFactor);
-            writer.Write(this.Unknown_D8h);
-            writer.Write(this.GlassWindowsCount);
-            writer.Write(this.Unknown_DAh);
-            writer.Write(this.Unknown_DCh);
-            writer.Write(this.GlassWindowsPointer);
-            writer.Write(this.Unknown_E8h);
-            writer.Write(this.PhysicsLODGroupPointer);
-            writer.Write(this.DrawableClothPointer);
-            writer.Write(this.Unknown_100h);
-            writer.Write(this.Unknown_108h);
-            writer.WriteBlock(this.LightAttributes);
-            writer.Write(this.VehicleGlassWindowsPointer);
-            writer.Write(this.Unknown_128h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h);
+            writer.Write(BoundingSphereCenter);
+            writer.Write(BoundingSphereRadius);
+            writer.Write(DrawablePointer);
+            writer.Write(DrawableArrayPointer);
+            writer.Write(DrawableArrayNamesPointer);
+            writer.Write(DrawableArrayCount);
+            writer.Write(DrawableArrayFlag);
+            writer.Write(Unknown_50h);
+            writer.Write(NamePointer);
+            writer.WriteBlock(Cloths);
+            writer.Write(Unknown_70h);
+            writer.Write(Unknown_78h);
+            writer.Write(Unknown_80h);
+            writer.Write(Unknown_88h);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_98h);
+            writer.Write(Unknown_A0h);
+            writer.Write(BoneTransformsPointer);
+            writer.Write(Unknown_B0h);
+            writer.Write(Unknown_B4h);
+            writer.Write(Unknown_B8h);
+            writer.Write(Unknown_BCh);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_C4h);
+            writer.Write(Unknown_C8h);
+            writer.Write(Unknown_CCh);
+            writer.Write(GravityFactor);
+            writer.Write(BuoyancyFactor);
+            writer.Write(Unknown_D8h);
+            writer.Write(GlassWindowsCount);
+            writer.Write(Unknown_DAh);
+            writer.Write(Unknown_DCh);
+            writer.Write(GlassWindowsPointer);
+            writer.Write(Unknown_E8h);
+            writer.Write(PhysicsLODGroupPointer);
+            writer.Write(DrawableClothPointer);
+            writer.Write(Unknown_100h);
+            writer.Write(Unknown_108h);
+            writer.WriteBlock(LightAttributes);
+            writer.Write(VehicleGlassWindowsPointer);
+            writer.Write(Unknown_128h);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             YftXml.StringTag(sb, indent, "Name", YftXml.XmlEscape(Name));
-            YftXml.SelfClosingTag(sb, indent, "BoundingSphereCenter " + FloatUtil.GetVector3XmlString(BoundingSphereCenter));
+            YftXml.SelfClosingTag(sb, indent,
+                "BoundingSphereCenter " + FloatUtil.GetVector3XmlString(BoundingSphereCenter));
             YftXml.ValueTag(sb, indent, "BoundingSphereRadius", FloatUtil.ToString(BoundingSphereRadius));
             YftXml.ValueTag(sb, indent, "UnknownB0", Unknown_B0h.ToString());
             YftXml.ValueTag(sb, indent, "UnknownB8", Unknown_B8h.ToString());
@@ -383,10 +380,8 @@ namespace CodeWalker.GameFiles
             YftXml.ValueTag(sb, indent, "UnknownCC", FloatUtil.ToString(Unknown_CCh));
             YftXml.ValueTag(sb, indent, "GravityFactor", FloatUtil.ToString(GravityFactor));
             YftXml.ValueTag(sb, indent, "BuoyancyFactor", FloatUtil.ToString(BuoyancyFactor));
-            if ((Drawable != null) && (Drawable.OwnerCloth == null))
-            {
+            if (Drawable != null && Drawable.OwnerCloth == null)
                 FragDrawable.WriteXmlNode(Drawable, sb, indent, ddsfolder, "Drawable");
-            }
             if ((DrawableArray?.data_items?.Length ?? 0) > 0)
             {
                 string_r[] danames = DrawableArrayNames?.data_items;
@@ -394,46 +389,39 @@ namespace CodeWalker.GameFiles
                 for (int i = 0; i < DrawableArray.data_items.Length; i++)
                 {
                     FragDrawable d = DrawableArray.data_items[i];
-                    string_r name = (i < (danames?.Length ?? 0)) ? danames[i] : null;
-                    if (d.Name != name.Value)
-                    {
-                        d.Name = name.Value;
-                    }
+                    string_r name = i < (danames?.Length ?? 0) ? danames[i] : null;
+                    if (d.Name != name.Value) d.Name = name.Value;
                     FragDrawable.WriteXmlNode(d, sb, indent + 1, ddsfolder, "Item");
                 }
+
                 YftXml.CloseTag(sb, indent, "DrawableArray");
             }
-            if (BoneTransforms != null)
-            {
-                BoneTransforms.WriteXml(sb, indent, "BoneTransforms");
-            }
+
+            if (BoneTransforms != null) BoneTransforms.WriteXml(sb, indent, "BoneTransforms");
             if (PhysicsLODGroup != null)
             {
                 YftXml.OpenTag(sb, indent, "Physics");
                 PhysicsLODGroup.WriteXml(sb, indent + 1, ddsfolder);
                 YftXml.CloseTag(sb, indent, "Physics");
             }
+
             if (VehicleGlassWindows != null)
             {
                 YftXml.OpenTag(sb, indent, "VehicleGlassWindows");
                 VehicleGlassWindows.WriteXml(sb, indent + 1);
                 YftXml.CloseTag(sb, indent, "VehicleGlassWindows");
             }
+
             if (GlassWindows?.data_items != null)
-            {
                 YftXml.WriteItemArray(sb, GlassWindows.data_items, indent, "GlassWindows");
-            }
             if (LightAttributes?.data_items != null)
-            {
                 YftXml.WriteItemArray(sb, LightAttributes.data_items, indent, "Lights");
-            }
             if ((Cloths?.data_items?.Length ?? 0) > 0)
             {
                 YftXml.OpenTag(sb, indent, "Cloths");
                 int cind = indent + 1;
                 int cind2 = indent + 2;
                 for (int i = 0; i < Cloths.data_items.Length; i++)
-                {
                     if (Cloths.data_items[i] != null)
                     {
                         YftXml.OpenTag(sb, cind, "Item");
@@ -444,28 +432,26 @@ namespace CodeWalker.GameFiles
                     {
                         YftXml.SelfClosingTag(sb, cind, "Item");
                     }
-                }
+
                 YftXml.CloseTag(sb, indent, "Cloths");
             }
         }
+
         public void ReadXml(XmlNode node, string ddsfolder)
         {
             Name = Xml.GetChildInnerText(node, "Name");
             BoundingSphereCenter = Xml.GetChildVector3Attributes(node, "BoundingSphereCenter");
-            BoundingSphereRadius = Xml.GetChildFloatAttribute(node, "BoundingSphereRadius", "value");
-            Unknown_B0h = Xml.GetChildIntAttribute(node, "UnknownB0", "value");
-            Unknown_B8h = Xml.GetChildIntAttribute(node, "UnknownB8", "value");
-            Unknown_BCh = Xml.GetChildIntAttribute(node, "UnknownBC", "value");
-            Unknown_C0h = Xml.GetChildIntAttribute(node, "UnknownC0", "value");
-            Unknown_C4h = Xml.GetChildIntAttribute(node, "UnknownC4", "value");
-            Unknown_CCh = Xml.GetChildFloatAttribute(node, "UnknownCC", "value");
-            GravityFactor = Xml.GetChildFloatAttribute(node, "GravityFactor", "value");
-            BuoyancyFactor = Xml.GetChildFloatAttribute(node, "BuoyancyFactor", "value");
+            BoundingSphereRadius = Xml.GetChildFloatAttribute(node, "BoundingSphereRadius");
+            Unknown_B0h = Xml.GetChildIntAttribute(node, "UnknownB0");
+            Unknown_B8h = Xml.GetChildIntAttribute(node, "UnknownB8");
+            Unknown_BCh = Xml.GetChildIntAttribute(node, "UnknownBC");
+            Unknown_C0h = Xml.GetChildIntAttribute(node, "UnknownC0");
+            Unknown_C4h = Xml.GetChildIntAttribute(node, "UnknownC4");
+            Unknown_CCh = Xml.GetChildFloatAttribute(node, "UnknownCC");
+            GravityFactor = Xml.GetChildFloatAttribute(node, "GravityFactor");
+            BuoyancyFactor = Xml.GetChildFloatAttribute(node, "BuoyancyFactor");
             XmlNode dnode = node.SelectSingleNode("Drawable");
-            if (dnode != null)
-            {
-                Drawable = FragDrawable.ReadXmlNode(dnode, ddsfolder);
-            }
+            if (dnode != null) Drawable = FragDrawable.ReadXmlNode(dnode, ddsfolder);
             XmlNode danode = node.SelectSingleNode("DrawableArray");
             if (danode != null)
             {
@@ -478,41 +464,44 @@ namespace CodeWalker.GameFiles
                     dlist.Add(d);
                     nlist.Add((string_r)d?.Name);
                 }
+
                 DrawableArray = new ResourcePointerArray64<FragDrawable>();
                 DrawableArray.data_items = dlist.ToArray();
                 DrawableArrayNames = new ResourcePointerArray64<string_r>();
                 DrawableArrayNames.data_items = nlist.ToArray();
             }
+
             XmlNode btnode = node.SelectSingleNode("BoneTransforms");
             if (btnode != null)
             {
                 BoneTransforms = new FragBoneTransforms();
                 BoneTransforms.ReadXml(btnode);
             }
+
             XmlNode pnode = node.SelectSingleNode("Physics");
             if (pnode != null)
             {
                 PhysicsLODGroup = new FragPhysicsLODGroup();
                 PhysicsLODGroup.ReadXml(pnode, ddsfolder);
             }
+
             XmlNode vgnode = node.SelectSingleNode("VehicleGlassWindows");
             if (vgnode != null)
             {
                 VehicleGlassWindows = new FragVehicleGlassWindows();
                 VehicleGlassWindows.ReadXml(vgnode);
             }
+
             FragGlassWindow[] gwinds = XmlMeta.ReadItemArray<FragGlassWindow>(node, "GlassWindows");
             if ((gwinds?.Length ?? 0) > 0)
             {
                 GlassWindows = new ResourcePointerArray64<FragGlassWindow>();
                 GlassWindows.data_items = gwinds;
             }
+
             LightAttributes = new ResourceSimpleList64<LightAttributes>();
             LightAttributes.data_items = XmlMeta.ReadItemArray<LightAttributes>(node, "Lights");
-            if (LightAttributes.data_items == null)
-            {
-                LightAttributes.data_items = new LightAttributes[0];
-            }
+            if (LightAttributes.data_items == null) LightAttributes.data_items = new LightAttributes[0];
             Cloths = new ResourcePointerList64<EnvironmentCloth>();
             XmlNode cnode = node.SelectSingleNode("Cloths");
             if (cnode != null)
@@ -527,19 +516,13 @@ namespace CodeWalker.GameFiles
                         v.ReadXml(inode, ddsfolder);
                         vlist.Add(v);
 
-                        if (v.Drawable != null)
-                        {
-                            v.Drawable.OwnerCloth = v;
-                        }
+                        if (v.Drawable != null) v.Drawable.OwnerCloth = v;
                         if (Drawable == null)
-                        {
                             Drawable = v.Drawable;
-                        }
                         else
-                        {
                             DrawableCloth = v.Drawable;
-                        }
                     }
+
                     Cloths.data_items = vlist.ToArray();
                 }
             }
@@ -549,13 +532,16 @@ namespace CodeWalker.GameFiles
 
             FileVFT = 1079456040;
         }
-        public static void WriteXmlNode(FragType f, StringBuilder sb, int indent, string ddsfolder, string name = "Fragment")
+
+        public static void WriteXmlNode(FragType f, StringBuilder sb, int indent, string ddsfolder,
+            string name = "Fragment")
         {
             if (f == null) return;
             YftXml.OpenTag(sb, indent, name);
             f.WriteXml(sb, indent + 1, ddsfolder);
             YftXml.CloseTag(sb, indent, name);
         }
+
         public static FragType ReadXmlNode(XmlNode node, string ddsfolder)
         {
             if (node == null) return null;
@@ -563,7 +549,6 @@ namespace CodeWalker.GameFiles
             f.ReadXml(node, ddsfolder);
             return f;
         }
-
 
 
         public void AssignChildrenShaders()
@@ -578,7 +563,7 @@ namespace CodeWalker.GameFiles
             {
                 if (dr == null) return;
                 if (pdrwbl == null) return;
-                dr.OwnerDrawable = pdrwbl;//this is also the signal for XML export to skip the skeleton and bounds
+                dr.OwnerDrawable = pdrwbl; //this is also the signal for XML export to skip the skeleton and bounds
                 dr.AssignGeometryShaders(pdrwbl.ShaderGroup);
 
                 //// just testing
@@ -597,7 +582,10 @@ namespace CodeWalker.GameFiles
                 //}
                 //else
                 //{ }//no hit
-            };
+            }
+
+            ;
+
             void assign(FragPhysicsLOD lod)
             {
                 FragPhysTypeChild[] children = lod?.Children?.data_items;
@@ -616,23 +604,18 @@ namespace CodeWalker.GameFiles
                     assigndr(child?.Drawable1, pbcmp1, i);
                     assigndr(child?.Drawable2, pbcmp2, i);
                 }
-            };
+            }
+
+            ;
 
             assign(PhysicsLODGroup.PhysicsLOD1);
             assign(PhysicsLODGroup.PhysicsLOD2);
             assign(PhysicsLODGroup.PhysicsLOD3);
 
 
-
             if (DrawableArray?.data_items != null)
-            {
                 foreach (FragDrawable arrd in DrawableArray.data_items)
-                {
                     assigndr(arrd, null, 0);
-                }
-            }
-
-
         }
 
         public void AssignChildrenSkeletonsAndBounds()
@@ -648,8 +631,11 @@ namespace CodeWalker.GameFiles
                 if (pdrwbl == null) return;
                 Bounds[] pbch = pbcmp?.Children?.data_items;
                 dr.Skeleton = pskel;
-                dr.Bound = ((pbch != null) && (i < pbch.Length)) ? pbch[i] : null;
-            };
+                dr.Bound = pbch != null && i < pbch.Length ? pbch[i] : null;
+            }
+
+            ;
+
             void assign(FragPhysicsLOD lod)
             {
                 if (lod == null) return;
@@ -664,17 +650,17 @@ namespace CodeWalker.GameFiles
                     assignskb(child?.Drawable1, pbcmp1, i);
                     assignskb(child?.Drawable2, pbcmp2, i);
                 }
-            };
+            }
+
+            ;
 
             assign(PhysicsLODGroup.PhysicsLOD1);
             assign(PhysicsLODGroup.PhysicsLOD2);
             assign(PhysicsLODGroup.PhysicsLOD3);
-
         }
 
         public void AssignGlassWindowsGroups()
         {
-
             void assign(FragPhysicsLOD lod)
             {
                 if (lod?.Groups?.data_items == null) return;
@@ -683,19 +669,16 @@ namespace CodeWalker.GameFiles
                     byte windx = grp.GlassWindowIndex;
                     byte flags = grp.GlassFlags;
                     if ((flags & 2) > 0)
-                    {
                         if (GlassWindows?.data_items != null)
-                        {
                             if (windx < GlassWindows.data_items.Length)
                             {
                                 FragGlassWindow wind = GlassWindows.data_items[windx];
                                 wind.Group = grp;
                                 wind.GroupLOD = lod;
                             }
-                        }
-                    }
                 }
             }
+
             assign(PhysicsLODGroup?.PhysicsLOD1);
             assign(PhysicsLODGroup?.PhysicsLOD2);
             assign(PhysicsLODGroup?.PhysicsLOD3);
@@ -718,24 +701,17 @@ namespace CodeWalker.GameFiles
             //        }
             //    }
             //}
-
         }
-
 
 
         public void EnsureGen9()
         {
-
             Drawable?.EnsureGen9();
             DrawableCloth?.EnsureGen9();
 
             if (DrawableArray?.data_items != null)
-            {
                 foreach (FragDrawable arrd in DrawableArray.data_items)
-                {
                     arrd?.EnsureGen9();
-                }
-            }
 
             void ensure(FragPhysicsLOD lod)
             {
@@ -747,12 +723,13 @@ namespace CodeWalker.GameFiles
                     child?.Drawable1?.EnsureGen9();
                     child?.Drawable2?.EnsureGen9();
                 }
-            };
+            }
+
+            ;
 
             ensure(PhysicsLODGroup?.PhysicsLOD1);
             ensure(PhysicsLODGroup?.PhysicsLOD2);
             ensure(PhysicsLODGroup?.PhysicsLOD3);
-
         }
 
 
@@ -767,6 +744,7 @@ namespace CodeWalker.GameFiles
                 NameBlock = (string_r)Name;
                 list.Add(NameBlock);
             }
+
             if (BoneTransforms != null) list.Add(BoneTransforms);
             if (GlassWindows != null) list.Add(GlassWindows);
             if (PhysicsLODGroup != null) list.Add(PhysicsLODGroup);
@@ -777,39 +755,42 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x60, Cloths),
                 new Tuple<long, IResourceBlock>(0x110, LightAttributes)
             };
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragDrawable : DrawableBase
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragDrawable : DrawableBase
     {
-        public override long BlockLength
-        {
-            get { return 336; }
-        }
+        private ResourceSystemStructBlock<Matrix4F_s> FragMatricesBlock;
+
+        private ResourceSystemStructBlock<ulong> FragMatricesIndsBlock; //used for saving only
+        private string_r NameBlock;
 
         // structure data
         public ulong Unknown_0A8h; // 0x0000000000000000
-        public Matrix4F_s FragMatrix { get; set; }
-        public ulong BoundPointer { get; set; }
-        public ulong FragMatricesIndsPointer { get; set; }
-        public ushort FragMatricesIndsCount { get; set; }
-        public ushort FragMatricesCapacity { get; set; }
         public uint Unknown_104h; // 0x00000000
-        public ulong FragMatricesPointer { get; set; }
-        public ushort FragMatricesCount { get; set; }
         public ushort Unknown_112h = 1; // 1
         public uint Unknown_114h; // 0x00000000
         public ulong Unknown_118h; // 0x0000000000000000
         public ulong Unknown_120h; // 0x0000000000000000
         public ulong Unknown_128h; // 0x0000000000000000
-        public ulong NamePointer { get; set; }
         public ulong Unknown_138h; // 0x0000000000000000
         public ulong Unknown_140h; // 0x0000000000000000
         public ulong Unknown_148h; // 0x0000000000000000
+        public override long BlockLength => 336;
+        public Matrix4F_s FragMatrix { get; set; }
+        public ulong BoundPointer { get; set; }
+        public ulong FragMatricesIndsPointer { get; set; }
+        public ushort FragMatricesIndsCount { get; set; }
+        public ushort FragMatricesCapacity { get; set; }
+        public ulong FragMatricesPointer { get; set; }
+        public ushort FragMatricesCount { get; set; }
+        public ulong NamePointer { get; set; }
 
         // reference data
         public Bounds Bound { get; set; }
@@ -822,33 +803,29 @@ namespace CodeWalker.GameFiles
         public FragPhysTypeChild OwnerFragmentPhys { get; set; }
         public FragDrawable OwnerDrawable { get; set; } //if inheriting shaders, skeletons and bounds
 
-        private ResourceSystemStructBlock<ulong> FragMatricesIndsBlock; //used for saving only
-        private ResourceSystemStructBlock<Matrix4F_s> FragMatricesBlock;
-        private string_r NameBlock;
-
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_0A8h = reader.ReadUInt64();
-            this.FragMatrix = reader.ReadStruct<Matrix4F_s>();
-            this.BoundPointer = reader.ReadUInt64();
-            this.FragMatricesIndsPointer = reader.ReadUInt64();
-            this.FragMatricesIndsCount = reader.ReadUInt16();
-            this.FragMatricesCapacity = reader.ReadUInt16();
-            this.Unknown_104h = reader.ReadUInt32();
-            this.FragMatricesPointer = reader.ReadUInt64();
-            this.FragMatricesCount = reader.ReadUInt16();
-            this.Unknown_112h = reader.ReadUInt16();
-            this.Unknown_114h = reader.ReadUInt32();
-            this.Unknown_118h = reader.ReadUInt64();
-            this.Unknown_120h = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadUInt64();
-            this.NamePointer = reader.ReadUInt64();
-            this.Unknown_138h = reader.ReadUInt64();
-            this.Unknown_140h = reader.ReadUInt64();
-            this.Unknown_148h = reader.ReadUInt64();
+            Unknown_0A8h = reader.ReadUInt64();
+            FragMatrix = reader.ReadStruct<Matrix4F_s>();
+            BoundPointer = reader.ReadUInt64();
+            FragMatricesIndsPointer = reader.ReadUInt64();
+            FragMatricesIndsCount = reader.ReadUInt16();
+            FragMatricesCapacity = reader.ReadUInt16();
+            Unknown_104h = reader.ReadUInt32();
+            FragMatricesPointer = reader.ReadUInt64();
+            FragMatricesCount = reader.ReadUInt16();
+            Unknown_112h = reader.ReadUInt16();
+            Unknown_114h = reader.ReadUInt32();
+            Unknown_118h = reader.ReadUInt64();
+            Unknown_120h = reader.ReadUInt64();
+            Unknown_128h = reader.ReadUInt64();
+            NamePointer = reader.ReadUInt64();
+            Unknown_138h = reader.ReadUInt64();
+            Unknown_140h = reader.ReadUInt64();
+            Unknown_148h = reader.ReadUInt64();
 
             // read reference data
             Bound = reader.ReadBlockAt<Bounds>(BoundPointer);
@@ -856,10 +833,7 @@ namespace CodeWalker.GameFiles
             FragMatrices = reader.ReadStructsAt<Matrix4F_s>(FragMatricesPointer, FragMatricesCapacity);
             Name = reader.ReadStringAt(NamePointer);
 
-            if (Bound != null)
-            {
-                Bound.Owner = this;
-            }
+            if (Bound != null) Bound.Owner = this;
 
             //if (Bound is BoundComposite bcmp)
             //{//no hit
@@ -868,11 +842,13 @@ namespace CodeWalker.GameFiles
             //}
 
 
-
             if (FragMatricesInds != null)
-            { }
+            {
+            }
+
             if (FragMatrices != null)
-            { }
+            {
+            }
             //if ((FragMatrices != null) != (FragMatricesInds != null))
             //{ }//no hit
             //if ((FragMatricesCount != 0) != (FragMatricesCapacity != 0))
@@ -924,56 +900,58 @@ namespace CodeWalker.GameFiles
             //        { }//no hit
             //    }
             //}
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // update structure data
-            this.BoundPointer = (ulong)(this.Bound != null ? this.Bound.FilePosition : 0);
-            this.FragMatricesIndsPointer = (ulong)(this.FragMatricesIndsBlock != null ? this.FragMatricesIndsBlock.FilePosition : 0);
-            this.FragMatricesIndsCount = (ushort)(this.FragMatricesIndsBlock != null ? this.FragMatricesIndsBlock.ItemCount : 0);
-            this.FragMatricesCapacity = (ushort)(this.FragMatricesBlock != null ? this.FragMatricesBlock.ItemCount : 0);
-            this.FragMatricesPointer = (ulong)(this.FragMatricesBlock != null ? this.FragMatricesBlock.FilePosition : 0);
-            this.NamePointer = (ulong)(this.NameBlock != null ? this.NameBlock.FilePosition : 0);
+            BoundPointer = (ulong)(Bound != null ? Bound.FilePosition : 0);
+            FragMatricesIndsPointer = (ulong)(FragMatricesIndsBlock != null ? FragMatricesIndsBlock.FilePosition : 0);
+            FragMatricesIndsCount = (ushort)(FragMatricesIndsBlock != null ? FragMatricesIndsBlock.ItemCount : 0);
+            FragMatricesCapacity = (ushort)(FragMatricesBlock != null ? FragMatricesBlock.ItemCount : 0);
+            FragMatricesPointer = (ulong)(FragMatricesBlock != null ? FragMatricesBlock.FilePosition : 0);
+            NamePointer = (ulong)(NameBlock != null ? NameBlock.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.Unknown_0A8h);
-            writer.WriteStruct(this.FragMatrix);
-            writer.Write(this.BoundPointer);
-            writer.Write(this.FragMatricesIndsPointer);
-            writer.Write(this.FragMatricesIndsCount);
-            writer.Write(this.FragMatricesCapacity);
-            writer.Write(this.Unknown_104h);
-            writer.Write(this.FragMatricesPointer);
-            writer.Write(this.FragMatricesCount);
-            writer.Write(this.Unknown_112h);
-            writer.Write(this.Unknown_114h);
-            writer.Write(this.Unknown_118h);
-            writer.Write(this.Unknown_120h);
-            writer.Write(this.Unknown_128h);
-            writer.Write(this.NamePointer);
-            writer.Write(this.Unknown_138h);
-            writer.Write(this.Unknown_140h);
-            writer.Write(this.Unknown_148h);
+            writer.Write(Unknown_0A8h);
+            writer.WriteStruct(FragMatrix);
+            writer.Write(BoundPointer);
+            writer.Write(FragMatricesIndsPointer);
+            writer.Write(FragMatricesIndsCount);
+            writer.Write(FragMatricesCapacity);
+            writer.Write(Unknown_104h);
+            writer.Write(FragMatricesPointer);
+            writer.Write(FragMatricesCount);
+            writer.Write(Unknown_112h);
+            writer.Write(Unknown_114h);
+            writer.Write(Unknown_118h);
+            writer.Write(Unknown_120h);
+            writer.Write(Unknown_128h);
+            writer.Write(NamePointer);
+            writer.Write(Unknown_138h);
+            writer.Write(Unknown_140h);
+            writer.Write(Unknown_148h);
         }
+
         public override void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             YftXml.StringTag(sb, indent, "Name", YftXml.XmlEscape(Name));
             YftXml.WriteRawArray(sb, FragMatrix.ToArray(), indent, "Matrix", "", FloatUtil.ToString, 3);
-            if ((FragMatrices != null) && (FragMatrices.Length > 0))
+            if (FragMatrices != null && FragMatrices.Length > 0)
             {
-                YftXml.OpenTag(sb, indent, "Matrices capacity=\"" + FragMatrices.Length.ToString() + "\"");
+                YftXml.OpenTag(sb, indent, "Matrices capacity=\"" + FragMatrices.Length + "\"");
                 int cind = indent + 1;
                 int cnt = Math.Min(FragMatrices.Length, FragMatricesCount);
                 for (int i = 0; i < cnt; i++)
                 {
-                    ulong idx = ((FragMatricesInds != null) && (i < FragMatricesInds.Length)) ? FragMatricesInds[i] : 0;
-                    YftXml.OpenTag(sb, cind, "Item id=\"" + idx.ToString() + "\"");
+                    ulong idx = FragMatricesInds != null && i < FragMatricesInds.Length ? FragMatricesInds[i] : 0;
+                    YftXml.OpenTag(sb, cind, "Item id=\"" + idx + "\"");
                     YftXml.WriteRawArrayContent(sb, FragMatrices[i].ToArray(), cind + 1, FloatUtil.ToString, 3);
                     YftXml.CloseTag(sb, cind, "Item");
                 }
+
                 YftXml.CloseTag(sb, indent, "Matrices");
             }
 
@@ -988,17 +966,16 @@ namespace CodeWalker.GameFiles
 
             base.WriteXml(sb, indent, ddsfolder);
 
-            if (Bound != null)
-            {
-                Bounds.WriteXmlNode(Bound, sb, indent);
-            }
+            if (Bound != null) Bounds.WriteXmlNode(Bound, sb, indent);
 
             Skeleton = skel;
             Bound = bnds;
         }
+
         public override void ReadXml(XmlNode node, string ddsfolder)
         {
-            Name = Xml.GetChildInnerText(node, "Name"); if (string.IsNullOrEmpty(Name)) Name = null;
+            Name = Xml.GetChildInnerText(node, "Name");
+            if (string.IsNullOrEmpty(Name)) Name = null;
             FragMatrix = new Matrix4F_s(Xml.GetChildRawFloatArray(node, "Matrix"));
 
             XmlNode msnode = node.SelectSingleNode("Matrices");
@@ -1015,12 +992,14 @@ namespace CodeWalker.GameFiles
                     matinds.Add(id);
                     mats.Add(mat);
                 }
+
                 FragMatricesCount = (ushort)mats.Count;
                 for (int i = mats.Count; i < cap; i++)
                 {
                     matinds.Add(0);
                     mats.Add(new Matrix4F_s(float.NaN));
                 }
+
                 FragMatrices = mats.ToArray();
                 FragMatricesInds = matinds.ToArray();
             }
@@ -1028,20 +1007,20 @@ namespace CodeWalker.GameFiles
             base.ReadXml(node, ddsfolder);
 
             XmlNode bnode = node.SelectSingleNode("Bounds");
-            if (bnode != null)
-            {
-                Bound = Bounds.ReadXmlNode(bnode, this);
-            }
+            if (bnode != null) Bound = Bounds.ReadXmlNode(bnode, this);
 
             FileVFT = 1080060872;
         }
-        public static void WriteXmlNode(FragDrawable d, StringBuilder sb, int indent, string ddsfolder, string name = "FragDrawable")
+
+        public static void WriteXmlNode(FragDrawable d, StringBuilder sb, int indent, string ddsfolder,
+            string name = "FragDrawable")
         {
             if (d == null) return;
             YftXml.OpenTag(sb, indent, name);
             d.WriteXml(sb, indent + 1, ddsfolder);
             YftXml.CloseTag(sb, indent, name);
         }
+
         public static FragDrawable ReadXmlNode(XmlNode node, string ddsfolder)
         {
             if (node == null) return null;
@@ -1059,48 +1038,48 @@ namespace CodeWalker.GameFiles
                 FragMatricesIndsBlock = new ResourceSystemStructBlock<ulong>(FragMatricesInds);
                 list.Add(FragMatricesIndsBlock);
             }
+
             if (FragMatrices != null)
             {
                 FragMatricesBlock = new ResourceSystemStructBlock<Matrix4F_s>(FragMatrices);
                 list.Add(FragMatricesBlock);
             }
+
             if (Name != null)
             {
                 NameBlock = (string_r)Name;
                 list.Add(NameBlock);
             }
+
             return list.ToArray();
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragBoneTransforms : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragBoneTransforms : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 32 + ((Items?.Length ?? 0) * 48); }
-        }
-
         // structure data
         public ulong Unknown_00h; // 0x0000000000000000
         public ulong Unknown_08h; // 0x0000000000000000
+        public uint Unknown_14h; // 0x00000000
+        public ulong Unknown_18h; // 0x0000000000000000
+        public override long BlockLength => 32 + (Items?.Length ?? 0) * 48;
         public byte ItemCount1 { get; set; }
         public byte ItemCount2 { get; set; }
         public ushort Unknown_12h { get; set; } // 0, 1
-        public uint Unknown_14h; // 0x00000000
-        public ulong Unknown_18h; // 0x0000000000000000
         public Matrix3_s[] Items { get; set; }
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.Unknown_00h = reader.ReadUInt64();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.ItemCount1 = reader.ReadByte();
-            this.ItemCount2 = reader.ReadByte();
-            this.Unknown_12h = reader.ReadUInt16();
-            this.Unknown_14h = reader.ReadUInt32();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Items = reader.ReadStructs<Matrix3_s>(ItemCount1);
+            Unknown_00h = reader.ReadUInt64();
+            Unknown_08h = reader.ReadUInt64();
+            ItemCount1 = reader.ReadByte();
+            ItemCount2 = reader.ReadByte();
+            Unknown_12h = reader.ReadUInt16();
+            Unknown_14h = reader.ReadUInt32();
+            Unknown_18h = reader.ReadUInt64();
+            Items = reader.ReadStructs<Matrix3_s>(ItemCount1);
 
             //if (ItemCount1 != ItemCount2)
             //{ }//no hit
@@ -1114,24 +1093,25 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_18h != 0)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.Unknown_00h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.ItemCount1);
-            writer.Write(this.ItemCount2);
-            writer.Write(this.Unknown_12h);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
+            writer.Write(Unknown_00h);
+            writer.Write(Unknown_08h);
+            writer.Write(ItemCount1);
+            writer.Write(ItemCount2);
+            writer.Write(Unknown_12h);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
             writer.WriteStructs(Items);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string name)
         {
-            string tag = name + " unk=\"" + Unknown_12h.ToString() + "\"";
-            if ((Items != null) && (Items.Length > 0))
+            string tag = name + " unk=\"" + Unknown_12h + "\"";
+            if (Items != null && Items.Length > 0)
             {
                 YftXml.OpenTag(sb, indent, tag);
                 int cind = indent + 1;
@@ -1141,6 +1121,7 @@ namespace CodeWalker.GameFiles
                     YftXml.WriteRawArrayContent(sb, mat.ToArray(), cind + 1, FloatUtil.ToString, 4);
                     YftXml.CloseTag(sb, cind, "Item");
                 }
+
                 YftXml.CloseTag(sb, indent, name);
             }
             else
@@ -1148,6 +1129,7 @@ namespace CodeWalker.GameFiles
                 YftXml.SelfClosingTag(sb, indent, tag);
             }
         }
+
         public void ReadXml(XmlNode node)
         {
             Unknown_12h = (ushort)Xml.GetUIntAttribute(node, "unk");
@@ -1161,26 +1143,28 @@ namespace CodeWalker.GameFiles
                     Matrix3_s mat = new Matrix3_s(arr);
                     mats.Add(mat);
                 }
-                Items = (mats.Count > 0) ? mats.ToArray() : null;
+
+                Items = mats.Count > 0 ? mats.ToArray() : null;
                 ItemCount1 = ItemCount2 = (byte)mats.Count;
             }
-
         }
-
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragGlassWindow : ResourceSystemBlock, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragGlassWindow : ResourceSystemBlock, IMetaXmlItem
     {
+        public uint UnkUint1 = 0x7f800001; // 0x7f800001
+        public uint UnkUint2 = 0x7f800001; // 0x7f800001
+        public uint UnkUint3 = 0x7f800001; // 0x7f800001
+        public uint UnkUint4 = 0x7f800001; // 0x7f800001
+        public ushort UnkUshort1 = 2; //2
         public override long BlockLength => 112;
         public override long BlockLength_Gen9 => 416;
 
         // structure data
         public Vector3 ProjectionRow1 { get; set; }
-        public uint UnkUint1 = 0x7f800001; // 0x7f800001
         public Vector3 ProjectionRow2 { get; set; }
-        public uint UnkUint2 = 0x7f800001; // 0x7f800001
         public Vector3 ProjectionRow3 { get; set; }
-        public uint UnkUint3 = 0x7f800001; // 0x7f800001
         public float UnkFloat13 { get; set; } //offset? Vector2
         public float UnkFloat14 { get; set; } //offset?
         public float UnkFloat15 { get; set; } //scale? sum of this and above often gives integers eg 1, 6
@@ -1188,31 +1172,71 @@ namespace CodeWalker.GameFiles
         public VertexDeclaration VertexDeclaration { get; set; } //VertexTypePNCTT
         public VertexDeclarationG9 VertexDeclarationG9 { get; set; }
         public float Thickness { get; set; } //probably
-        public ushort UnkUshort1 = 2; //2
-        public ushort Flags { get; set; }//512, 768, 1280 etc ... flags
+        public ushort Flags { get; set; } //512, 768, 1280 etc ... flags
         public float UnkFloat18 { get; set; } //another scale in UV space..?
         public float UnkFloat19 { get; set; } //(as above, Vector2)
         public Vector3 Tangent { get; set; }
-        public uint UnkUint4 = 0x7f800001; // 0x7f800001
 
-        public byte FlagsLo { get { return (byte)((Flags >> 0) & 0xFF); } }
-        public byte FlagsHi { get { return (byte)((Flags >> 8) & 0xFF); } }
+        public byte FlagsLo => (byte)((Flags >> 0) & 0xFF);
+        public byte FlagsHi => (byte)((Flags >> 8) & 0xFF);
         public FragPhysTypeGroup Group { get; set; }
         public FragPhysicsLOD GroupLOD { get; set; }
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            YftXml.ValueTag(sb, indent, "Flags", Flags.ToString());
+            YftXml.OpenTag(sb, indent, "Projection");
+            YftXml.WriteRawArrayContent(sb,
+                new Matrix3x3 { Row1 = ProjectionRow1, Row2 = ProjectionRow2, Row3 = ProjectionRow3 }.ToArray(),
+                indent + 1, FloatUtil.ToString, 3);
+            YftXml.CloseTag(sb, indent, "Projection");
+            YftXml.ValueTag(sb, indent, "UnkFloat13", FloatUtil.ToString(UnkFloat13));
+            YftXml.ValueTag(sb, indent, "UnkFloat14", FloatUtil.ToString(UnkFloat14));
+            YftXml.ValueTag(sb, indent, "UnkFloat15", FloatUtil.ToString(UnkFloat15));
+            YftXml.ValueTag(sb, indent, "UnkFloat16", FloatUtil.ToString(UnkFloat16));
+            YftXml.ValueTag(sb, indent, "Thickness", FloatUtil.ToString(Thickness));
+            YftXml.ValueTag(sb, indent, "UnkFloat18", FloatUtil.ToString(UnkFloat18));
+            YftXml.ValueTag(sb, indent, "UnkFloat19", FloatUtil.ToString(UnkFloat19));
+            YftXml.SelfClosingTag(sb, indent, "Tangent " + FloatUtil.GetVector3XmlString(Tangent));
+            VertexDeclaration?.WriteXml(sb, indent, "Layout");
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Flags = (ushort)Xml.GetChildUIntAttribute(node, "Flags");
+            float[] proj = Xml.GetChildRawFloatArray(node, "Projection");
+            if ((proj?.Length ?? 0) == 9)
+            {
+                ProjectionRow1 = new Vector3(proj[0], proj[1], proj[2]);
+                ProjectionRow2 = new Vector3(proj[3], proj[4], proj[5]);
+                ProjectionRow3 = new Vector3(proj[6], proj[7], proj[8]);
+            }
+
+            UnkFloat13 = Xml.GetChildFloatAttribute(node, "UnkFloat13");
+            UnkFloat14 = Xml.GetChildFloatAttribute(node, "UnkFloat14");
+            UnkFloat15 = Xml.GetChildFloatAttribute(node, "UnkFloat15");
+            UnkFloat16 = Xml.GetChildFloatAttribute(node, "UnkFloat16");
+            Thickness = Xml.GetChildFloatAttribute(node, "Thickness");
+            UnkFloat18 = Xml.GetChildFloatAttribute(node, "UnkFloat18");
+            UnkFloat19 = Xml.GetChildFloatAttribute(node, "UnkFloat19");
+            Tangent = Xml.GetChildVector3Attributes(node, "Tangent");
+            VertexDeclaration = new VertexDeclaration();
+            VertexDeclaration.ReadXml(node.SelectSingleNode("Layout"));
+        }
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.ProjectionRow1 = reader.ReadVector3();
-            this.UnkUint1 = reader.ReadUInt32();
-            this.ProjectionRow2 = reader.ReadVector3();
-            this.UnkUint2 = reader.ReadUInt32();
-            this.ProjectionRow3 = reader.ReadVector3();
-            this.UnkUint3 = reader.ReadUInt32();
-            this.UnkFloat13 = reader.ReadSingle();
-            this.UnkFloat14 = reader.ReadSingle();
-            this.UnkFloat15 = reader.ReadSingle();
-            this.UnkFloat16 = reader.ReadSingle();
+            ProjectionRow1 = reader.ReadVector3();
+            UnkUint1 = reader.ReadUInt32();
+            ProjectionRow2 = reader.ReadVector3();
+            UnkUint2 = reader.ReadUInt32();
+            ProjectionRow3 = reader.ReadVector3();
+            UnkUint3 = reader.ReadUInt32();
+            UnkFloat13 = reader.ReadSingle();
+            UnkFloat14 = reader.ReadSingle();
+            UnkFloat15 = reader.ReadSingle();
+            UnkFloat16 = reader.ReadSingle();
             if (reader.IsGen9)
             {
                 VertexDeclarationG9 = new VertexDeclarationG9();
@@ -1221,16 +1245,17 @@ namespace CodeWalker.GameFiles
             }
             else
             {
-                this.VertexDeclaration = new VertexDeclaration();
-                this.VertexDeclaration.Read(reader);
+                VertexDeclaration = new VertexDeclaration();
+                VertexDeclaration.Read(reader);
             }
-            this.Thickness = reader.ReadSingle();
-            this.UnkUshort1 = reader.ReadUInt16();
-            this.Flags = reader.ReadUInt16();
-            this.UnkFloat18 = reader.ReadSingle();
-            this.UnkFloat19 = reader.ReadSingle();
-            this.Tangent = reader.ReadVector3();
-            this.UnkUint4 = reader.ReadUInt32();
+
+            Thickness = reader.ReadSingle();
+            UnkUshort1 = reader.ReadUInt16();
+            Flags = reader.ReadUInt16();
+            UnkFloat18 = reader.ReadSingle();
+            UnkFloat19 = reader.ReadSingle();
+            Tangent = reader.ReadVector3();
+            UnkUint4 = reader.ReadUInt32();
 
             //if (UnkUint1 != 0x7f800001)
             //{ }//no hit
@@ -1245,145 +1270,289 @@ namespace CodeWalker.GameFiles
             //if (UnkFloat17 > 1.0f)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.ProjectionRow1);
-            writer.Write(this.UnkUint1);
-            writer.Write(this.ProjectionRow2);
-            writer.Write(this.UnkUint2);
-            writer.Write(this.ProjectionRow3);
-            writer.Write(this.UnkUint3);
-            writer.Write(this.UnkFloat13);
-            writer.Write(this.UnkFloat14);
-            writer.Write(this.UnkFloat15);
-            writer.Write(this.UnkFloat16);
+            writer.Write(ProjectionRow1);
+            writer.Write(UnkUint1);
+            writer.Write(ProjectionRow2);
+            writer.Write(UnkUint2);
+            writer.Write(ProjectionRow3);
+            writer.Write(UnkUint3);
+            writer.Write(UnkFloat13);
+            writer.Write(UnkFloat14);
+            writer.Write(UnkFloat15);
+            writer.Write(UnkFloat16);
             if (VertexDeclaration == null) VertexDeclaration = CreateVertexDeclaration();
             if (writer.IsGen9)
             {
                 if (VertexDeclarationG9 == null)
-                {
                     VertexDeclarationG9 = VertexDeclarationG9.FromLegacyDeclaration(VertexDeclaration);
-                }
                 VertexDeclarationG9.Write(writer);
             }
             else
             {
                 VertexDeclaration.Write(writer);
             }
-            writer.Write(this.Thickness);
-            writer.Write(this.UnkUshort1);
-            writer.Write(this.Flags);
-            writer.Write(this.UnkFloat18);
-            writer.Write(this.UnkFloat19);
-            writer.Write(this.Tangent);
-            writer.Write(this.UnkUint4);
-        }
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            YftXml.ValueTag(sb, indent, "Flags", Flags.ToString());
-            YftXml.OpenTag(sb, indent, "Projection");
-            YftXml.WriteRawArrayContent(sb, new Matrix3x3() { Row1 = ProjectionRow1, Row2 = ProjectionRow2, Row3 = ProjectionRow3 }.ToArray(), indent + 1, FloatUtil.ToString, 3);
-            YftXml.CloseTag(sb, indent, "Projection");
-            YftXml.ValueTag(sb, indent, "UnkFloat13", FloatUtil.ToString(UnkFloat13));
-            YftXml.ValueTag(sb, indent, "UnkFloat14", FloatUtil.ToString(UnkFloat14));
-            YftXml.ValueTag(sb, indent, "UnkFloat15", FloatUtil.ToString(UnkFloat15));
-            YftXml.ValueTag(sb, indent, "UnkFloat16", FloatUtil.ToString(UnkFloat16));
-            YftXml.ValueTag(sb, indent, "Thickness", FloatUtil.ToString(Thickness));
-            YftXml.ValueTag(sb, indent, "UnkFloat18", FloatUtil.ToString(UnkFloat18));
-            YftXml.ValueTag(sb, indent, "UnkFloat19", FloatUtil.ToString(UnkFloat19));
-            YftXml.SelfClosingTag(sb, indent, "Tangent " + FloatUtil.GetVector3XmlString(Tangent));
-            VertexDeclaration?.WriteXml(sb, indent, "Layout");
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Flags = (ushort)Xml.GetChildUIntAttribute(node, "Flags", "value");
-            float[] proj = Xml.GetChildRawFloatArray(node, "Projection");
-            if ((proj?.Length ?? 0) == 9)
-            {
-                ProjectionRow1 = new Vector3(proj[0], proj[1], proj[2]);
-                ProjectionRow2 = new Vector3(proj[3], proj[4], proj[5]);
-                ProjectionRow3 = new Vector3(proj[6], proj[7], proj[8]);
-            }
-            UnkFloat13 = Xml.GetChildFloatAttribute(node, "UnkFloat13", "value");
-            UnkFloat14 = Xml.GetChildFloatAttribute(node, "UnkFloat14", "value");
-            UnkFloat15 = Xml.GetChildFloatAttribute(node, "UnkFloat15", "value");
-            UnkFloat16 = Xml.GetChildFloatAttribute(node, "UnkFloat16", "value");
-            Thickness = Xml.GetChildFloatAttribute(node, "Thickness", "value");
-            UnkFloat18 = Xml.GetChildFloatAttribute(node, "UnkFloat18", "value");
-            UnkFloat19 = Xml.GetChildFloatAttribute(node, "UnkFloat19", "value");
-            Tangent = Xml.GetChildVector3Attributes(node, "Tangent");
-            VertexDeclaration = new VertexDeclaration();
-            VertexDeclaration.ReadXml(node.SelectSingleNode("Layout"));
+
+            writer.Write(Thickness);
+            writer.Write(UnkUshort1);
+            writer.Write(Flags);
+            writer.Write(UnkFloat18);
+            writer.Write(UnkFloat19);
+            writer.Write(Tangent);
+            writer.Write(UnkUint4);
         }
 
         private VertexDeclaration CreateVertexDeclaration()
         {
-            VertexDeclaration vd = new VertexDeclaration()
+            VertexDeclaration vd = new VertexDeclaration
             {
                 Types = VertexDeclarationTypes.GTAV4,
-                Flags = (uint)VertexType.PNCTT,
+                Flags = (uint)VertexType.PNCTT
             };
             vd.UpdateCountAndStride();
             return vd;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragVehicleGlassWindows : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragVehicleGlassWindows : ResourceSystemBlock
     {
-        public override long BlockLength
+        public override long BlockLength => TotalLength;
+
+
+        // structure data
+        public uint Unknown_0h { get; set; } = 0x56475748; // "VGWH"   ...vehicle glass window H..?
+        public ushort Unknown_4h { get; set; } = 112; // = length of item headers
+        public ushort ItemCount { get; set; }
+        public uint TotalLength { get; set; }
+        public WindowOffset[] WindowOffsets { get; set; }
+        public uint UnkUint0 { get; set; }
+        public Window[] Windows { get; set; }
+
+
+        public override void Read(ResourceDataReader reader, params object[] parameters)
         {
-            get { return TotalLength; }
+            // read structure data
+            Unknown_0h = reader.ReadUInt32(); // "VGWH"   ...vehicle glass window H..?
+            Unknown_4h = reader.ReadUInt16(); //112 = length of item headers
+            ItemCount = reader.ReadUInt16();
+            TotalLength = reader.ReadUInt32();
+            WindowOffsets =
+                reader.ReadStructs<WindowOffset>(ItemCount +
+                                                 (ItemCount & 1u)); //offsets in here start at just after UnkUint0
+            UnkUint0 = reader.ReadUInt32(); //0
+
+            long coffset = 16 + WindowOffsets.Length * 8;
+
+            Windows = new Window[ItemCount];
+            for (int i = 0; i < ItemCount; i++)
+            {
+                long rpos = reader.Position;
+                Window u = new Window();
+                u.Read(reader);
+                Windows[i] = u;
+                coffset += reader.Position - rpos;
+
+                long padd = (16 - coffset % 16) % 16;
+                if (padd > 0)
+                {
+                    u.Padding = reader.ReadBytes((int)padd);
+                    coffset += padd;
+
+                    //foreach (var b in u.Padding)
+                    //{
+                    //    if (b != 0)
+                    //    { }
+                    //}
+                }
+            }
+
+            //if (coffset != TotalLength)
+            //{ }
+            //if (Unknown_4h != 112)
+            //{ }//no hit
+            //if (UnkUint0 != 0)
+            //{ }//no hit
+
+            //// just testing
+            //BuildOffsets();
         }
 
-        [TypeConverter(typeof(ExpandableObjectConverter))] public struct WindowOffset
+        public override void Write(ResourceDataWriter writer, params object[] parameters)
+        {
+            BuildOffsets();
+
+            // write structure data
+            writer.Write(Unknown_0h);
+            writer.Write(Unknown_4h);
+            writer.Write(ItemCount);
+            writer.Write(TotalLength);
+
+            writer.WriteStructs(WindowOffsets);
+            writer.Write(UnkUint0);
+
+            long coffset = 16 + WindowOffsets.Length * 8;
+
+            foreach (Window item in Windows)
+            {
+                long rpos = writer.Position;
+
+                item.Write(writer);
+
+                coffset += writer.Position - rpos;
+                long padd = (16 - coffset % 16) % 16;
+                if (padd > 0)
+                {
+                    writer.Write(new byte[padd]);
+                    coffset += padd;
+                }
+            }
+
+            //if (coffset != TotalLength)
+            //{ }
+        }
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            if (Windows != null)
+                foreach (Window item in Windows)
+                {
+                    YftXml.OpenTag(sb, indent, "Window");
+                    item.WriteXml(sb, indent + 1);
+                    YftXml.CloseTag(sb, indent, "Window");
+                }
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            XmlNodeList inodes = node.SelectNodes("Window");
+            List<Window> ilist = new List<Window>();
+            if (inodes != null)
+                foreach (XmlNode inode in inodes)
+                {
+                    Window item = new Window();
+                    item.ReadXml(inode);
+                    ilist.Add(item);
+                }
+
+            Windows = ilist.ToArray();
+            ItemCount = (ushort)ilist.Count;
+
+            BuildOffsets();
+        }
+
+
+        public void BuildOffsets()
+        {
+            List<WindowOffset> offs = new List<WindowOffset>();
+            uint bc = 16u;
+            if (Windows != null)
+            {
+                bc += (uint)((Windows.Length + (Windows.Length & 1)) * 8);
+                foreach (Window item in Windows)
+                {
+                    WindowOffset off = new WindowOffset();
+                    off.ItemID = item.ItemID;
+                    off.Offset = bc;
+                    offs.Add(off);
+                    bc += item.TotalLength;
+                    bc += (16 - bc % 16) % 16; //account for padding
+                }
+
+                if ((offs.Count & 1) != 0) offs.Add(new WindowOffset());
+            }
+
+            //// just testing
+            //if (TotalLength != bc)
+            //{ }
+            TotalLength = bc;
+
+            //// just testing
+            //if ((ItemOffsets?.Length ?? 0) != offs.Count)
+            //{ }
+            //else
+            //{
+            //    for (int i = 0; i < offs.Count; i++)
+            //    {
+            //        var oo = ItemOffsets[i];
+            //        var no = offs[i];
+            //        if ((no.Item != oo.Item) || (no.Offset != oo.Offset))
+            //        { }
+            //    }
+            //}
+            WindowOffsets = offs.ToArray();
+        }
+
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public struct WindowOffset
         {
             public uint ItemID { get; set; }
             public uint Offset { get; set; }
+
             public override string ToString()
             {
-                return ItemID.ToString() + ": " + Offset.ToString();
+                return ItemID + ": " + Offset;
             }
         }
-        [TypeConverter(typeof(ExpandableObjectConverter))] public class Window
+
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public class Window
         {
-            public Matrix Projection { get; set; } //NOTE: M44 is not actually part of this matrix, what actually is it? the value needs to be 1.0 for projection to be correct, but file contains other values. maybe some scaling factor?
+            public uint UnkUint2; // 0
+            public uint UnkUint3; // 0
+            public uint UnkUint4; // 0
+            public uint UnkUint5; // 0
+            public ushort UnkUshort3; // 0
+
+            public Matrix
+                Projection
+            {
+                get;
+                set;
+            } //NOTE: M44 is not actually part of this matrix, what actually is it? the value needs to be 1.0 for projection to be correct, but file contains other values. maybe some scaling factor?
+
             public uint UnkUint1 { get; set; } = 0x56475743; // "VGWC"    vehicle glass window C..?
             public ushort ItemID { get; set; }
             public ushort UnkUshort1 { get; set; }
             public ushort ShatterMapWidth { get; set; } //max value of all End1 and End2 in ItemDatas, plus 1
-            public ushort ItemDataCount { get; set; }//count of item data arrays
-            public ushort ItemDataByteLength { get; set; }//total byte length of ItemDatas plus byte length of ItemDataOffsets
-            public ushort UnkUshort3; // 0
-            public uint UnkUint2; // 0
-            public uint UnkUint3; // 0
+            public ushort ItemDataCount { get; set; } //count of item data arrays
+
+            public ushort
+                ItemDataByteLength { get; set; } //total byte length of ItemDatas plus byte length of ItemDataOffsets
+
             public float UnkFloat17 { get; set; }
             public float UnkFloat18 { get; set; }
             public ushort UnkUshort4 { get; set; } //0, 1
             public ushort UnkUshort5 { get; set; } //2, 2050
-            public float CracksTextureTiling { get; set; } // UV multiplier for the "shattered" cracks texture that is applied when the window is broken
-            public uint UnkUint4; // 0
-            public uint UnkUint5; // 0
-            public ushort[] ShatterMapRowOffsets { get; set; }//byte offsets for shatter map array
+
+            public float
+                CracksTextureTiling
+            {
+                get;
+                set;
+            } // UV multiplier for the "shattered" cracks texture that is applied when the window is broken
+
+            public ushort[] ShatterMapRowOffsets { get; set; } //byte offsets for shatter map array
             public WindowShatterMapRow[] ShatterMap { get; set; }
 
-            public byte[] Padding { get; set; }//should just be leftover padding, TODO: getrid of this
+            public byte[] Padding { get; set; } //should just be leftover padding, TODO: getrid of this
 
             public uint ItemDataLength
             {
                 get
                 {
-                    uint bc = (ShatterMapRowOffsets != null) ? ItemDataCount * 2u : 0;
+                    uint bc = ShatterMapRowOffsets != null ? ItemDataCount * 2u : 0;
                     if (ShatterMap != null)
-                    {
                         foreach (WindowShatterMapRow u in ShatterMap)
-                        {
                             bc += u.TotalLength;
-                        }
-                    }
+
                     return bc;
                 }
             }
+
             public uint TotalLength
             {
                 get
@@ -1402,23 +1571,24 @@ namespace CodeWalker.GameFiles
                 ItemID = reader.ReadUInt16();
                 UnkUshort1 = reader.ReadUInt16();
                 ShatterMapWidth = reader.ReadUInt16();
-                ItemDataCount = reader.ReadUInt16();//count of item data arrays
-                ItemDataByteLength = reader.ReadUInt16();//total byte length of ItemDatas plus byte length of ItemDataOffsets
-                UnkUshort3 = reader.ReadUInt16();//0
-                UnkUint2 = reader.ReadUInt32();//0
-                UnkUint3 = reader.ReadUInt32();//0
+                ItemDataCount = reader.ReadUInt16(); //count of item data arrays
+                ItemDataByteLength =
+                    reader.ReadUInt16(); //total byte length of ItemDatas plus byte length of ItemDataOffsets
+                UnkUshort3 = reader.ReadUInt16(); //0
+                UnkUint2 = reader.ReadUInt32(); //0
+                UnkUint3 = reader.ReadUInt32(); //0
                 UnkFloat17 = reader.ReadSingle();
                 UnkFloat18 = reader.ReadSingle();
-                UnkUshort4 = reader.ReadUInt16();//0, 1
-                UnkUshort5 = reader.ReadUInt16();//2, 2050
+                UnkUshort4 = reader.ReadUInt16(); //0, 1
+                UnkUshort5 = reader.ReadUInt16(); //2, 2050
                 CracksTextureTiling = reader.ReadSingle();
-                UnkUint4 = reader.ReadUInt32();//0
-                UnkUint5 = reader.ReadUInt32();//0
+                UnkUint4 = reader.ReadUInt32(); //0
+                UnkUint5 = reader.ReadUInt32(); //0
 
 
-                if (ItemDataByteLength != 0)//sometimes this is 0 and UnkUshort3>0, which is weird
+                if (ItemDataByteLength != 0) //sometimes this is 0 and UnkUshort3>0, which is weird
                 {
-                    ShatterMapRowOffsets = reader.ReadStructs<ushort>(ItemDataCount);//byte offsets for following array
+                    ShatterMapRowOffsets = reader.ReadStructs<ushort>(ItemDataCount); //byte offsets for following array
                     ShatterMap = new WindowShatterMapRow[ItemDataCount];
                     for (int i = 0; i < ItemDataCount; i++)
                     {
@@ -1428,8 +1598,6 @@ namespace CodeWalker.GameFiles
                         ShatterMap[i] = u;
                     }
                 }
-                else
-                { }
 
 
                 //switch (UnkUshort1)
@@ -1520,6 +1688,7 @@ namespace CodeWalker.GameFiles
                 ////testing!
                 //BuildOffsets();
             }
+
             public void Write(ResourceDataWriter writer)
             {
                 writer.Write(Projection);
@@ -1542,19 +1711,15 @@ namespace CodeWalker.GameFiles
                 writer.WriteStructs(ShatterMapRowOffsets);
 
                 if (ShatterMap != null)
-                {
                     foreach (WindowShatterMapRow ud in ShatterMap)
-                    {
                         ud.Write(writer);
-                    }
-                }
 
                 //if (Padding != null)
                 //{
                 //    writer.Write(Padding);
                 //}
-
             }
+
             public void WriteXml(StringBuilder sb, int indent)
             {
                 YftXml.ValueTag(sb, indent, "ItemID", ItemID.ToString());
@@ -1576,19 +1741,21 @@ namespace CodeWalker.GameFiles
                         YftXml.Indent(sb, cind);
                         item.WriteLine(sb, ShatterMapWidth);
                     }
+
                     YftXml.CloseTag(sb, indent, "ShatterMap");
                 }
             }
+
             public void ReadXml(XmlNode node)
             {
-                ItemID = (ushort)Xml.GetChildUIntAttribute(node, "ItemID", "value");
-                UnkUshort1 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort1", "value");
-                UnkUshort4 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort4", "value");
-                UnkUshort5 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort5", "value");
+                ItemID = (ushort)Xml.GetChildUIntAttribute(node, "ItemID");
+                UnkUshort1 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort1");
+                UnkUshort4 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort4");
+                UnkUshort5 = (ushort)Xml.GetChildUIntAttribute(node, "UnkUshort5");
                 Projection = Xml.GetChildMatrix(node, "Projection");
-                UnkFloat17 = Xml.GetChildFloatAttribute(node, "UnkFloat17", "value");
-                UnkFloat18 = Xml.GetChildFloatAttribute(node, "UnkFloat18", "value");
-                CracksTextureTiling = Xml.GetChildFloatAttribute(node, "CracksTextureTiling", "value");
+                UnkFloat17 = Xml.GetChildFloatAttribute(node, "UnkFloat17");
+                UnkFloat18 = Xml.GetChildFloatAttribute(node, "UnkFloat18");
+                CracksTextureTiling = Xml.GetChildFloatAttribute(node, "CracksTextureTiling");
                 XmlNode smnode = node.SelectSingleNode("ShatterMap");
                 if (smnode != null)
                 {
@@ -1602,8 +1769,10 @@ namespace CodeWalker.GameFiles
                         smr.ReadLine(rstr);
                         smlist.Add(smr);
                     }
+
                     ShatterMap = smlist.ToArray();
                 }
+
                 BuildOffsets();
             }
 
@@ -1622,6 +1791,7 @@ namespace CodeWalker.GameFiles
                         uint dl = item.DataLength + item.Start1;
                         maxend = Math.Max(Math.Max(maxend, item.End1), item.End2);
                     }
+
                     o += (uint)(ShatterMap.Length * 2);
                 }
 
@@ -1649,15 +1819,17 @@ namespace CodeWalker.GameFiles
                 //if (UnkUshort2 != maxend + 1)
                 //{ }//no hit
                 ShatterMapWidth = (ushort)(maxend + 1);
-
             }
 
             public override string ToString()
             {
-                return ItemID.ToString() + ": " + UnkUshort1.ToString() + ": " + ShatterMapWidth.ToString() + ": " + ItemDataCount.ToString() + ": " + ItemDataByteLength.ToString() + ": " + UnkUshort3.ToString();
+                return ItemID + ": " + UnkUshort1 + ": " + ShatterMapWidth + ": " + ItemDataCount + ": " +
+                       ItemDataByteLength + ": " + UnkUshort3;
             }
         }
-        [TypeConverter(typeof(ExpandableObjectConverter))] public class WindowShatterMapRow
+
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public class WindowShatterMapRow
         {
             public byte Start1 { get; set; }
             public byte End1 { get; set; }
@@ -1676,6 +1848,7 @@ namespace CodeWalker.GameFiles
                     return bc;
                 }
             }
+
             public uint TotalLength
             {
                 get
@@ -1694,7 +1867,7 @@ namespace CodeWalker.GameFiles
                 Start1 = reader.ReadByte();
                 End1 = reader.ReadByte();
 
-                int n = (End1 - Start1) + 1;
+                int n = End1 - Start1 + 1;
                 if (n > 0)
                 {
                     Data1 = reader.ReadBytes(n);
@@ -1704,17 +1877,12 @@ namespace CodeWalker.GameFiles
                     {
                         End2 = reader.ReadByte();
 
-                        int n2 = (End2 - Start2) + 1;
-                        if (n2 > 0)
-                        {
-                            Data2 = reader.ReadBytes(n2);
-                        }
+                        int n2 = End2 - Start2 + 1;
+                        if (n2 > 0) Data2 = reader.ReadBytes(n2);
                     }
                 }
-                else
-                { }
-
             }
+
             public void Write(ResourceDataWriter writer)
             {
                 writer.Write(Start1);
@@ -1729,37 +1897,33 @@ namespace CodeWalker.GameFiles
                     {
                         writer.Write(End2);
 
-                        if (Data2 != null)
-                        {
-                            writer.Write(Data2);
-                        }
+                        if (Data2 != null) writer.Write(Data2);
                     }
                 }
-
-
             }
+
             public void WriteXml(StringBuilder sb, int indent)
             {
                 YftXml.ValueTag(sb, indent, "Start1", Start1.ToString());
-                if (Data1 != null)
-                {
-                    YftXml.WriteRawArray(sb, Data1, indent, "Data1", "");
-                }
+                if (Data1 != null) YftXml.WriteRawArray(sb, Data1, indent, "Data1", "");
                 if (Data2 != null)
                 {
                     YftXml.ValueTag(sb, indent, "Start2", Start2.ToString());
                     YftXml.WriteRawArray(sb, Data2, indent, "Data2", "");
                 }
             }
+
             public void ReadXml(XmlNode node)
             {
-                Data1 = Xml.GetChildRawByteArray(node, "Data1", 10); if ((Data1?.Length ?? 0) == 0) Data1 = null;
-                Data2 = Xml.GetChildRawByteArray(node, "Data2", 10); if ((Data2?.Length ?? 0) == 0) Data2 = null;
-                Start1 = (byte)Xml.GetChildUIntAttribute(node, "Start1", "value");
+                Data1 = Xml.GetChildRawByteArray(node, "Data1", 10);
+                if ((Data1?.Length ?? 0) == 0) Data1 = null;
+                Data2 = Xml.GetChildRawByteArray(node, "Data2", 10);
+                if ((Data2?.Length ?? 0) == 0) Data2 = null;
+                Start1 = (byte)Xml.GetChildUIntAttribute(node, "Start1");
                 End1 = (byte)(Start1 + (Data1?.Length ?? 0) - 1);
                 if (Data2 != null)
                 {
-                    Start2 = (byte)Xml.GetChildUIntAttribute(node, "Start2", "value");
+                    Start2 = (byte)Xml.GetChildUIntAttribute(node, "Start2");
                     End2 = (byte)(Start2 + (Data2?.Length ?? 0) - 1);
                 }
                 else
@@ -1775,37 +1939,24 @@ namespace CodeWalker.GameFiles
                 int cpos = 0;
                 if (Data1 != null)
                 {
-                    for (int i = 0; i < Start1; i++)
-                    {
-                        sb.Append("##");
-                    }
-                    for (int i = 0; i < Data1.Length; i++)
-                    {
-                        sb.Append(MetaXml.FormatHexByte(Data1[i]));
-                    }
+                    for (int i = 0; i < Start1; i++) sb.Append("##");
+                    for (int i = 0; i < Data1.Length; i++) sb.Append(MetaXml.FormatHexByte(Data1[i]));
                     cpos = Start1 + Data1.Length;
                 }
+
                 if (Data2 != null)
                 {
-                    for (int i = cpos; i < Start2; i++)
-                    {
-                        sb.Append("--");
-                    }
-                    for (int i = 0; i < Data2.Length; i++)
-                    {
-                        sb.Append(MetaXml.FormatHexByte(Data2[i]));
-                    }
+                    for (int i = cpos; i < Start2; i++) sb.Append("--");
+                    for (int i = 0; i < Data2.Length; i++) sb.Append(MetaXml.FormatHexByte(Data2[i]));
                     cpos = Start2 + Data2.Length;
                 }
-                for (int i = cpos; i < width; i++)
-                {
-                    sb.Append("##");
-                }
+
+                for (int i = cpos; i < width; i++) sb.Append("##");
                 sb.AppendLine();
             }
+
             public void ReadLine(string s)
             {
-
                 List<byte> d1 = new List<byte>();
                 List<byte> d2 = new List<byte>();
                 bool b1 = false;
@@ -1821,13 +1972,9 @@ namespace CodeWalker.GameFiles
                     if (sc == "##")
                     {
                         if (!b1)
-                        {
                             s1 = i + 1;
-                        }
                         else
-                        {
                             break;
-                        }
                     }
                     else if (sc == "--")
                     {
@@ -1847,7 +1994,7 @@ namespace CodeWalker.GameFiles
                         {
                             d1.Add(val);
                             e1 = i;
-                            if ((val == 255) && (i == 0))
+                            if (val == 255 && i == 0)
                             {
                                 s2 = i + 1;
                                 b2 = true;
@@ -1860,9 +2007,8 @@ namespace CodeWalker.GameFiles
                 Start2 = (byte)s2;
                 End1 = (byte)e1;
                 End2 = (byte)e2;
-                Data1 = (d1.Count > 0) ? d1.ToArray() : null;
-                Data2 = (d2.Count > 0) ? d2.ToArray() : null;
-
+                Data1 = d1.Count > 0 ? d1.ToArray() : null;
+                Data2 = d2.Count > 0 ? d2.ToArray() : null;
             }
 
             public int GetValue(int x)
@@ -1874,205 +2020,37 @@ namespace CodeWalker.GameFiles
                     int cpos = x - Start1;
                     if (cpos < Data1.Length) return Data1[cpos];
                 }
+
                 if (Data2 != null)
                 {
                     if (x < Start2) return 256;
                     int cpos = x - Start2;
                     if (cpos < Data2.Length) return Data2[cpos];
                 }
+
                 return -1;
             }
 
             public override string ToString()
             {
-                return Start1.ToString() + ": " + End1.ToString() + ", " + Start2.ToString() + ": " + End2.ToString();
+                return Start1 + ": " + End1 + ", " + Start2 + ": " + End2;
             }
         }
-
-
-        // structure data
-        public uint Unknown_0h { get; set; } = 0x56475748; // "VGWH"   ...vehicle glass window H..?
-        public ushort Unknown_4h { get; set; } = 112;// = length of item headers
-        public ushort ItemCount { get; set; }
-        public uint TotalLength { get; set; }
-        public WindowOffset[] WindowOffsets { get; set; }
-        public uint UnkUint0 { get; set; }
-        public Window[] Windows { get; set; }
-
-
-        public override void Read(ResourceDataReader reader, params object[] parameters)
-        {
-            // read structure data
-            Unknown_0h = reader.ReadUInt32(); // "VGWH"   ...vehicle glass window H..?
-            Unknown_4h = reader.ReadUInt16(); //112 = length of item headers
-            ItemCount = reader.ReadUInt16();
-            TotalLength = reader.ReadUInt32();
-            WindowOffsets = reader.ReadStructs<WindowOffset>(ItemCount + (ItemCount & 1u)); //offsets in here start at just after UnkUint0
-            UnkUint0 = reader.ReadUInt32();//0
-
-            long coffset = 16 + WindowOffsets.Length*8;
-
-            Windows = new Window[ItemCount];
-            for (int i = 0; i < ItemCount; i++)
-            {
-                long rpos = reader.Position;
-                Window u = new Window();
-                u.Read(reader);
-                Windows[i] = u;
-                coffset += reader.Position - rpos;
-
-                long padd = (16 - (coffset % 16)) % 16;
-                if (padd > 0)
-                {
-                    u.Padding = reader.ReadBytes((int)padd);
-                    coffset += padd;
-
-                    //foreach (var b in u.Padding)
-                    //{
-                    //    if (b != 0)
-                    //    { }
-                    //}
-                }
-            }
-
-            //if (coffset != TotalLength)
-            //{ }
-            //if (Unknown_4h != 112)
-            //{ }//no hit
-            //if (UnkUint0 != 0)
-            //{ }//no hit
-
-            //// just testing
-            //BuildOffsets();
-        }
-        public override void Write(ResourceDataWriter writer, params object[] parameters)
-        {
-            BuildOffsets();
-
-            // write structure data
-            writer.Write(this.Unknown_0h);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.ItemCount);
-            writer.Write(this.TotalLength);
-
-            writer.WriteStructs(WindowOffsets);
-            writer.Write(UnkUint0);
-
-            long coffset = 16 + WindowOffsets.Length * 8;
-
-            foreach (Window item in Windows)
-            {
-                long rpos = writer.Position;
-
-                item.Write(writer);
-
-                coffset += writer.Position - rpos;
-                long padd = (16 - (coffset % 16)) % 16;
-                if (padd > 0)
-                {
-                    writer.Write(new byte[padd]);
-                    coffset += padd;
-                }
-            }
-
-            //if (coffset != TotalLength)
-            //{ }
-
-        }
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            if (Windows != null)
-            {
-                foreach (Window item in Windows)
-                {
-                    YftXml.OpenTag(sb, indent, "Window");
-                    item.WriteXml(sb, indent + 1);
-                    YftXml.CloseTag(sb, indent, "Window");
-                }
-            }
-        }
-        public void ReadXml(XmlNode node)
-        {
-            XmlNodeList inodes = node.SelectNodes("Window");
-            List<Window> ilist = new List<Window>();
-            if (inodes != null)
-            {
-                foreach (XmlNode inode in inodes)
-                {
-                    Window item = new Window();
-                    item.ReadXml(inode);
-                    ilist.Add(item);
-                }
-            }
-            Windows = ilist.ToArray();
-            ItemCount = (ushort)ilist.Count;
-
-            BuildOffsets();
-        }
-
-
-
-        public void BuildOffsets()
-        {
-            List<WindowOffset> offs = new List<WindowOffset>();
-            uint bc = 16u;
-            if (Windows != null)
-            {
-                bc += (uint)((Windows.Length + (Windows.Length & 1)) * 8);
-                foreach (Window item in Windows)
-                {
-                    WindowOffset off = new WindowOffset();
-                    off.ItemID = item.ItemID;
-                    off.Offset = bc;
-                    offs.Add(off);
-                    bc += item.TotalLength;
-                    bc += (16 - (bc % 16)) % 16;//account for padding
-                }
-                if ((offs.Count & 1) != 0)
-                {
-                    offs.Add(new WindowOffset());
-                }
-            }
-
-            //// just testing
-            //if (TotalLength != bc)
-            //{ }
-            TotalLength = bc;
-
-            //// just testing
-            //if ((ItemOffsets?.Length ?? 0) != offs.Count)
-            //{ }
-            //else
-            //{
-            //    for (int i = 0; i < offs.Count; i++)
-            //    {
-            //        var oo = ItemOffsets[i];
-            //        var no = offs[i];
-            //        if ((no.Item != oo.Item) || (no.Offset != oo.Offset))
-            //        { }
-            //    }
-            //}
-            WindowOffsets = offs.ToArray();
-
-        }
-
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysicsLODGroup : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysicsLODGroup : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 48; }
-        }
+        public uint Unknown_04h = 1; // 0x00000001
+        public ulong Unknown_08h; // 0x0000000000000000
+        public ulong Unknown_28h; // 0x0000000000000000
+        public override long BlockLength => 48;
 
         // structure data
         public uint VFT { get; set; } = 1080055472;
-        public uint Unknown_04h = 1; // 0x00000001
-        public ulong Unknown_08h; // 0x0000000000000000
         public ulong PhysicsLOD1Pointer { get; set; }
         public ulong PhysicsLOD2Pointer { get; set; }
         public ulong PhysicsLOD3Pointer { get; set; }
-        public ulong Unknown_28h; // 0x0000000000000000
 
         // reference data
         public FragPhysicsLOD PhysicsLOD1 { get; set; }
@@ -2082,18 +2060,18 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.PhysicsLOD1Pointer = reader.ReadUInt64();
-            this.PhysicsLOD2Pointer = reader.ReadUInt64();
-            this.PhysicsLOD3Pointer = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            PhysicsLOD1Pointer = reader.ReadUInt64();
+            PhysicsLOD2Pointer = reader.ReadUInt64();
+            PhysicsLOD3Pointer = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
 
             // read reference data
-            this.PhysicsLOD1 = reader.ReadBlockAt<FragPhysicsLOD>(this.PhysicsLOD1Pointer);
-            this.PhysicsLOD2 = reader.ReadBlockAt<FragPhysicsLOD>(this.PhysicsLOD2Pointer);
-            this.PhysicsLOD3 = reader.ReadBlockAt<FragPhysicsLOD>(this.PhysicsLOD3Pointer);
+            PhysicsLOD1 = reader.ReadBlockAt<FragPhysicsLOD>(PhysicsLOD1Pointer);
+            PhysicsLOD2 = reader.ReadBlockAt<FragPhysicsLOD>(PhysicsLOD2Pointer);
+            PhysicsLOD3 = reader.ReadBlockAt<FragPhysicsLOD>(PhysicsLOD3Pointer);
 
             //if (Unknown_04h != 1)
             //{ }//no hit
@@ -2102,22 +2080,24 @@ namespace CodeWalker.GameFiles
             //if (Unknown_28h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.PhysicsLOD1Pointer = (ulong)(this.PhysicsLOD1 != null ? this.PhysicsLOD1.FilePosition : 0);
-            this.PhysicsLOD2Pointer = (ulong)(this.PhysicsLOD2 != null ? this.PhysicsLOD2.FilePosition : 0);
-            this.PhysicsLOD3Pointer = (ulong)(this.PhysicsLOD3 != null ? this.PhysicsLOD3.FilePosition : 0);
+            PhysicsLOD1Pointer = (ulong)(PhysicsLOD1 != null ? PhysicsLOD1.FilePosition : 0);
+            PhysicsLOD2Pointer = (ulong)(PhysicsLOD2 != null ? PhysicsLOD2.FilePosition : 0);
+            PhysicsLOD3Pointer = (ulong)(PhysicsLOD3 != null ? PhysicsLOD3.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.PhysicsLOD1Pointer);
-            writer.Write(this.PhysicsLOD2Pointer);
-            writer.Write(this.PhysicsLOD3Pointer);
-            writer.Write(this.Unknown_28h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(PhysicsLOD1Pointer);
+            writer.Write(PhysicsLOD2Pointer);
+            writer.Write(PhysicsLOD3Pointer);
+            writer.Write(Unknown_28h);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             if (PhysicsLOD1 != null)
@@ -2126,12 +2106,14 @@ namespace CodeWalker.GameFiles
                 PhysicsLOD1.WriteXml(sb, indent + 1, ddsfolder);
                 YftXml.CloseTag(sb, indent, "LOD1");
             }
+
             if (PhysicsLOD2 != null)
             {
                 YftXml.OpenTag(sb, indent, "LOD2");
                 PhysicsLOD2.WriteXml(sb, indent + 1, ddsfolder);
                 YftXml.CloseTag(sb, indent, "LOD2");
             }
+
             if (PhysicsLOD3 != null)
             {
                 YftXml.OpenTag(sb, indent, "LOD3");
@@ -2139,6 +2121,7 @@ namespace CodeWalker.GameFiles
                 YftXml.CloseTag(sb, indent, "LOD3");
             }
         }
+
         public void ReadXml(XmlNode node, string ddsfolder)
         {
             XmlNode l1node = node.SelectSingleNode("LOD1");
@@ -2147,12 +2130,14 @@ namespace CodeWalker.GameFiles
                 PhysicsLOD1 = new FragPhysicsLOD();
                 PhysicsLOD1.ReadXml(l1node, ddsfolder);
             }
+
             XmlNode l2node = node.SelectSingleNode("LOD2");
             if (l2node != null)
             {
                 PhysicsLOD2 = new FragPhysicsLOD();
                 PhysicsLOD2.ReadXml(l2node, ddsfolder);
             }
+
             XmlNode l3node = node.SelectSingleNode("LOD3");
             if (l3node != null)
             {
@@ -2171,18 +2156,34 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysicsLOD : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysicsLOD : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 304; }
-        }
+        private ResourceSystemStructBlock<Vector4> ChildrenInertiaTensorsBlock;
 
-        // structure data
-        public uint VFT { get; set; } = 1080055512;
+
+        private ResourceSystemStructBlock<float> ChildrenUnkFloatsBlock; //used only for saving
+        private ResourceSystemStructBlock<Vector4> ChildrenUnkVecsBlock;
         public uint Unknown_04h = 1; // 0x00000001
         public ulong Unknown_08h; // 0x0000000000000000
         public uint Unknown_10h; // 0x00000000
+        public byte Unknown_11Ch = 1; // 0x01
+        public byte Unknown_11Fh; // 0x00
+        public ulong Unknown_120h; // 0x0000000000000000
+        public ulong Unknown_128h; // 0x0000000000000000
+        public uint Unknown_5Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_6Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_7Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_8Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_9Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_ACh = 0x7f800001; // 0x7f800001
+        public uint Unknown_BCh = 0x7f800001; // 0x7f800001
+        private ResourceSystemStructBlock<byte> UnknownData1Block;
+        private ResourceSystemStructBlock<byte> UnknownData2Block;
+        public override long BlockLength => 304;
+
+        // structure data
+        public uint VFT { get; set; } = 1080055512;
         public float Unknown_14h { get; set; }
         public float Unknown_18h { get; set; }
         public float Unknown_1Ch { get; set; }
@@ -2193,19 +2194,12 @@ namespace CodeWalker.GameFiles
         public Vector3 Unknown_40h { get; set; }
         public uint Unknown_4Ch { get; set; } = 0x7fc00001; // 0x7f800001, 0x7fc00001
         public Vector3 Unknown_50h { get; set; }
-        public uint Unknown_5Ch = 0x7f800001; // 0x7f800001
         public Vector3 DampingLinearC { get; set; }
-        public uint Unknown_6Ch = 0x7f800001; // 0x7f800001
         public Vector3 DampingLinearV { get; set; }
-        public uint Unknown_7Ch = 0x7f800001; // 0x7f800001
         public Vector3 DampingLinearV2 { get; set; }
-        public uint Unknown_8Ch = 0x7f800001; // 0x7f800001
         public Vector3 DampingAngularC { get; set; }
-        public uint Unknown_9Ch = 0x7f800001; // 0x7f800001
         public Vector3 DampingAngularV { get; set; }
-        public uint Unknown_ACh = 0x7f800001; // 0x7f800001
         public Vector3 DampingAngularV2 { get; set; }
-        public uint Unknown_BCh = 0x7f800001; // 0x7f800001
         public ulong GroupNamesPointer { get; set; }
         public ulong GroupsPointer { get; set; }
         public ulong ChildrenPointer { get; set; }
@@ -2221,12 +2215,8 @@ namespace CodeWalker.GameFiles
         public byte UnknownData2Count { get; set; }
         public byte GroupsCount { get; set; }
         public byte RootGroupsCount { get; set; }
-        public byte Unknown_11Ch = 1; // 0x01
         public byte ChildrenCount { get; set; }
         public byte ChildrenCount2 { get; set; }
-        public byte Unknown_11Fh; // 0x00
-        public ulong Unknown_120h; // 0x0000000000000000
-        public ulong Unknown_128h; // 0x0000000000000000
 
         // reference data
         public FragPhysArticulatedBodyType ArticulatedBodyType { get; set; }
@@ -2244,126 +2234,111 @@ namespace CodeWalker.GameFiles
         public byte[] UnknownData2 { get; set; }
 
 
-        private ResourceSystemStructBlock<float> ChildrenUnkFloatsBlock; //used only for saving
-        private ResourceSystemStructBlock<Vector4> ChildrenInertiaTensorsBlock;
-        private ResourceSystemStructBlock<Vector4> ChildrenUnkVecsBlock;
-        private ResourceSystemStructBlock<byte> UnknownData1Block;
-        private ResourceSystemStructBlock<byte> UnknownData2Block;
-
-
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt32();
-            this.Unknown_14h = reader.ReadSingle();
-            this.Unknown_18h = reader.ReadSingle();
-            this.Unknown_1Ch = reader.ReadSingle();
-            this.ArticulatedBodyTypePointer = reader.ReadUInt64();
-            this.ChildrenUnkFloatsPointer = reader.ReadUInt64();
-            this.PositionOffset = reader.ReadVector3();
-            this.Unknown_3Ch = reader.ReadUInt32();
-            this.Unknown_40h = reader.ReadVector3();
-            this.Unknown_4Ch = reader.ReadUInt32();
-            this.Unknown_50h = reader.ReadVector3();
-            this.Unknown_5Ch = reader.ReadUInt32();
-            this.DampingLinearC = reader.ReadVector3();
-            this.Unknown_6Ch = reader.ReadUInt32();
-            this.DampingLinearV = reader.ReadVector3();
-            this.Unknown_7Ch = reader.ReadUInt32();
-            this.DampingLinearV2 = reader.ReadVector3();
-            this.Unknown_8Ch = reader.ReadUInt32();
-            this.DampingAngularC = reader.ReadVector3();
-            this.Unknown_9Ch = reader.ReadUInt32();
-            this.DampingAngularV = reader.ReadVector3();
-            this.Unknown_ACh = reader.ReadUInt32();
-            this.DampingAngularV2 = reader.ReadVector3();
-            this.Unknown_BCh = reader.ReadUInt32();
-            this.GroupNamesPointer = reader.ReadUInt64();
-            this.GroupsPointer = reader.ReadUInt64();
-            this.ChildrenPointer = reader.ReadUInt64();
-            this.Archetype1Pointer = reader.ReadUInt64();
-            this.Archetype2Pointer = reader.ReadUInt64();
-            this.BoundPointer = reader.ReadUInt64();
-            this.ChildrenInertiaTensorsPointer = reader.ReadUInt64();
-            this.ChildrenUnkVecsPointer = reader.ReadUInt64();
-            this.FragTransformsPointer = reader.ReadUInt64();
-            this.UnknownData1Pointer = reader.ReadUInt64();
-            this.UnknownData2Pointer = reader.ReadUInt64();
-            this.UnknownData1Count = reader.ReadByte();
-            this.UnknownData2Count = reader.ReadByte();
-            this.GroupsCount = reader.ReadByte();
-            this.RootGroupsCount = reader.ReadByte();
-            this.Unknown_11Ch = reader.ReadByte();
-            this.ChildrenCount = reader.ReadByte();
-            this.ChildrenCount2 = reader.ReadByte();
-            this.Unknown_11Fh = reader.ReadByte();
-            this.Unknown_120h = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt32();
+            Unknown_14h = reader.ReadSingle();
+            Unknown_18h = reader.ReadSingle();
+            Unknown_1Ch = reader.ReadSingle();
+            ArticulatedBodyTypePointer = reader.ReadUInt64();
+            ChildrenUnkFloatsPointer = reader.ReadUInt64();
+            PositionOffset = reader.ReadVector3();
+            Unknown_3Ch = reader.ReadUInt32();
+            Unknown_40h = reader.ReadVector3();
+            Unknown_4Ch = reader.ReadUInt32();
+            Unknown_50h = reader.ReadVector3();
+            Unknown_5Ch = reader.ReadUInt32();
+            DampingLinearC = reader.ReadVector3();
+            Unknown_6Ch = reader.ReadUInt32();
+            DampingLinearV = reader.ReadVector3();
+            Unknown_7Ch = reader.ReadUInt32();
+            DampingLinearV2 = reader.ReadVector3();
+            Unknown_8Ch = reader.ReadUInt32();
+            DampingAngularC = reader.ReadVector3();
+            Unknown_9Ch = reader.ReadUInt32();
+            DampingAngularV = reader.ReadVector3();
+            Unknown_ACh = reader.ReadUInt32();
+            DampingAngularV2 = reader.ReadVector3();
+            Unknown_BCh = reader.ReadUInt32();
+            GroupNamesPointer = reader.ReadUInt64();
+            GroupsPointer = reader.ReadUInt64();
+            ChildrenPointer = reader.ReadUInt64();
+            Archetype1Pointer = reader.ReadUInt64();
+            Archetype2Pointer = reader.ReadUInt64();
+            BoundPointer = reader.ReadUInt64();
+            ChildrenInertiaTensorsPointer = reader.ReadUInt64();
+            ChildrenUnkVecsPointer = reader.ReadUInt64();
+            FragTransformsPointer = reader.ReadUInt64();
+            UnknownData1Pointer = reader.ReadUInt64();
+            UnknownData2Pointer = reader.ReadUInt64();
+            UnknownData1Count = reader.ReadByte();
+            UnknownData2Count = reader.ReadByte();
+            GroupsCount = reader.ReadByte();
+            RootGroupsCount = reader.ReadByte();
+            Unknown_11Ch = reader.ReadByte();
+            ChildrenCount = reader.ReadByte();
+            ChildrenCount2 = reader.ReadByte();
+            Unknown_11Fh = reader.ReadByte();
+            Unknown_120h = reader.ReadUInt64();
+            Unknown_128h = reader.ReadUInt64();
 
             // read reference data
-            this.ArticulatedBodyType = reader.ReadBlockAt<FragPhysArticulatedBodyType>(this.ArticulatedBodyTypePointer);
-            this.ChildrenUnkFloats = reader.ReadFloatsAt(this.ChildrenUnkFloatsPointer, this.ChildrenCount);
-            this.Groups = reader.ReadBlockAt<ResourcePointerArray64<FragPhysTypeGroup>>(this.GroupsPointer, this.GroupsCount);
-            this.GroupNames = reader.ReadBlockAt<FragPhysGroupNamesBlock>(this.GroupNamesPointer, this.GroupsCount, this.Groups?.data_items);
-            this.Children = reader.ReadBlockAt<ResourcePointerArray64<FragPhysTypeChild>>(this.ChildrenPointer, this.ChildrenCount);
-            this.Archetype1 = reader.ReadBlockAt<FragPhysArchetype>(this.Archetype1Pointer);
-            this.Archetype2 = reader.ReadBlockAt<FragPhysArchetype>(this.Archetype2Pointer);
-            this.Bound = reader.ReadBlockAt<Bounds>(this.BoundPointer);
-            this.ChildrenInertiaTensors = reader.ReadStructsAt<Vector4>(this.ChildrenInertiaTensorsPointer, this.ChildrenCount);
-            this.ChildrenUnkVecs = reader.ReadStructsAt<Vector4>(this.ChildrenUnkVecsPointer, this.ChildrenCount);
-            this.FragTransforms = reader.ReadBlockAt<FragPhysTransforms>(this.FragTransformsPointer);
-            this.UnknownData1 = reader.ReadBytesAt(this.UnknownData1Pointer, this.UnknownData1Count);
-            this.UnknownData2 = reader.ReadBytesAt(this.UnknownData2Pointer, this.UnknownData2Count);
+            ArticulatedBodyType = reader.ReadBlockAt<FragPhysArticulatedBodyType>(ArticulatedBodyTypePointer);
+            ChildrenUnkFloats = reader.ReadFloatsAt(ChildrenUnkFloatsPointer, ChildrenCount);
+            Groups = reader.ReadBlockAt<ResourcePointerArray64<FragPhysTypeGroup>>(GroupsPointer, GroupsCount);
+            GroupNames =
+                reader.ReadBlockAt<FragPhysGroupNamesBlock>(GroupNamesPointer, GroupsCount, Groups?.data_items);
+            Children = reader.ReadBlockAt<ResourcePointerArray64<FragPhysTypeChild>>(ChildrenPointer, ChildrenCount);
+            Archetype1 = reader.ReadBlockAt<FragPhysArchetype>(Archetype1Pointer);
+            Archetype2 = reader.ReadBlockAt<FragPhysArchetype>(Archetype2Pointer);
+            Bound = reader.ReadBlockAt<Bounds>(BoundPointer);
+            ChildrenInertiaTensors = reader.ReadStructsAt<Vector4>(ChildrenInertiaTensorsPointer, ChildrenCount);
+            ChildrenUnkVecs = reader.ReadStructsAt<Vector4>(ChildrenUnkVecsPointer, ChildrenCount);
+            FragTransforms = reader.ReadBlockAt<FragPhysTransforms>(FragTransformsPointer);
+            UnknownData1 = reader.ReadBytesAt(UnknownData1Pointer, UnknownData1Count);
+            UnknownData2 = reader.ReadBytesAt(UnknownData2Pointer, UnknownData2Count);
 
 
-
-            if ((Children != null) && (Children.data_items != null))
-            {
+            if (Children != null && Children.data_items != null)
                 for (int i = 0; i < Children.data_items.Length; i++)
                 {
                     FragPhysTypeChild child = Children.data_items[i];
                     child.OwnerFragPhysLod = this;
                     child.OwnerFragPhysIndex = i;
 
-                    child.UnkFloatFromParent = ((ChildrenUnkFloats != null) && (i < ChildrenUnkFloats.Length)) ? ChildrenUnkFloats[i] : 0;
-                    child.UnkVecFromParent = ((ChildrenUnkVecs != null) && (i < ChildrenUnkVecs.Length)) ? ChildrenUnkVecs[i] : Vector4.Zero;
-                    child.InertiaTensorFromParent = ((ChildrenInertiaTensors != null) && (i < ChildrenInertiaTensors.Length)) ? ChildrenInertiaTensors[i] : Vector4.Zero;
+                    child.UnkFloatFromParent = ChildrenUnkFloats != null && i < ChildrenUnkFloats.Length
+                        ? ChildrenUnkFloats[i]
+                        : 0;
+                    child.UnkVecFromParent = ChildrenUnkVecs != null && i < ChildrenUnkVecs.Length
+                        ? ChildrenUnkVecs[i]
+                        : Vector4.Zero;
+                    child.InertiaTensorFromParent = ChildrenInertiaTensors != null && i < ChildrenInertiaTensors.Length
+                        ? ChildrenInertiaTensors[i]
+                        : Vector4.Zero;
 
                     ushort gi = child.GroupIndex;
-                    if ((Groups?.data_items != null) && (gi < Groups.data_items.Length))
+                    if (Groups?.data_items != null && gi < Groups.data_items.Length)
                     {
                         FragPhysTypeGroup group = Groups.data_items[gi];
                         child.Group = group;
                     }
                 }
-            }
 
 
-            if ((Groups?.data_items != null) && (GroupNames?.data_items != null) && (Groups.data_items.Length == GroupNames.data_items.Length))
-            {
+            if (Groups?.data_items != null && GroupNames?.data_items != null &&
+                Groups.data_items.Length == GroupNames.data_items.Length)
                 //this fixes up broken group names caused by zmod, but it's not necessary for vanilla files, 
                 //since the group name pointers should point at the names embedded in the groups themselves.
                 for (int i = 0; i < Groups.data_items.Length; i++)
-                {
                     Groups.data_items[i].Name = GroupNames.data_items[i];
-                }
-            }
 
-            if (Archetype1 != null)
-            {
-                Archetype1.Owner = this;
-            }
-            if (Archetype2 != null)
-            {
-                Archetype2.Owner = this;
-            }
-            if (Bound != null)
-            {
-                Bound.Owner = this;
-            }
+            if (Archetype1 != null) Archetype1.Owner = this;
+            if (Archetype2 != null) Archetype2.Owner = this;
+            if (Bound != null) Bound.Owner = this;
 
             //if (Bound is BoundComposite bcmp)
             //{
@@ -2436,80 +2411,84 @@ namespace CodeWalker.GameFiles
             //{ }//hit
             //BuildGroupsData();
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.ArticulatedBodyTypePointer = (ulong)(this.ArticulatedBodyType != null ? this.ArticulatedBodyType.FilePosition : 0);
-            this.ChildrenUnkFloatsPointer = (ulong)(this.ChildrenUnkFloatsBlock != null ? this.ChildrenUnkFloatsBlock.FilePosition : 0);
-            this.GroupNamesPointer = (ulong)(this.GroupNames != null ? this.GroupNames.FilePosition : 0);
-            this.GroupsPointer = (ulong)(this.Groups != null ? this.Groups.FilePosition : 0);
-            this.ChildrenPointer = (ulong)(this.Children != null ? this.Children.FilePosition : 0);
-            this.Archetype1Pointer = (ulong)(this.Archetype1 != null ? this.Archetype1.FilePosition : 0);
-            this.Archetype2Pointer = (ulong)(this.Archetype2 != null ? this.Archetype2.FilePosition : 0);
-            this.BoundPointer = (ulong)(this.Bound != null ? this.Bound.FilePosition : 0);
-            this.ChildrenInertiaTensorsPointer = (ulong)(this.ChildrenInertiaTensorsBlock != null ? this.ChildrenInertiaTensorsBlock.FilePosition : 0);
-            this.ChildrenUnkVecsPointer = (ulong)(this.ChildrenUnkVecsBlock != null ? this.ChildrenUnkVecsBlock.FilePosition : 0);
-            this.FragTransformsPointer = (ulong)(this.FragTransforms != null ? this.FragTransforms.FilePosition : 0);
-            this.UnknownData1Pointer = (ulong)(this.UnknownData1Block != null ? this.UnknownData1Block.FilePosition : 0);
-            this.UnknownData2Pointer = (ulong)(this.UnknownData2Block != null ? this.UnknownData2Block.FilePosition : 0);
+            ArticulatedBodyTypePointer = (ulong)(ArticulatedBodyType != null ? ArticulatedBodyType.FilePosition : 0);
+            ChildrenUnkFloatsPointer =
+                (ulong)(ChildrenUnkFloatsBlock != null ? ChildrenUnkFloatsBlock.FilePosition : 0);
+            GroupNamesPointer = (ulong)(GroupNames != null ? GroupNames.FilePosition : 0);
+            GroupsPointer = (ulong)(Groups != null ? Groups.FilePosition : 0);
+            ChildrenPointer = (ulong)(Children != null ? Children.FilePosition : 0);
+            Archetype1Pointer = (ulong)(Archetype1 != null ? Archetype1.FilePosition : 0);
+            Archetype2Pointer = (ulong)(Archetype2 != null ? Archetype2.FilePosition : 0);
+            BoundPointer = (ulong)(Bound != null ? Bound.FilePosition : 0);
+            ChildrenInertiaTensorsPointer =
+                (ulong)(ChildrenInertiaTensorsBlock != null ? ChildrenInertiaTensorsBlock.FilePosition : 0);
+            ChildrenUnkVecsPointer = (ulong)(ChildrenUnkVecsBlock != null ? ChildrenUnkVecsBlock.FilePosition : 0);
+            FragTransformsPointer = (ulong)(FragTransforms != null ? FragTransforms.FilePosition : 0);
+            UnknownData1Pointer = (ulong)(UnknownData1Block != null ? UnknownData1Block.FilePosition : 0);
+            UnknownData2Pointer = (ulong)(UnknownData2Block != null ? UnknownData2Block.FilePosition : 0);
 
-            this.UnknownData1Count = (byte)(this.UnknownData1Block != null ? this.UnknownData1Block.ItemCount : 0);
-            this.UnknownData2Count = (byte)(this.UnknownData2Block != null ? this.UnknownData2Block.ItemCount : 0);
-            this.GroupsCount = (byte)(this.Groups != null ? this.Groups.Count : 0);
-            this.ChildrenCount = (byte)(this.Children != null ? this.Children.Count : 0);
-            this.ChildrenCount2 = this.ChildrenCount;
+            UnknownData1Count = (byte)(UnknownData1Block != null ? UnknownData1Block.ItemCount : 0);
+            UnknownData2Count = (byte)(UnknownData2Block != null ? UnknownData2Block.ItemCount : 0);
+            GroupsCount = (byte)(Groups != null ? Groups.Count : 0);
+            ChildrenCount = (byte)(Children != null ? Children.Count : 0);
+            ChildrenCount2 = ChildrenCount;
 
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_1Ch);
-            writer.Write(this.ArticulatedBodyTypePointer);
-            writer.Write(this.ChildrenUnkFloatsPointer);
-            writer.Write(this.PositionOffset);
-            writer.Write(this.Unknown_3Ch);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_4Ch);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_5Ch);
-            writer.Write(this.DampingLinearC);
-            writer.Write(this.Unknown_6Ch);
-            writer.Write(this.DampingLinearV);
-            writer.Write(this.Unknown_7Ch);
-            writer.Write(this.DampingLinearV2);
-            writer.Write(this.Unknown_8Ch);
-            writer.Write(this.DampingAngularC);
-            writer.Write(this.Unknown_9Ch);
-            writer.Write(this.DampingAngularV);
-            writer.Write(this.Unknown_ACh);
-            writer.Write(this.DampingAngularV2);
-            writer.Write(this.Unknown_BCh);
-            writer.Write(this.GroupNamesPointer);
-            writer.Write(this.GroupsPointer);
-            writer.Write(this.ChildrenPointer);
-            writer.Write(this.Archetype1Pointer);
-            writer.Write(this.Archetype2Pointer);
-            writer.Write(this.BoundPointer);
-            writer.Write(this.ChildrenInertiaTensorsPointer);
-            writer.Write(this.ChildrenUnkVecsPointer);
-            writer.Write(this.FragTransformsPointer);
-            writer.Write(this.UnknownData1Pointer);
-            writer.Write(this.UnknownData2Pointer);
-            writer.Write(this.UnknownData1Count);
-            writer.Write(this.UnknownData2Count);
-            writer.Write(this.GroupsCount);
-            writer.Write(this.RootGroupsCount);
-            writer.Write(this.Unknown_11Ch);
-            writer.Write(this.ChildrenCount);
-            writer.Write(this.ChildrenCount2);
-            writer.Write(this.Unknown_11Fh);
-            writer.Write(this.Unknown_120h);
-            writer.Write(this.Unknown_128h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_1Ch);
+            writer.Write(ArticulatedBodyTypePointer);
+            writer.Write(ChildrenUnkFloatsPointer);
+            writer.Write(PositionOffset);
+            writer.Write(Unknown_3Ch);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_4Ch);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_5Ch);
+            writer.Write(DampingLinearC);
+            writer.Write(Unknown_6Ch);
+            writer.Write(DampingLinearV);
+            writer.Write(Unknown_7Ch);
+            writer.Write(DampingLinearV2);
+            writer.Write(Unknown_8Ch);
+            writer.Write(DampingAngularC);
+            writer.Write(Unknown_9Ch);
+            writer.Write(DampingAngularV);
+            writer.Write(Unknown_ACh);
+            writer.Write(DampingAngularV2);
+            writer.Write(Unknown_BCh);
+            writer.Write(GroupNamesPointer);
+            writer.Write(GroupsPointer);
+            writer.Write(ChildrenPointer);
+            writer.Write(Archetype1Pointer);
+            writer.Write(Archetype2Pointer);
+            writer.Write(BoundPointer);
+            writer.Write(ChildrenInertiaTensorsPointer);
+            writer.Write(ChildrenUnkVecsPointer);
+            writer.Write(FragTransformsPointer);
+            writer.Write(UnknownData1Pointer);
+            writer.Write(UnknownData2Pointer);
+            writer.Write(UnknownData1Count);
+            writer.Write(UnknownData2Count);
+            writer.Write(GroupsCount);
+            writer.Write(RootGroupsCount);
+            writer.Write(Unknown_11Ch);
+            writer.Write(ChildrenCount);
+            writer.Write(ChildrenCount2);
+            writer.Write(Unknown_11Fh);
+            writer.Write(Unknown_120h);
+            writer.Write(Unknown_128h);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             YftXml.ValueTag(sb, indent, "Unknown14", FloatUtil.ToString(Unknown_14h));
@@ -2530,35 +2509,35 @@ namespace CodeWalker.GameFiles
                 Archetype1.WriteXml(sb, indent + 1);
                 YftXml.CloseTag(sb, indent, "Archetype");
             }
+
             if (Archetype2 != null)
             {
                 YftXml.OpenTag(sb, indent, "Archetype2");
                 Archetype2.WriteXml(sb, indent + 1);
                 YftXml.CloseTag(sb, indent, "Archetype2");
             }
+
             if (ArticulatedBodyType != null)
             {
                 YftXml.OpenTag(sb, indent, "ArticulatedBody");
                 ArticulatedBodyType.WriteXml(sb, indent + 1);
                 YftXml.CloseTag(sb, indent, "ArticulatedBody");
             }
+
             if (FragTransforms != null)
             {
                 YftXml.OpenTag(sb, indent, "Transforms");
                 FragTransforms.WriteXml(sb, indent + 1);
                 YftXml.CloseTag(sb, indent, "Transforms");
             }
-            if (Groups?.data_items != null)
-            {
-                YftXml.WriteItemArray(sb, Groups.data_items, indent, "Groups");
-            }
+
+            if (Groups?.data_items != null) YftXml.WriteItemArray(sb, Groups.data_items, indent, "Groups");
             if (Children?.data_items != null)
             {
                 YftXml.OpenTag(sb, indent, "Children");
                 int cind = indent + 1;
                 int cind2 = cind + 1;
                 foreach (FragPhysTypeChild child in Children?.data_items)
-                {
                     if (child != null)
                     {
                         YftXml.OpenTag(sb, cind, "Item");
@@ -2569,27 +2548,23 @@ namespace CodeWalker.GameFiles
                     {
                         YftXml.SelfClosingTag(sb, cind, "Item");
                     }
-                }
+
                 YftXml.CloseTag(sb, indent, "Children");
             }
+
             //if (Bound != null)
             //{
             //    Bounds.WriteXmlNode(Bound, sb, indent);
             //}
-            if (UnknownData1 != null)
-            {
-                YftXml.WriteRawArray(sb, UnknownData1, indent, "UnknownData1", "");
-            }
-            if (UnknownData2 != null)
-            {
-                YftXml.WriteRawArray(sb, UnknownData2, indent, "UnknownData2", "");
-            }
+            if (UnknownData1 != null) YftXml.WriteRawArray(sb, UnknownData1, indent, "UnknownData1", "");
+            if (UnknownData2 != null) YftXml.WriteRawArray(sb, UnknownData2, indent, "UnknownData2", "");
         }
+
         public void ReadXml(XmlNode node, string ddsfolder)
         {
-            Unknown_14h = Xml.GetChildFloatAttribute(node, "Unknown14", "value");
-            Unknown_18h = Xml.GetChildFloatAttribute(node, "Unknown18", "value");
-            Unknown_1Ch = Xml.GetChildFloatAttribute(node, "Unknown1C", "value");
+            Unknown_14h = Xml.GetChildFloatAttribute(node, "Unknown14");
+            Unknown_18h = Xml.GetChildFloatAttribute(node, "Unknown18");
+            Unknown_1Ch = Xml.GetChildFloatAttribute(node, "Unknown1C");
             PositionOffset = Xml.GetChildVector3Attributes(node, "PositionOffset");
             Unknown_40h = Xml.GetChildVector3Attributes(node, "Unknown40");
             Unknown_50h = Xml.GetChildVector3Attributes(node, "Unknown50");
@@ -2606,6 +2581,7 @@ namespace CodeWalker.GameFiles
                 Archetype1.Owner = this;
                 Archetype1.ReadXml(a1node);
             }
+
             XmlNode a2node = node.SelectSingleNode("Archetype2");
             if (a2node != null)
             {
@@ -2613,33 +2589,35 @@ namespace CodeWalker.GameFiles
                 Archetype2.Owner = this;
                 Archetype2.ReadXml(a2node);
             }
+
             XmlNode abnode = node.SelectSingleNode("ArticulatedBody");
             if (abnode != null)
             {
                 ArticulatedBodyType = new FragPhysArticulatedBodyType();
                 ArticulatedBodyType.ReadXml(abnode);
             }
+
             XmlNode tnode = node.SelectSingleNode("Transforms");
             if (tnode != null)
             {
                 FragTransforms = new FragPhysTransforms();
                 FragTransforms.ReadXml(tnode);
             }
+
             FragPhysTypeGroup[] grps = XmlMeta.ReadItemArray<FragPhysTypeGroup>(node, "Groups");
             if ((grps?.Length ?? 0) > 0)
             {
                 Groups = new ResourcePointerArray64<FragPhysTypeGroup>();
                 Groups.data_items = grps;
             }
+
             XmlNode chnode = node.SelectSingleNode("Children");
             if (chnode != null)
             {
                 List<FragPhysTypeChild> clist = new List<FragPhysTypeChild>();
                 XmlNodeList cnodes = chnode.SelectNodes("Item");
                 if ((cnodes?.Count ?? 0) > 0)
-                {
                     foreach (XmlNode cnode in cnodes)
-                    {
                         if (cnode.HasChildNodes)
                         {
                             FragPhysTypeChild c = new FragPhysTypeChild();
@@ -2650,11 +2628,11 @@ namespace CodeWalker.GameFiles
                         {
                             clist.Add(null);
                         }
-                    }
-                }
+
                 Children = new ResourcePointerArray64<FragPhysTypeChild>();
                 Children.data_items = clist.ToArray();
             }
+
             //var bnode = node.SelectSingleNode("Bounds");
             //if (bnode != null)
             //{
@@ -2662,8 +2640,8 @@ namespace CodeWalker.GameFiles
             //}
             byte[] ud1 = Xml.GetChildRawByteArray(node, "UnknownData1", 10);
             byte[] ud2 = Xml.GetChildRawByteArray(node, "UnknownData2", 10);
-            UnknownData1 = ((ud1?.Length ?? 0) > 0) ? ud1 : null;
-            UnknownData2 = ((ud2?.Length ?? 0) > 0) ? ud2 : null;
+            UnknownData1 = (ud1?.Length ?? 0) > 0 ? ud1 : null;
+            UnknownData2 = (ud2?.Length ?? 0) > 0 ? ud2 : null;
 
             BuildChildrenData();
             BuildGroupsData();
@@ -2687,7 +2665,6 @@ namespace CodeWalker.GameFiles
             ChildrenUnkFloats = unkfloats.ToArray();
             ChildrenUnkVecs = unkvecs.ToArray();
             ChildrenInertiaTensors = tensors.ToArray();
-
         }
 
         public void BuildGroupsData()
@@ -2695,15 +2672,11 @@ namespace CodeWalker.GameFiles
             List<FragPhysNameStruct_s> grpnames = new List<FragPhysNameStruct_s>();
             int rootgrps = 0;
             if (Groups?.data_items != null)
-            {
                 for (int i = 0; i < Groups.data_items.Length; i++)
                 {
                     FragPhysTypeGroup grp = Groups.data_items[i];
                     grpnames.Add(grp.Name);
-                    if (grp.ParentIndex == 255)
-                    {
-                        rootgrps++;
-                    }
+                    if (grp.ParentIndex == 255) rootgrps++;
 
 
                     ////just testing
@@ -2711,14 +2684,12 @@ namespace CodeWalker.GameFiles
                     //var childGroupCount = grp.ChildGroupCount;
                     //var childIndex = grp.ChildIndex;
                     //var childCount = grp.ChildCount;
-
-
                     grp.ChildGroupIndex = 255;
                     grp.ChildGroupCount = 0;
                     grp.ChildIndex = 255;
                     grp.ChildCount = 0;
                     bool childfound = false;
-                    for(int ii = 0; ii < Groups.data_items.Length; ii++)
+                    for (int ii = 0; ii < Groups.data_items.Length; ii++)
                     {
                         FragPhysTypeGroup grp2 = Groups.data_items[ii];
                         if (grp2.ParentIndex == i)
@@ -2731,6 +2702,7 @@ namespace CodeWalker.GameFiles
                             }
                         }
                     }
+
                     childfound = false;
                     int childrencount = Children?.data_items?.Length ?? 0;
                     for (int ii = 0; ii < childrencount; ii++)
@@ -2747,7 +2719,6 @@ namespace CodeWalker.GameFiles
                             }
                         }
                     }
-
                     ////just testing
                     //if (grp.ChildGroupIndex != childGroupIndex)
                     //{ }
@@ -2758,7 +2729,6 @@ namespace CodeWalker.GameFiles
                     //if (grp.ChildCount != childCount)
                     //{ }
                 }
-            }
 
             ////just testing
             //if (RootGroupsCount != rootgrps)
@@ -2775,7 +2745,6 @@ namespace CodeWalker.GameFiles
             {
                 GroupNames = null;
             }
-
         }
 
 
@@ -2788,6 +2757,7 @@ namespace CodeWalker.GameFiles
                 ChildrenUnkFloatsBlock = new ResourceSystemStructBlock<float>(ChildrenUnkFloats);
                 list.Add(ChildrenUnkFloatsBlock);
             }
+
             if (Groups != null) list.Add(Groups);
             if (Children != null) list.Add(Children);
             if (Archetype1 != null) list.Add(Archetype1);
@@ -2798,81 +2768,80 @@ namespace CodeWalker.GameFiles
                 ChildrenInertiaTensorsBlock = new ResourceSystemStructBlock<Vector4>(ChildrenInertiaTensors);
                 list.Add(ChildrenInertiaTensorsBlock);
             }
+
             if (ChildrenUnkVecs != null)
             {
                 ChildrenUnkVecsBlock = new ResourceSystemStructBlock<Vector4>(ChildrenUnkVecs);
                 list.Add(ChildrenUnkVecsBlock);
             }
+
             if (FragTransforms != null) list.Add(FragTransforms);
             if (UnknownData1 != null)
             {
                 UnknownData1Block = new ResourceSystemStructBlock<byte>(UnknownData1);
                 list.Add(UnknownData1Block);
             }
+
             if (UnknownData2 != null)
             {
                 UnknownData2Block = new ResourceSystemStructBlock<byte>(UnknownData2);
                 list.Add(UnknownData2Block);
             }
-            if (GroupNames != null)
-            {
-                list.Add(GroupNames);
-            }
+
+            if (GroupNames != null) list.Add(GroupNames);
             return list.ToArray();
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysArticulatedBodyType : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysArticulatedBodyType : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 176; }
-        }
-
-        // structure data
-        public uint VFT { get; set; } = 1080211704;
         public uint Unknown_04h = 1; // 0x00000001
         public ulong Unknown_08h; // 0x0000000000000000
-        public uint[] ItemIndices { get; set; } // array of 22 uints
         public uint Unknown_68h; // 0x00000000
         public float Unknown_6Ch = 1.0f; // 1.0f
         public ulong Unknown_70h; // 0x0000000000000000
+        public ulong Unknown_A0h; // 0x0000000000000000
+        public ulong Unknown_A8h; // 0x0000000000000000
+
+        private ResourceSystemStructBlock<Vector4> UnknownVectorsBlock; //only used for saving
+        public override long BlockLength => 176;
+
+        // structure data
+        public uint VFT { get; set; } = 1080211704;
+        public uint[] ItemIndices { get; set; } // array of 22 uints
         public ulong JointsPointer { get; set; }
         public ulong UnknownVectorsPointer { get; set; }
         public byte UnknownVectorsCount { get; set; }
         public byte JointsCount { get; set; }
         public byte[] ItemFlags { get; set; } //array of 22 bytes, could be joint types?
-        public ulong Unknown_A0h; // 0x0000000000000000
-        public ulong Unknown_A8h; // 0x0000000000000000
 
         // reference data
         public ResourcePointerArray64<FragPhysJointType> Joints { get; set; }
         public Vector4[] UnknownVectors { get; set; }
 
-        private ResourceSystemStructBlock<Vector4> UnknownVectorsBlock;//only used for saving
-
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.ItemIndices = reader.ReadStructs<uint>(22);
-            this.Unknown_68h = reader.ReadUInt32();
-            this.Unknown_6Ch = reader.ReadSingle();
-            this.Unknown_70h = reader.ReadUInt64();
-            this.JointsPointer = reader.ReadUInt64();
-            this.UnknownVectorsPointer = reader.ReadUInt64();
-            this.UnknownVectorsCount = reader.ReadByte();
-            this.JointsCount = reader.ReadByte();
-            this.ItemFlags = reader.ReadBytes(22);
-            this.Unknown_A0h = reader.ReadUInt64();
-            this.Unknown_A8h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            ItemIndices = reader.ReadStructs<uint>(22);
+            Unknown_68h = reader.ReadUInt32();
+            Unknown_6Ch = reader.ReadSingle();
+            Unknown_70h = reader.ReadUInt64();
+            JointsPointer = reader.ReadUInt64();
+            UnknownVectorsPointer = reader.ReadUInt64();
+            UnknownVectorsCount = reader.ReadByte();
+            JointsCount = reader.ReadByte();
+            ItemFlags = reader.ReadBytes(22);
+            Unknown_A0h = reader.ReadUInt64();
+            Unknown_A8h = reader.ReadUInt64();
 
             // read reference data
-            this.Joints = reader.ReadBlockAt<ResourcePointerArray64<FragPhysJointType>>(this.JointsPointer, this.JointsCount);
-            this.UnknownVectors = reader.ReadStructsAt<Vector4>(this.UnknownVectorsPointer, this.UnknownVectorsCount);
+            Joints = reader.ReadBlockAt<ResourcePointerArray64<FragPhysJointType>>(JointsPointer, JointsCount);
+            UnknownVectors = reader.ReadStructsAt<Vector4>(UnknownVectorsPointer, UnknownVectorsCount);
 
 
             ////testing!!
@@ -2890,46 +2859,40 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_A8h != 0)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.JointsPointer = (ulong)(this.Joints != null ? this.Joints.FilePosition : 0);
-            this.UnknownVectorsPointer = (ulong)(this.UnknownVectorsBlock != null ? this.UnknownVectorsBlock.FilePosition : 0);
-            this.UnknownVectorsCount = (byte)(this.UnknownVectorsBlock != null ? this.UnknownVectorsBlock.ItemCount : 0);
-            this.JointsCount = (byte)(this.Joints != null ? this.Joints.Count : 0);
+            JointsPointer = (ulong)(Joints != null ? Joints.FilePosition : 0);
+            UnknownVectorsPointer = (ulong)(UnknownVectorsBlock != null ? UnknownVectorsBlock.FilePosition : 0);
+            UnknownVectorsCount = (byte)(UnknownVectorsBlock != null ? UnknownVectorsBlock.ItemCount : 0);
+            JointsCount = (byte)(Joints != null ? Joints.Count : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.WriteStructs(ItemIndices);//22 uints
-            writer.Write(this.Unknown_68h);
-            writer.Write(this.Unknown_6Ch);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.JointsPointer);
-            writer.Write(this.UnknownVectorsPointer);
-            writer.Write(this.UnknownVectorsCount);
-            writer.Write(this.JointsCount);
-            writer.Write(this.ItemFlags);//22 bytes
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_A8h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.WriteStructs(ItemIndices); //22 uints
+            writer.Write(Unknown_68h);
+            writer.Write(Unknown_6Ch);
+            writer.Write(Unknown_70h);
+            writer.Write(JointsPointer);
+            writer.Write(UnknownVectorsPointer);
+            writer.Write(UnknownVectorsCount);
+            writer.Write(JointsCount);
+            writer.Write(ItemFlags); //22 bytes
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_A8h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
-            if (ItemIndices != null)
-            {
-                YftXml.WriteRawArray(sb, ItemIndices, indent, "ItemIndices", "", null, 22);
-            }
-            if (ItemFlags != null)
-            {
-                YftXml.WriteRawArray(sb, ItemFlags, indent, "ItemFlags", "", null, 22);
-            }
+            if (ItemIndices != null) YftXml.WriteRawArray(sb, ItemIndices, indent, "ItemIndices", "", null, 22);
+            if (ItemFlags != null) YftXml.WriteRawArray(sb, ItemFlags, indent, "ItemFlags", "", null, 22);
             if (UnknownVectors != null)
-            {
-                YftXml.WriteRawArray(sb, UnknownVectors, indent, "UnknownVectors", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YftXml.WriteRawArray(sb, UnknownVectors, indent, "UnknownVectors", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Joints?.data_items != null)
             {
                 int itemCount = Joints.data_items.Length;
@@ -2941,7 +2904,7 @@ namespace CodeWalker.GameFiles
                     FragPhysJointType j = Joints.data_items[i];
                     if (j != null)
                     {
-                        YftXml.OpenTag(sb, cind, "Item type=\"" + j.Type.ToString() + "\"");
+                        YftXml.OpenTag(sb, cind, "Item type=\"" + j.Type + "\"");
                         j.WriteXml(sb, cind2);
                         YftXml.CloseTag(sb, cind, "Item");
                     }
@@ -2950,17 +2913,19 @@ namespace CodeWalker.GameFiles
                         YftXml.SelfClosingTag(sb, cind, "Item");
                     }
                 }
+
                 YftXml.CloseTag(sb, indent, "Joints");
             }
         }
+
         public void ReadXml(XmlNode node)
         {
             uint[] ii = Xml.GetChildRawUintArray(node, "ItemIndices");
             byte[] fi = Xml.GetChildRawByteArray(node, "ItemFlags", 10);
             Vector4[] uv = Xml.GetChildRawVector4Array(node, "UnknownVectors");
-            ItemIndices = ((ii?.Length ?? 0) == 22) ? ii : new uint[22];
-            ItemFlags = ((fi?.Length ?? 0) == 22) ? fi : new byte[22];
-            UnknownVectors = ((uv?.Length ?? 0) > 0) ? uv : null;
+            ItemIndices = (ii?.Length ?? 0) == 22 ? ii : new uint[22];
+            ItemFlags = (fi?.Length ?? 0) == 22 ? fi : new byte[22];
+            UnknownVectors = (uv?.Length ?? 0) > 0 ? uv : null;
             XmlNode jsnode = node.SelectSingleNode("Joints");
             if (jsnode != null)
             {
@@ -2974,6 +2939,7 @@ namespace CodeWalker.GameFiles
                     j?.ReadXml(jnode);
                     jlist.Add(j);
                 }
+
                 Joints = new ResourcePointerArray64<FragPhysJointType>();
                 Joints.data_items = jlist.ToArray();
             }
@@ -2988,6 +2954,7 @@ namespace CodeWalker.GameFiles
                 UnknownVectorsBlock = new ResourceSystemStructBlock<Vector4>(UnknownVectors);
                 list.Add(UnknownVectorsBlock);
             }
+
             return list.ToArray();
         }
     }
@@ -2995,38 +2962,37 @@ namespace CodeWalker.GameFiles
     public enum FragJointType : byte
     {
         DOF1 = 0,
-        DOF3 = 1,
+        DOF3 = 1
     }
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysJointType : ResourceSystemBlock, IResourceXXSystemBlock
-    {
-        public override long BlockLength
-        {
-            get { return 32; }
-        }
 
-        // structure data
-        public uint VFT { get; set; }
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysJointType : ResourceSystemBlock, IResourceXXSystemBlock
+    {
         public uint Unknown_04h = 1; // 0x00000001
         public ulong Unknown_08h; // 0x0000000000000000
         public float Unknown_10h = 0.825f; // 0x3F533333 (0.825f)
         public byte Unknown_14h; // 0x00
+        public ulong Unknown_18h; // 0x0000000000000000
+
+        // structure data
+        public uint VFT { get; set; }
         public FragJointType Type { get; set; }
         public byte FragIndex1 { get; set; }
         public byte FragIndex2 { get; set; }
-        public ulong Unknown_18h; // 0x0000000000000000
+        public override long BlockLength => 32;
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadSingle();
-            this.Unknown_14h = reader.ReadByte();
-            this.Type = (FragJointType)reader.ReadByte();
-            this.FragIndex1 = reader.ReadByte();
-            this.FragIndex2 = reader.ReadByte();
-            this.Unknown_18h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadSingle();
+            Unknown_14h = reader.ReadByte();
+            Type = (FragJointType)reader.ReadByte();
+            FragIndex1 = reader.ReadByte();
+            FragIndex2 = reader.ReadByte();
+            Unknown_18h = reader.ReadUInt64();
 
             //if (Unknown_04h != 1)
             //{ }//no hit
@@ -3040,32 +3006,42 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Index1 == Index2)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_14h);
-            writer.Write((byte)this.Type);
-            writer.Write(this.FragIndex1);
-            writer.Write(this.FragIndex2);
-            writer.Write(this.Unknown_18h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_14h);
+            writer.Write((byte)Type);
+            writer.Write(FragIndex1);
+            writer.Write(FragIndex2);
+            writer.Write(Unknown_18h);
         }
+
+        public IResourceSystemBlock GetType(ResourceDataReader reader, params object[] parameters)
+        {
+            reader.Position += 21;
+            FragJointType type = (FragJointType)reader.ReadByte();
+            reader.Position -= 22;
+            return Create(type);
+        }
+
         public virtual void WriteXml(StringBuilder sb, int indent)
         {
             YftXml.ValueTag(sb, indent, "FragIndex1", FragIndex1.ToString());
             YftXml.ValueTag(sb, indent, "FragIndex2", FragIndex2.ToString());
             YftXml.ValueTag(sb, indent, "Unknown10", FloatUtil.ToString(Unknown_10h));
         }
+
         public virtual void ReadXml(XmlNode node)
         {
-            FragIndex1 = (byte)Xml.GetChildUIntAttribute(node, "FragIndex1", "value");
-            FragIndex2 = (byte)Xml.GetChildUIntAttribute(node, "FragIndex2", "value");
-            Unknown_10h = Xml.GetChildFloatAttribute(node, "Unknown10", "value");
+            FragIndex1 = (byte)Xml.GetChildUIntAttribute(node, "FragIndex1");
+            FragIndex2 = (byte)Xml.GetChildUIntAttribute(node, "FragIndex2");
+            Unknown_10h = Xml.GetChildFloatAttribute(node, "Unknown10");
         }
 
         public static FragPhysJointType Create(FragJointType type)
@@ -3074,23 +3050,15 @@ namespace CodeWalker.GameFiles
             {
                 case FragJointType.DOF1: return new FragPhysJoint1DofType();
                 case FragJointType.DOF3: return new FragPhysJoint3DofType();
-                default: return null;// throw new Exception("Unknown type");
+                default: return null; // throw new Exception("Unknown type");
             }
         }
-        public IResourceSystemBlock GetType(ResourceDataReader reader, params object[] parameters)
-        {
-            reader.Position += 21;
-            FragJointType type = (FragJointType)reader.ReadByte();
-            reader.Position -= 22;
-            return Create(type);
-        }
     }
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysJoint1DofType : FragPhysJointType
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysJoint1DofType : FragPhysJointType
     {
-        public override long BlockLength
-        {
-            get { return 176; }
-        }
+        public override long BlockLength => 176;
 
         // structure data
         public Vector4 Unknown_20h { get; set; }
@@ -3108,15 +3076,15 @@ namespace CodeWalker.GameFiles
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_20h = reader.ReadVector4();
-            this.Unknown_30h = reader.ReadVector4();
-            this.Unknown_40h = reader.ReadVector4();
-            this.Unknown_50h = reader.ReadVector4();
-            this.Unknown_60h = reader.ReadVector4();
-            this.Unknown_70h = reader.ReadVector4();
-            this.Unknown_80h = reader.ReadVector4();
-            this.Unknown_90h = reader.ReadVector4();
-            this.Unknown_A0h = reader.ReadVector4();
+            Unknown_20h = reader.ReadVector4();
+            Unknown_30h = reader.ReadVector4();
+            Unknown_40h = reader.ReadVector4();
+            Unknown_50h = reader.ReadVector4();
+            Unknown_60h = reader.ReadVector4();
+            Unknown_70h = reader.ReadVector4();
+            Unknown_80h = reader.ReadVector4();
+            Unknown_90h = reader.ReadVector4();
+            Unknown_A0h = reader.ReadVector4();
 
             //if (Unknown_20h.W != 0)
             //{ }//no hit
@@ -3138,23 +3106,24 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_A0h.W != -1e8f)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // write structure data
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_60h);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.Unknown_80h);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_A0h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_60h);
+            writer.Write(Unknown_70h);
+            writer.Write(Unknown_80h);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_A0h);
         }
+
         public override void WriteXml(StringBuilder sb, int indent)
         {
             base.WriteXml(sb, indent);
@@ -3168,6 +3137,7 @@ namespace CodeWalker.GameFiles
             YftXml.SelfClosingTag(sb, indent, "Unknown90 " + FloatUtil.GetVector4XmlString(Unknown_90h));
             YftXml.SelfClosingTag(sb, indent, "UnknownA0 " + FloatUtil.GetVector4XmlString(Unknown_A0h));
         }
+
         public override void ReadXml(XmlNode node)
         {
             base.ReadXml(node);
@@ -3184,12 +3154,11 @@ namespace CodeWalker.GameFiles
             VFT = 1080212656;
         }
     }
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysJoint3DofType : FragPhysJointType
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysJoint3DofType : FragPhysJointType
     {
-        public override long BlockLength
-        {
-            get { return 240; }
-        }
+        public override long BlockLength => 240;
 
         // structure data
         public Vector4 Unknown_20h { get; set; }
@@ -3202,7 +3171,7 @@ namespace CodeWalker.GameFiles
         public Vector4 Unknown_90h { get; set; }
         public Vector4 Unknown_A0h { get; set; }
         public Vector4 Unknown_B0h { get; set; } // 0x00000000
-        public Vector4 Unknown_C0h { get; set; } = new Vector4( 1e8f); // 0x4CBEBC20  1e8f
+        public Vector4 Unknown_C0h { get; set; } = new Vector4(1e8f); // 0x4CBEBC20  1e8f
         public Vector4 Unknown_D0h { get; set; } = new Vector4(-1e8f); // 0xCCBEBC20 -1e8f
         public Vector4 Unknown_E0h { get; set; } // 0x00000000
 
@@ -3211,19 +3180,19 @@ namespace CodeWalker.GameFiles
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_20h = reader.ReadVector4();
-            this.Unknown_30h = reader.ReadVector4();
-            this.Unknown_40h = reader.ReadVector4();
-            this.Unknown_50h = reader.ReadVector4();
-            this.Unknown_60h = reader.ReadVector4();
-            this.Unknown_70h = reader.ReadVector4();
-            this.Unknown_80h = reader.ReadVector4();
-            this.Unknown_90h = reader.ReadVector4();
-            this.Unknown_A0h = reader.ReadVector4();
-            this.Unknown_B0h = reader.ReadVector4();
-            this.Unknown_C0h = reader.ReadVector4();
-            this.Unknown_D0h = reader.ReadVector4();
-            this.Unknown_E0h = reader.ReadVector4();
+            Unknown_20h = reader.ReadVector4();
+            Unknown_30h = reader.ReadVector4();
+            Unknown_40h = reader.ReadVector4();
+            Unknown_50h = reader.ReadVector4();
+            Unknown_60h = reader.ReadVector4();
+            Unknown_70h = reader.ReadVector4();
+            Unknown_80h = reader.ReadVector4();
+            Unknown_90h = reader.ReadVector4();
+            Unknown_A0h = reader.ReadVector4();
+            Unknown_B0h = reader.ReadVector4();
+            Unknown_C0h = reader.ReadVector4();
+            Unknown_D0h = reader.ReadVector4();
+            Unknown_E0h = reader.ReadVector4();
 
             //if (Unknown_20h.W != 0)
             //{ }//no hit
@@ -3251,27 +3220,28 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_E0h != Vector4.Zero)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // write structure data
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_60h);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.Unknown_80h);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_B0h);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_E0h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_60h);
+            writer.Write(Unknown_70h);
+            writer.Write(Unknown_80h);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_B0h);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_E0h);
         }
+
         public override void WriteXml(StringBuilder sb, int indent)
         {
             base.WriteXml(sb, indent);
@@ -3289,6 +3259,7 @@ namespace CodeWalker.GameFiles
             //YftXml.SelfClosingTag(sb, indent, "UnknownD0 " + FloatUtil.GetVector4XmlString(Unknown_D0h));
             //YftXml.SelfClosingTag(sb, indent, "UnknownE0 " + FloatUtil.GetVector4XmlString(Unknown_E0h));
         }
+
         public override void ReadXml(XmlNode node)
         {
             base.ReadXml(node);
@@ -3310,32 +3281,30 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysTransforms : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysTransforms : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 32 + ((Matrices?.Length ?? 0) * 64); }
-        }
+        public uint Unknown_04h = 1; // 0x00000001
+        public ulong Unknown_08h; // 0x0000000000000000
+        public uint Unknown_14h; // 0x00000000
+        public ulong Unknown_18h; // 0x0000000000000000
+        public override long BlockLength => 32 + (Matrices?.Length ?? 0) * 64;
 
         // structure data
         public uint VFT { get; set; } = 1080043536;
-        public uint Unknown_04h = 1; // 0x00000001
-        public ulong Unknown_08h; // 0x0000000000000000
         public uint MatricesCount { get; set; }
-        public uint Unknown_14h; // 0x00000000
-        public ulong Unknown_18h; // 0x0000000000000000
         public Matrix[] Matrices { get; set; }
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.MatricesCount = reader.ReadUInt32();
-            this.Unknown_14h = reader.ReadUInt32();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Matrices = reader.ReadStructsAt<Matrix>((ulong)reader.Position, MatricesCount);
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            MatricesCount = reader.ReadUInt32();
+            Unknown_14h = reader.ReadUInt32();
+            Unknown_18h = reader.ReadUInt64();
+            Matrices = reader.ReadStructsAt<Matrix>((ulong)reader.Position, MatricesCount);
 
             //if (Unknown_04h != 1)
             //{ }//no hit
@@ -3346,31 +3315,32 @@ namespace CodeWalker.GameFiles
             //if (Unknown_18h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             MatricesCount = (uint)(Matrices?.Length ?? 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.MatricesCount);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(MatricesCount);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
             writer.WriteStructs(Matrices);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
-            if ((Matrices != null) && (Matrices.Length > 0))
-            {
+            if (Matrices != null && Matrices.Length > 0)
                 for (int i = 0; i < Matrices.Length; i++)
                 {
                     YftXml.OpenTag(sb, indent, "Item");
                     YftXml.WriteRawArrayContent(sb, Matrices[i].ToArray(), indent + 1, FloatUtil.ToString, 4);
                     YftXml.CloseTag(sb, indent, "Item");
                 }
-            }
         }
+
         public void ReadXml(XmlNode node)
         {
             List<Matrix> mats = new List<Matrix>();
@@ -3381,59 +3351,56 @@ namespace CodeWalker.GameFiles
                 Matrix mat = Xml.GetMatrix(inode);
                 mats.Add(mat);
             }
-            Matrices = (mats.Count > 0) ? mats.ToArray() : null;
+
+            Matrices = mats.Count > 0 ? mats.ToArray() : null;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysArchetype : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysArchetype : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 224; }
-        }
-
-        // structure data
-        public uint VFT { get; set; } = 1080215944;
+        private string_r NameBlock; //used only when saving
         public uint Unknown_04h = 1; // 0x00000001
         public ulong Unknown_08h; // 0x0000000000000000
         public ulong Unknown_10h = 2; // 0x0000000000000002
-        public ulong NamePointer { get; set; }
-        public ulong BoundPointer { get; set; }
         public uint Unknown_28h = 1; // 0x00000001
         public uint Unknown_2Ch = 0xFFFFFFFF; // 0xFFFFFFFF
         public uint Unknown_30h = 0x00010000; // 0x00010000
         public uint Unknown_34h; // 0x00000000
         public ulong Unknown_38h; // 0x0000000000000000
+        public ulong Unknown_58h; // 0x0000000000000000
+        public uint Unknown_6Ch = 0x7fc00001; // 0x7fc00001
+        public uint Unknown_7Ch = 0x7fc00001; // 0x7fc00001
+        public uint Unknown_8Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_9Ch = 0x7f800001; // 0x7f800001
+        public uint Unknown_ACh = 0x7f800001; // 0x7f800001
+        public uint Unknown_BCh = 0x7f800001; // 0x7f800001
+        public uint Unknown_CCh = 0x7f800001; // 0x7f800001
+        public uint Unknown_DCh = 0x7f800001; // 0x7f800001
+        public override long BlockLength => 224;
+
+        // structure data
+        public uint VFT { get; set; } = 1080215944;
+        public ulong NamePointer { get; set; }
+        public ulong BoundPointer { get; set; }
         public float Mass { get; set; } //in pounds, of course
         public float MassInv { get; set; } // 1.0 / Mass
         public float Unknown_48h { get; set; } = 1.0f; // 1.0f
         public float Unknown_4Ch { get; set; } = 150.0f; // 150.0f
         public float Unknown_50h { get; set; } = 6.2831855f; // 6.2831855f = 2*pi
         public float Unknown_54h { get; set; } = 1.0f; // 1.0f
-        public ulong Unknown_58h; // 0x0000000000000000
         public Vector3 InertiaTensor { get; set; }
-        public uint Unknown_6Ch = 0x7fc00001; // 0x7fc00001
         public Vector3 InertiaTensorInv { get; set; } // 1.0 / InertiaTensor
-        public uint Unknown_7Ch = 0x7fc00001; // 0x7fc00001
         public Vector3 Unknown_80h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_8Ch = 0x7f800001; // 0x7f800001
         public Vector3 Unknown_90h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_9Ch = 0x7f800001; // 0x7f800001
         public Vector3 Unknown_A0h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_ACh = 0x7f800001; // 0x7f800001
         public Vector3 Unknown_B0h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_BCh = 0x7f800001; // 0x7f800001
         public Vector3 Unknown_C0h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_CCh = 0x7f800001; // 0x7f800001
         public Vector3 Unknown_D0h { get; set; } = Vector3.Zero; // 0.0 0.0 0.0 NaN
-        public uint Unknown_DCh = 0x7f800001; // 0x7f800001
 
         // reference data
         public string Name { get; set; }
         public Bounds Bound { get; set; }
-
-
-        private string_r NameBlock;//used only when saving
 
         public FragPhysicsLOD Owner { get; set; } //required for correct bounds BVH generation
 
@@ -3441,49 +3408,46 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.NamePointer = reader.ReadUInt64();
-            this.BoundPointer = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt32();
-            this.Unknown_2Ch = reader.ReadUInt32();
-            this.Unknown_30h = reader.ReadUInt32();
-            this.Unknown_34h = reader.ReadUInt32();
-            this.Unknown_38h = reader.ReadUInt64();
-            this.Mass = reader.ReadSingle();
-            this.MassInv = reader.ReadSingle();
-            this.Unknown_48h = reader.ReadSingle();
-            this.Unknown_4Ch = reader.ReadSingle();
-            this.Unknown_50h = reader.ReadSingle();
-            this.Unknown_54h = reader.ReadSingle();
-            this.Unknown_58h = reader.ReadUInt64();
-            this.InertiaTensor = reader.ReadVector3();
-            this.Unknown_6Ch = reader.ReadUInt32();
-            this.InertiaTensorInv = reader.ReadVector3();
-            this.Unknown_7Ch = reader.ReadUInt32();
-            this.Unknown_80h = reader.ReadVector3();
-            this.Unknown_8Ch = reader.ReadUInt32();
-            this.Unknown_90h = reader.ReadVector3();
-            this.Unknown_9Ch = reader.ReadUInt32();
-            this.Unknown_A0h = reader.ReadVector3();
-            this.Unknown_ACh = reader.ReadUInt32();
-            this.Unknown_B0h = reader.ReadVector3();
-            this.Unknown_BCh = reader.ReadUInt32();
-            this.Unknown_C0h = reader.ReadVector3();
-            this.Unknown_CCh = reader.ReadUInt32();
-            this.Unknown_D0h = reader.ReadVector3();
-            this.Unknown_DCh = reader.ReadUInt32();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            NamePointer = reader.ReadUInt64();
+            BoundPointer = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt32();
+            Unknown_2Ch = reader.ReadUInt32();
+            Unknown_30h = reader.ReadUInt32();
+            Unknown_34h = reader.ReadUInt32();
+            Unknown_38h = reader.ReadUInt64();
+            Mass = reader.ReadSingle();
+            MassInv = reader.ReadSingle();
+            Unknown_48h = reader.ReadSingle();
+            Unknown_4Ch = reader.ReadSingle();
+            Unknown_50h = reader.ReadSingle();
+            Unknown_54h = reader.ReadSingle();
+            Unknown_58h = reader.ReadUInt64();
+            InertiaTensor = reader.ReadVector3();
+            Unknown_6Ch = reader.ReadUInt32();
+            InertiaTensorInv = reader.ReadVector3();
+            Unknown_7Ch = reader.ReadUInt32();
+            Unknown_80h = reader.ReadVector3();
+            Unknown_8Ch = reader.ReadUInt32();
+            Unknown_90h = reader.ReadVector3();
+            Unknown_9Ch = reader.ReadUInt32();
+            Unknown_A0h = reader.ReadVector3();
+            Unknown_ACh = reader.ReadUInt32();
+            Unknown_B0h = reader.ReadVector3();
+            Unknown_BCh = reader.ReadUInt32();
+            Unknown_C0h = reader.ReadVector3();
+            Unknown_CCh = reader.ReadUInt32();
+            Unknown_D0h = reader.ReadVector3();
+            Unknown_DCh = reader.ReadUInt32();
 
             // read reference data
-            this.Name = reader.ReadStringAt(this.NamePointer);
-            this.Bound = reader.ReadBlockAt<Bounds>(this.BoundPointer);
+            Name = reader.ReadStringAt(NamePointer);
+            Bound = reader.ReadBlockAt<Bounds>(BoundPointer);
 
-            if (Bound != null)
-            {
-                Bound.Owner = this;
-            }
+            if (Bound != null) Bound.Owner = this;
 
             //if (Bound is BoundComposite bcmp)
             //{
@@ -3566,48 +3530,50 @@ namespace CodeWalker.GameFiles
             //if (Unknown_DCh != 0x7f800001)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.NamePointer = (ulong)(this.NameBlock != null ? this.NameBlock.FilePosition : 0);
-            this.BoundPointer = (ulong)(this.Bound != null ? this.Bound.FilePosition : 0);
+            NamePointer = (ulong)(NameBlock != null ? NameBlock.FilePosition : 0);
+            BoundPointer = (ulong)(Bound != null ? Bound.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.NamePointer);
-            writer.Write(this.BoundPointer);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.Unknown_2Ch);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_34h);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Mass);
-            writer.Write(this.MassInv);
-            writer.Write(this.Unknown_48h);
-            writer.Write(this.Unknown_4Ch);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_54h);
-            writer.Write(this.Unknown_58h);
-            writer.Write(this.InertiaTensor);
-            writer.Write(this.Unknown_6Ch);
-            writer.Write(this.InertiaTensorInv);
-            writer.Write(this.Unknown_7Ch);
-            writer.Write(this.Unknown_80h);
-            writer.Write(this.Unknown_8Ch);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_9Ch);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_ACh);
-            writer.Write(this.Unknown_B0h);
-            writer.Write(this.Unknown_BCh);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_CCh);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_DCh);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(Unknown_10h);
+            writer.Write(NamePointer);
+            writer.Write(BoundPointer);
+            writer.Write(Unknown_28h);
+            writer.Write(Unknown_2Ch);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_34h);
+            writer.Write(Unknown_38h);
+            writer.Write(Mass);
+            writer.Write(MassInv);
+            writer.Write(Unknown_48h);
+            writer.Write(Unknown_4Ch);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_54h);
+            writer.Write(Unknown_58h);
+            writer.Write(InertiaTensor);
+            writer.Write(Unknown_6Ch);
+            writer.Write(InertiaTensorInv);
+            writer.Write(Unknown_7Ch);
+            writer.Write(Unknown_80h);
+            writer.Write(Unknown_8Ch);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_9Ch);
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_ACh);
+            writer.Write(Unknown_B0h);
+            writer.Write(Unknown_BCh);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_CCh);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_DCh);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YftXml.StringTag(sb, indent, "Name", YftXml.XmlEscape(Name));
@@ -3619,27 +3585,22 @@ namespace CodeWalker.GameFiles
             YftXml.ValueTag(sb, indent, "Unknown54", FloatUtil.ToString(Unknown_54h));
             YftXml.SelfClosingTag(sb, indent, "InertiaTensor " + FloatUtil.GetVector3XmlString(InertiaTensor));
             YftXml.SelfClosingTag(sb, indent, "InertiaTensorInv " + FloatUtil.GetVector3XmlString(InertiaTensorInv));
-            if (Bound != null)
-            {
-                Bounds.WriteXmlNode(Bound, sb, indent);
-            }
+            if (Bound != null) Bounds.WriteXmlNode(Bound, sb, indent);
         }
+
         public void ReadXml(XmlNode node)
         {
             Name = Xml.GetChildInnerText(node, "Name");
-            Mass = Xml.GetChildFloatAttribute(node, "Mass", "value");
-            MassInv = Xml.GetChildFloatAttribute(node, "MassInv", "value");
-            Unknown_48h = Xml.GetChildFloatAttribute(node, "Unknown48", "value");
-            Unknown_4Ch = Xml.GetChildFloatAttribute(node, "Unknown4C", "value");
-            Unknown_50h = Xml.GetChildFloatAttribute(node, "Unknown50", "value");
-            Unknown_54h = Xml.GetChildFloatAttribute(node, "Unknown54", "value");
+            Mass = Xml.GetChildFloatAttribute(node, "Mass");
+            MassInv = Xml.GetChildFloatAttribute(node, "MassInv");
+            Unknown_48h = Xml.GetChildFloatAttribute(node, "Unknown48");
+            Unknown_4Ch = Xml.GetChildFloatAttribute(node, "Unknown4C");
+            Unknown_50h = Xml.GetChildFloatAttribute(node, "Unknown50");
+            Unknown_54h = Xml.GetChildFloatAttribute(node, "Unknown54");
             InertiaTensor = Xml.GetChildVector3Attributes(node, "InertiaTensor");
             InertiaTensorInv = Xml.GetChildVector3Attributes(node, "InertiaTensorInv");
             XmlNode bnode = node.SelectSingleNode("Bounds");
-            if (bnode != null)
-            {
-                Bound = Bounds.ReadXmlNode(bnode, this);
-            }
+            if (bnode != null) Bound = Bounds.ReadXmlNode(bnode, this);
         }
 
         public override IResourceBlock[] GetReferences()
@@ -3650,6 +3611,7 @@ namespace CodeWalker.GameFiles
                 NameBlock = (string_r)Name;
                 list.Add(NameBlock);
             }
+
             if (Bound != null) list.Add(Bound);
             return list.ToArray();
         }
@@ -3660,20 +3622,10 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysTypeChild : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysTypeChild : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 256; }
-        }
-
-        // structure data
-        public uint VFT { get; set; } = 1080061712;
         public uint Unknown_04h = 1; // 0x00000001
-        public float PristineMass { get; set; }
-        public float DamagedMass { get; set; }
-        public ushort GroupIndex { get; set; }
-        public ushort BoneTag { get; set; }
         public uint Unknown_14h; // 0x00000000
         public ulong Unknown_18h; // 0x0000000000000000
         public ulong Unknown_20h; // 0x0000000000000000
@@ -3692,9 +3644,6 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_88h; // 0x0000000000000000
         public ulong Unknown_90h; // 0x0000000000000000
         public ulong Unknown_98h; // 0x0000000000000000
-        public ulong Drawable1Pointer { get; set; }
-        public ulong Drawable2Pointer { get; set; }
-        public ulong EvtSetPointer { get; set; }
         public ulong Unknown_B8h; // 0x0000000000000000
         public ulong Unknown_C0h; // 0x0000000000000000
         public ulong Unknown_C8h; // 0x0000000000000000
@@ -3704,6 +3653,17 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_E8h; // 0x0000000000000000
         public ulong Unknown_F0h; // 0x0000000000000000
         public ulong Unknown_F8h; // 0x0000000000000000
+        public override long BlockLength => 256;
+
+        // structure data
+        public uint VFT { get; set; } = 1080061712;
+        public float PristineMass { get; set; }
+        public float DamagedMass { get; set; }
+        public ushort GroupIndex { get; set; }
+        public ushort BoneTag { get; set; }
+        public ulong Drawable1Pointer { get; set; }
+        public ulong Drawable2Pointer { get; set; }
+        public ulong EvtSetPointer { get; set; }
 
         // reference data
         public FragDrawable Drawable1 { get; set; }
@@ -3711,68 +3671,62 @@ namespace CodeWalker.GameFiles
         public FragPhysEvtSet EvtSet { get; set; }
 
 
-        public float UnkFloatFromParent { get; set; }//is this mass..?
+        public float UnkFloatFromParent { get; set; } //is this mass..?
         public Vector4 UnkVecFromParent { get; set; }
-        public Vector4 InertiaTensorFromParent { get; set; }//is this really an inertia tensor?
+        public Vector4 InertiaTensorFromParent { get; set; } //is this really an inertia tensor?
 
         public FragPhysicsLOD OwnerFragPhysLod { get; set; }
         public int OwnerFragPhysIndex { get; set; }
         public FragPhysTypeGroup Group { get; set; }
-        public string GroupName { get { return Group?.ToString(); } }
+        public string GroupName => Group?.ToString();
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.PristineMass = reader.ReadSingle();
-            this.DamagedMass = reader.ReadSingle();
-            this.GroupIndex = reader.ReadUInt16();
-            this.BoneTag = reader.ReadUInt16();
-            this.Unknown_14h = reader.ReadUInt32();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
-            this.Unknown_40h = reader.ReadUInt64();
-            this.Unknown_48h = reader.ReadUInt64();
-            this.Unknown_50h = reader.ReadUInt64();
-            this.Unknown_58h = reader.ReadUInt64();
-            this.Unknown_60h = reader.ReadUInt64();
-            this.Unknown_68h = reader.ReadUInt64();
-            this.Unknown_70h = reader.ReadUInt64();
-            this.Unknown_78h = reader.ReadUInt64();
-            this.Unknown_80h = reader.ReadUInt64();
-            this.Unknown_88h = reader.ReadUInt64();
-            this.Unknown_90h = reader.ReadUInt64();
-            this.Unknown_98h = reader.ReadUInt64();
-            this.Drawable1Pointer = reader.ReadUInt64();
-            this.Drawable2Pointer = reader.ReadUInt64();
-            this.EvtSetPointer = reader.ReadUInt64();
-            this.Unknown_B8h = reader.ReadUInt64();
-            this.Unknown_C0h = reader.ReadUInt64();
-            this.Unknown_C8h = reader.ReadUInt64();
-            this.Unknown_D0h = reader.ReadUInt64();
-            this.Unknown_D8h = reader.ReadUInt64();
-            this.Unknown_E0h = reader.ReadUInt64();
-            this.Unknown_E8h = reader.ReadUInt64();
-            this.Unknown_F0h = reader.ReadUInt64();
-            this.Unknown_F8h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            PristineMass = reader.ReadSingle();
+            DamagedMass = reader.ReadSingle();
+            GroupIndex = reader.ReadUInt16();
+            BoneTag = reader.ReadUInt16();
+            Unknown_14h = reader.ReadUInt32();
+            Unknown_18h = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
+            Unknown_30h = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
+            Unknown_40h = reader.ReadUInt64();
+            Unknown_48h = reader.ReadUInt64();
+            Unknown_50h = reader.ReadUInt64();
+            Unknown_58h = reader.ReadUInt64();
+            Unknown_60h = reader.ReadUInt64();
+            Unknown_68h = reader.ReadUInt64();
+            Unknown_70h = reader.ReadUInt64();
+            Unknown_78h = reader.ReadUInt64();
+            Unknown_80h = reader.ReadUInt64();
+            Unknown_88h = reader.ReadUInt64();
+            Unknown_90h = reader.ReadUInt64();
+            Unknown_98h = reader.ReadUInt64();
+            Drawable1Pointer = reader.ReadUInt64();
+            Drawable2Pointer = reader.ReadUInt64();
+            EvtSetPointer = reader.ReadUInt64();
+            Unknown_B8h = reader.ReadUInt64();
+            Unknown_C0h = reader.ReadUInt64();
+            Unknown_C8h = reader.ReadUInt64();
+            Unknown_D0h = reader.ReadUInt64();
+            Unknown_D8h = reader.ReadUInt64();
+            Unknown_E0h = reader.ReadUInt64();
+            Unknown_E8h = reader.ReadUInt64();
+            Unknown_F0h = reader.ReadUInt64();
+            Unknown_F8h = reader.ReadUInt64();
 
             // read reference data
-            this.Drawable1 = reader.ReadBlockAt<FragDrawable>(this.Drawable1Pointer);
-            this.Drawable2 = reader.ReadBlockAt<FragDrawable>(this.Drawable2Pointer);
-            this.EvtSet = reader.ReadBlockAt<FragPhysEvtSet>(this.EvtSetPointer);
+            Drawable1 = reader.ReadBlockAt<FragDrawable>(Drawable1Pointer);
+            Drawable2 = reader.ReadBlockAt<FragDrawable>(Drawable2Pointer);
+            EvtSet = reader.ReadBlockAt<FragPhysEvtSet>(EvtSetPointer);
 
-            if (this.Drawable1 != null)
-            {
-                this.Drawable1.OwnerFragmentPhys = this;
-            }
-            if (this.Drawable2 != null)
-            {
-                this.Drawable2.OwnerFragmentPhys = this;
-            }
+            if (Drawable1 != null) Drawable1.OwnerFragmentPhys = this;
+            if (Drawable2 != null) Drawable2.OwnerFragmentPhys = this;
 
 
             //if (Unknown_04h != 1)
@@ -3836,51 +3790,53 @@ namespace CodeWalker.GameFiles
             //if (Unknown_F8h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.Drawable1Pointer = (ulong)(this.Drawable1 != null ? this.Drawable1.FilePosition : 0);
-            this.Drawable2Pointer = (ulong)(this.Drawable2 != null ? this.Drawable2.FilePosition : 0);
-            this.EvtSetPointer = (ulong)(this.EvtSet != null ? this.EvtSet.FilePosition : 0);
+            Drawable1Pointer = (ulong)(Drawable1 != null ? Drawable1.FilePosition : 0);
+            Drawable2Pointer = (ulong)(Drawable2 != null ? Drawable2.FilePosition : 0);
+            EvtSetPointer = (ulong)(EvtSet != null ? EvtSet.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.PristineMass);
-            writer.Write(this.DamagedMass);
-            writer.Write(this.GroupIndex);
-            writer.Write(this.BoneTag);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_48h);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_58h);
-            writer.Write(this.Unknown_60h);
-            writer.Write(this.Unknown_68h);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.Unknown_78h);
-            writer.Write(this.Unknown_80h);
-            writer.Write(this.Unknown_88h);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_98h);
-            writer.Write(this.Drawable1Pointer);
-            writer.Write(this.Drawable2Pointer);
-            writer.Write(this.EvtSetPointer);
-            writer.Write(this.Unknown_B8h);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_C8h);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_D8h);
-            writer.Write(this.Unknown_E0h);
-            writer.Write(this.Unknown_E8h);
-            writer.Write(this.Unknown_F0h);
-            writer.Write(this.Unknown_F8h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(PristineMass);
+            writer.Write(DamagedMass);
+            writer.Write(GroupIndex);
+            writer.Write(BoneTag);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_28h);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_38h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_48h);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_58h);
+            writer.Write(Unknown_60h);
+            writer.Write(Unknown_68h);
+            writer.Write(Unknown_70h);
+            writer.Write(Unknown_78h);
+            writer.Write(Unknown_80h);
+            writer.Write(Unknown_88h);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_98h);
+            writer.Write(Drawable1Pointer);
+            writer.Write(Drawable2Pointer);
+            writer.Write(EvtSetPointer);
+            writer.Write(Unknown_B8h);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_C8h);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_D8h);
+            writer.Write(Unknown_E0h);
+            writer.Write(Unknown_E8h);
+            writer.Write(Unknown_F0h);
+            writer.Write(Unknown_F8h);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             YftXml.ValueTag(sb, indent, "GroupIndex", GroupIndex.ToString());
@@ -3889,46 +3845,30 @@ namespace CodeWalker.GameFiles
             YftXml.ValueTag(sb, indent, "DamagedMass", FloatUtil.ToString(DamagedMass));
             YftXml.ValueTag(sb, indent, "UnkFloat", FloatUtil.ToString(UnkFloatFromParent));
             YftXml.SelfClosingTag(sb, indent, "UnkVec " + FloatUtil.GetVector4XmlString(UnkVecFromParent));
-            YftXml.SelfClosingTag(sb, indent, "InertiaTensor " + FloatUtil.GetVector4XmlString(InertiaTensorFromParent));
-            if (EvtSet != null)
-            {
-                YftXml.SelfClosingTag(sb, indent, "EventSet");
-                //EvtSet.WriteXml(sb, indent);//nothing to write..
-            }
-            if (Drawable1 != null)
-            {
-                FragDrawable.WriteXmlNode(Drawable1, sb, indent, ddsfolder, "Drawable");
-            }
-            if (Drawable2 != null)
-            {
-                FragDrawable.WriteXmlNode(Drawable2, sb, indent, ddsfolder, "Drawable2");
-            }
+            YftXml.SelfClosingTag(sb, indent,
+                "InertiaTensor " + FloatUtil.GetVector4XmlString(InertiaTensorFromParent));
+            if (EvtSet != null) YftXml.SelfClosingTag(sb, indent, "EventSet");
+            //EvtSet.WriteXml(sb, indent);//nothing to write..
+            if (Drawable1 != null) FragDrawable.WriteXmlNode(Drawable1, sb, indent, ddsfolder, "Drawable");
+            if (Drawable2 != null) FragDrawable.WriteXmlNode(Drawable2, sb, indent, ddsfolder, "Drawable2");
         }
+
         public void ReadXml(XmlNode node, string ddsfolder)
         {
-            GroupIndex = (ushort)Xml.GetChildUIntAttribute(node, "GroupIndex", "value");
-            BoneTag = (ushort)Xml.GetChildUIntAttribute(node, "BoneTag", "value");
-            PristineMass = Xml.GetChildFloatAttribute(node, "PristineMass", "value");
-            DamagedMass = Xml.GetChildFloatAttribute(node, "DamagedMass", "value");
-            UnkFloatFromParent = Xml.GetChildFloatAttribute(node, "UnkFloat", "value");
+            GroupIndex = (ushort)Xml.GetChildUIntAttribute(node, "GroupIndex");
+            BoneTag = (ushort)Xml.GetChildUIntAttribute(node, "BoneTag");
+            PristineMass = Xml.GetChildFloatAttribute(node, "PristineMass");
+            DamagedMass = Xml.GetChildFloatAttribute(node, "DamagedMass");
+            UnkFloatFromParent = Xml.GetChildFloatAttribute(node, "UnkFloat");
             UnkVecFromParent = Xml.GetChildVector4Attributes(node, "UnkVec");
             InertiaTensorFromParent = Xml.GetChildVector4Attributes(node, "InertiaTensor");
             XmlNode esnode = node.SelectSingleNode("EventSet");
-            if (esnode != null)
-            {
-                EvtSet = new FragPhysEvtSet();
-                //EvtSet.ReadXml(esnode);//nothing to read...
-            }
+            if (esnode != null) EvtSet = new FragPhysEvtSet();
+            //EvtSet.ReadXml(esnode);//nothing to read...
             XmlNode dnode = node.SelectSingleNode("Drawable");
-            if (dnode != null)
-            {
-                Drawable1 = FragDrawable.ReadXmlNode(dnode, ddsfolder);
-            }
+            if (dnode != null) Drawable1 = FragDrawable.ReadXmlNode(dnode, ddsfolder);
             XmlNode dnode2 = node.SelectSingleNode("Drawable2");
-            if (dnode2 != null)
-            {
-                Drawable2 = FragDrawable.ReadXmlNode(dnode2, ddsfolder);
-            }
+            if (dnode2 != null) Drawable2 = FragDrawable.ReadXmlNode(dnode2, ddsfolder);
         }
 
         public override IResourceBlock[] GetReferences()
@@ -3947,32 +3887,30 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysEvtSet : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysEvtSet : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 48; }
-        }
-
-        // structure data
-        public uint VFT { get; set; } = 1080060072;
         public uint Unknown_04h = 1; // 0x00000001
         public ulong Unknown_08h; // 0x0000000000000000
         public ulong Unknown_10h; // 0x0000000000000000
         public ulong Unknown_18h; // 0x0000000000000000
         public ulong Unknown_20h; // 0x0000000000000000
         public ulong Unknown_28h; // 0x0000000000000000
+        public override long BlockLength => 48;
+
+        // structure data
+        public uint VFT { get; set; } = 1080060072;
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_04h = reader.ReadUInt32();
-            this.Unknown_08h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_04h = reader.ReadUInt32();
+            Unknown_08h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
 
             //if ((VFT != 0x406048a8) && (VFT != 0x406068a8) && (VFT != 0x40606888) && (VFT != 0x405f8698) && (VFT != 0x405f6138) && (VFT != 0x406068c8))
             //{ }//no hit
@@ -3989,36 +3927,42 @@ namespace CodeWalker.GameFiles
             //if (Unknown_28h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_04h);
-            writer.Write(this.Unknown_08h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_28h);
+            writer.Write(VFT);
+            writer.Write(Unknown_04h);
+            writer.Write(Unknown_08h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_28h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             //nothing to write...
         }
+
         public void ReadXml(XmlNode node)
         {
             //nothing to read...
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysTypeGroup : ResourceSystemBlock, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysTypeGroup : ResourceSystemBlock, IMetaXmlItem
     {
-        public override long BlockLength => 176;
-
         // structure data
         public float Unknown_00h; // 0x00000000
         public float Unknown_04h; // 0x00000000
         public float Unknown_08h; // 0x00000000
         public float Unknown_0Ch; // 0x00000000
+        public float Unknown_48h; // 0x00000000
+        public float Unknown_7Ch; // 0x00000000
+        public float Unknown_ACh; // 0x00000000
+        public override long BlockLength => 176;
         public float Strength { get; set; }
         public float ForceTransmissionScaleUp { get; set; }
         public float ForceTransmissionScaleDown { get; set; }
@@ -4033,15 +3977,40 @@ namespace CodeWalker.GameFiles
         public float RestoringMaxTorque { get; set; }
         public float LatchStrength { get; set; }
         public float Mass { get; set; }
-        public float Unknown_48h; // 0x00000000
-        public byte ChildGroupIndex { get; set; } //index of the first child group of this group, 255 if no children - calc on XML import! (from ParentIndex)
+
+        public byte
+            ChildGroupIndex
+        {
+            get;
+            set;
+        } //index of the first child group of this group, 255 if no children - calc on XML import! (from ParentIndex)
+
         public byte ParentIndex { get; set; } //index of the parent group.
-        public byte ChildIndex { get; set; } //index of first BoundComposite child, AND fragment child - calc on XML import! (from FragPhysTypeChild.GroupIndex)
-        public byte ChildCount { get; set; } //number of BoundComposite children, AND fragment children - calc on XML import! (from FragPhysTypeChild.GroupIndex)
-        public byte ChildGroupCount { get; set; } //number of groups with this as the direct parent - calc on XML import! (from ParentIndex)
+
+        public byte
+            ChildIndex
+        {
+            get;
+            set;
+        } //index of first BoundComposite child, AND fragment child - calc on XML import! (from FragPhysTypeChild.GroupIndex)
+
+        public byte
+            ChildCount
+        {
+            get;
+            set;
+        } //number of BoundComposite children, AND fragment children - calc on XML import! (from FragPhysTypeChild.GroupIndex)
+
+        public byte
+            ChildGroupCount
+        {
+            get;
+            set;
+        } //number of groups with this as the direct parent - calc on XML import! (from ParentIndex)
+
         public byte UnkByte51 { get; set; } = 255; //0xFF  (always)
-        public byte GlassWindowIndex { get; set; }//GlassWindows index
-        public byte GlassFlags { get; set; }//flags: 1=?, 2=glass, 4=?, ...
+        public byte GlassWindowIndex { get; set; } //GlassWindows index
+        public byte GlassFlags { get; set; } //flags: 1=?, 2=glass, 4=?, ...
         public float MinDamageForce { get; set; }
         public float DamageHealth { get; set; }
         public float UnkFloat5C { get; set; }
@@ -4052,54 +4021,118 @@ namespace CodeWalker.GameFiles
         public float UnkFloat70 { get; set; }
         public float UnkFloat74 { get; set; }
         public float UnkFloat78 { get; set; }
-        public float Unknown_7Ch; // 0x00000000
         public FragPhysNameStruct_s Name { get; set; }
         public float UnkFloatA8 { get; set; }
-        public float Unknown_ACh; // 0x00000000
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            YftXml.StringTag(sb, indent, "Name", YftXml.XmlEscape(Name.ToString()));
+            YftXml.ValueTag(sb, indent, "ParentIndex", ParentIndex.ToString());
+            YftXml.ValueTag(sb, indent, "GlassWindowIndex", GlassWindowIndex.ToString());
+            YftXml.ValueTag(sb, indent, "GlassFlags", GlassFlags.ToString());
+            YftXml.ValueTag(sb, indent, "Strength", FloatUtil.ToString(Strength));
+            YftXml.ValueTag(sb, indent, "ForceTransmissionScaleUp", FloatUtil.ToString(ForceTransmissionScaleUp));
+            YftXml.ValueTag(sb, indent, "ForceTransmissionScaleDown", FloatUtil.ToString(ForceTransmissionScaleDown));
+            YftXml.ValueTag(sb, indent, "JointStiffness", FloatUtil.ToString(JointStiffness));
+            YftXml.ValueTag(sb, indent, "MinSoftAngle1", FloatUtil.ToString(MinSoftAngle1));
+            YftXml.ValueTag(sb, indent, "MaxSoftAngle1", FloatUtil.ToString(MaxSoftAngle1));
+            YftXml.ValueTag(sb, indent, "MaxSoftAngle2", FloatUtil.ToString(MaxSoftAngle2));
+            YftXml.ValueTag(sb, indent, "MaxSoftAngle3", FloatUtil.ToString(MaxSoftAngle3));
+            YftXml.ValueTag(sb, indent, "RotationSpeed", FloatUtil.ToString(RotationSpeed));
+            YftXml.ValueTag(sb, indent, "RotationStrength", FloatUtil.ToString(RotationStrength));
+            YftXml.ValueTag(sb, indent, "RestoringStrength", FloatUtil.ToString(RestoringStrength));
+            YftXml.ValueTag(sb, indent, "RestoringMaxTorque", FloatUtil.ToString(RestoringMaxTorque));
+            YftXml.ValueTag(sb, indent, "LatchStrength", FloatUtil.ToString(LatchStrength));
+            YftXml.ValueTag(sb, indent, "Mass", FloatUtil.ToString(Mass));
+            YftXml.ValueTag(sb, indent, "MinDamageForce", FloatUtil.ToString(MinDamageForce));
+            YftXml.ValueTag(sb, indent, "DamageHealth", FloatUtil.ToString(DamageHealth));
+            YftXml.ValueTag(sb, indent, "UnkFloat5C", FloatUtil.ToString(UnkFloat5C));
+            YftXml.ValueTag(sb, indent, "UnkFloat60", FloatUtil.ToString(UnkFloat60));
+            YftXml.ValueTag(sb, indent, "UnkFloat64", FloatUtil.ToString(UnkFloat64));
+            YftXml.ValueTag(sb, indent, "UnkFloat68", FloatUtil.ToString(UnkFloat68));
+            YftXml.ValueTag(sb, indent, "UnkFloat6C", FloatUtil.ToString(UnkFloat6C));
+            YftXml.ValueTag(sb, indent, "UnkFloat70", FloatUtil.ToString(UnkFloat70));
+            YftXml.ValueTag(sb, indent, "UnkFloat74", FloatUtil.ToString(UnkFloat74));
+            YftXml.ValueTag(sb, indent, "UnkFloat78", FloatUtil.ToString(UnkFloat78));
+            YftXml.ValueTag(sb, indent, "UnkFloatA8", FloatUtil.ToString(UnkFloatA8));
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Name = new FragPhysNameStruct_s(Xml.GetChildInnerText(node, "Name"));
+            ParentIndex = (byte)Xml.GetChildUIntAttribute(node, "ParentIndex");
+            GlassWindowIndex = (byte)Xml.GetChildUIntAttribute(node, "GlassWindowIndex");
+            GlassFlags = (byte)Xml.GetChildUIntAttribute(node, "GlassFlags");
+            Strength = Xml.GetChildFloatAttribute(node, "Strength");
+            ForceTransmissionScaleUp = Xml.GetChildFloatAttribute(node, "ForceTransmissionScaleUp");
+            ForceTransmissionScaleDown = Xml.GetChildFloatAttribute(node, "ForceTransmissionScaleDown");
+            JointStiffness = Xml.GetChildFloatAttribute(node, "JointStiffness");
+            MinSoftAngle1 = Xml.GetChildFloatAttribute(node, "MinSoftAngle1");
+            MaxSoftAngle1 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle1");
+            MaxSoftAngle2 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle2");
+            MaxSoftAngle3 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle3");
+            RotationSpeed = Xml.GetChildFloatAttribute(node, "RotationSpeed");
+            RotationStrength = Xml.GetChildFloatAttribute(node, "RotationStrength");
+            RestoringStrength = Xml.GetChildFloatAttribute(node, "RestoringStrength");
+            RestoringMaxTorque = Xml.GetChildFloatAttribute(node, "RestoringMaxTorque");
+            LatchStrength = Xml.GetChildFloatAttribute(node, "LatchStrength");
+            Mass = Xml.GetChildFloatAttribute(node, "Mass");
+            MinDamageForce = Xml.GetChildFloatAttribute(node, "MinDamageForce");
+            DamageHealth = Xml.GetChildFloatAttribute(node, "DamageHealth");
+            UnkFloat5C = Xml.GetChildFloatAttribute(node, "UnkFloat5C");
+            UnkFloat60 = Xml.GetChildFloatAttribute(node, "UnkFloat60");
+            UnkFloat64 = Xml.GetChildFloatAttribute(node, "UnkFloat64");
+            UnkFloat68 = Xml.GetChildFloatAttribute(node, "UnkFloat68");
+            UnkFloat6C = Xml.GetChildFloatAttribute(node, "UnkFloat6C");
+            UnkFloat70 = Xml.GetChildFloatAttribute(node, "UnkFloat70");
+            UnkFloat74 = Xml.GetChildFloatAttribute(node, "UnkFloat74");
+            UnkFloat78 = Xml.GetChildFloatAttribute(node, "UnkFloat78");
+            UnkFloatA8 = Xml.GetChildFloatAttribute(node, "UnkFloatA8");
+        }
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
-            this.Unknown_00h = reader.ReadSingle();
-            this.Unknown_04h = reader.ReadSingle();
-            this.Unknown_08h = reader.ReadSingle();
-            this.Unknown_0Ch = reader.ReadSingle();
-            this.Strength = reader.ReadSingle();
-            this.ForceTransmissionScaleUp = reader.ReadSingle();
-            this.ForceTransmissionScaleDown = reader.ReadSingle();
-            this.JointStiffness = reader.ReadSingle();
-            this.MinSoftAngle1 = reader.ReadSingle();
-            this.MaxSoftAngle1 = reader.ReadSingle();
-            this.MaxSoftAngle2 = reader.ReadSingle();
-            this.MaxSoftAngle3 = reader.ReadSingle();
-            this.RotationSpeed = reader.ReadSingle();
-            this.RotationStrength = reader.ReadSingle();
-            this.RestoringStrength = reader.ReadSingle();
-            this.RestoringMaxTorque = reader.ReadSingle();
-            this.LatchStrength = reader.ReadSingle();
-            this.Mass = reader.ReadSingle();
-            this.Unknown_48h = reader.ReadSingle();
-            this.ChildGroupIndex = reader.ReadByte();
-            this.ParentIndex = reader.ReadByte();
-            this.ChildIndex = reader.ReadByte();
-            this.ChildCount = reader.ReadByte();
-            this.ChildGroupCount = reader.ReadByte();
-            this.UnkByte51 = reader.ReadByte();
-            this.GlassWindowIndex = reader.ReadByte();
-            this.GlassFlags = reader.ReadByte();
-            this.MinDamageForce = reader.ReadSingle();
-            this.DamageHealth = reader.ReadSingle();
-            this.UnkFloat5C = reader.ReadSingle();
-            this.UnkFloat60 = reader.ReadSingle();
-            this.UnkFloat64 = reader.ReadSingle();
-            this.UnkFloat68 = reader.ReadSingle();
-            this.UnkFloat6C = reader.ReadSingle();
-            this.UnkFloat70 = reader.ReadSingle();
-            this.UnkFloat74 = reader.ReadSingle();
-            this.UnkFloat78 = reader.ReadSingle();
-            this.Unknown_7Ch = reader.ReadSingle();
-            this.Name = reader.ReadStruct<FragPhysNameStruct_s>();
-            this.UnkFloatA8 = reader.ReadSingle();
-            this.Unknown_ACh = reader.ReadSingle();
+            Unknown_00h = reader.ReadSingle();
+            Unknown_04h = reader.ReadSingle();
+            Unknown_08h = reader.ReadSingle();
+            Unknown_0Ch = reader.ReadSingle();
+            Strength = reader.ReadSingle();
+            ForceTransmissionScaleUp = reader.ReadSingle();
+            ForceTransmissionScaleDown = reader.ReadSingle();
+            JointStiffness = reader.ReadSingle();
+            MinSoftAngle1 = reader.ReadSingle();
+            MaxSoftAngle1 = reader.ReadSingle();
+            MaxSoftAngle2 = reader.ReadSingle();
+            MaxSoftAngle3 = reader.ReadSingle();
+            RotationSpeed = reader.ReadSingle();
+            RotationStrength = reader.ReadSingle();
+            RestoringStrength = reader.ReadSingle();
+            RestoringMaxTorque = reader.ReadSingle();
+            LatchStrength = reader.ReadSingle();
+            Mass = reader.ReadSingle();
+            Unknown_48h = reader.ReadSingle();
+            ChildGroupIndex = reader.ReadByte();
+            ParentIndex = reader.ReadByte();
+            ChildIndex = reader.ReadByte();
+            ChildCount = reader.ReadByte();
+            ChildGroupCount = reader.ReadByte();
+            UnkByte51 = reader.ReadByte();
+            GlassWindowIndex = reader.ReadByte();
+            GlassFlags = reader.ReadByte();
+            MinDamageForce = reader.ReadSingle();
+            DamageHealth = reader.ReadSingle();
+            UnkFloat5C = reader.ReadSingle();
+            UnkFloat60 = reader.ReadSingle();
+            UnkFloat64 = reader.ReadSingle();
+            UnkFloat68 = reader.ReadSingle();
+            UnkFloat6C = reader.ReadSingle();
+            UnkFloat70 = reader.ReadSingle();
+            UnkFloat74 = reader.ReadSingle();
+            UnkFloat78 = reader.ReadSingle();
+            Unknown_7Ch = reader.ReadSingle();
+            Name = reader.ReadStruct<FragPhysNameStruct_s>();
+            UnkFloatA8 = reader.ReadSingle();
+            Unknown_ACh = reader.ReadSingle();
 
             //if (Unknown_00h != 0)
             //{ }//no hit
@@ -4180,6 +4213,7 @@ namespace CodeWalker.GameFiles
             //if ((UnkFloatA8 != 1.0f) && (UnkFloatA8 != 0.0f) && (UnkFloatA8 != 0.6f) && (UnkFloatA8 != 0.5f) && (UnkFloatA8 != 0.1f))
             //{ }//hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             writer.Write(Unknown_00h);
@@ -4224,85 +4258,19 @@ namespace CodeWalker.GameFiles
             writer.Write(UnkFloatA8);
             writer.Write(Unknown_ACh);
         }
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            YftXml.StringTag(sb, indent, "Name", YftXml.XmlEscape(Name.ToString()));
-            YftXml.ValueTag(sb, indent, "ParentIndex", ParentIndex.ToString());
-            YftXml.ValueTag(sb, indent, "GlassWindowIndex", GlassWindowIndex.ToString());
-            YftXml.ValueTag(sb, indent, "GlassFlags", GlassFlags.ToString());
-            YftXml.ValueTag(sb, indent, "Strength", FloatUtil.ToString(Strength));
-            YftXml.ValueTag(sb, indent, "ForceTransmissionScaleUp", FloatUtil.ToString(ForceTransmissionScaleUp));
-            YftXml.ValueTag(sb, indent, "ForceTransmissionScaleDown", FloatUtil.ToString(ForceTransmissionScaleDown));
-            YftXml.ValueTag(sb, indent, "JointStiffness", FloatUtil.ToString(JointStiffness));
-            YftXml.ValueTag(sb, indent, "MinSoftAngle1", FloatUtil.ToString(MinSoftAngle1));
-            YftXml.ValueTag(sb, indent, "MaxSoftAngle1", FloatUtil.ToString(MaxSoftAngle1));
-            YftXml.ValueTag(sb, indent, "MaxSoftAngle2", FloatUtil.ToString(MaxSoftAngle2));
-            YftXml.ValueTag(sb, indent, "MaxSoftAngle3", FloatUtil.ToString(MaxSoftAngle3));
-            YftXml.ValueTag(sb, indent, "RotationSpeed", FloatUtil.ToString(RotationSpeed));
-            YftXml.ValueTag(sb, indent, "RotationStrength", FloatUtil.ToString(RotationStrength));
-            YftXml.ValueTag(sb, indent, "RestoringStrength", FloatUtil.ToString(RestoringStrength));
-            YftXml.ValueTag(sb, indent, "RestoringMaxTorque", FloatUtil.ToString(RestoringMaxTorque));
-            YftXml.ValueTag(sb, indent, "LatchStrength", FloatUtil.ToString(LatchStrength));
-            YftXml.ValueTag(sb, indent, "Mass", FloatUtil.ToString(Mass));
-            YftXml.ValueTag(sb, indent, "MinDamageForce", FloatUtil.ToString(MinDamageForce));
-            YftXml.ValueTag(sb, indent, "DamageHealth", FloatUtil.ToString(DamageHealth));
-            YftXml.ValueTag(sb, indent, "UnkFloat5C", FloatUtil.ToString(UnkFloat5C));
-            YftXml.ValueTag(sb, indent, "UnkFloat60", FloatUtil.ToString(UnkFloat60));
-            YftXml.ValueTag(sb, indent, "UnkFloat64", FloatUtil.ToString(UnkFloat64));
-            YftXml.ValueTag(sb, indent, "UnkFloat68", FloatUtil.ToString(UnkFloat68));
-            YftXml.ValueTag(sb, indent, "UnkFloat6C", FloatUtil.ToString(UnkFloat6C));
-            YftXml.ValueTag(sb, indent, "UnkFloat70", FloatUtil.ToString(UnkFloat70));
-            YftXml.ValueTag(sb, indent, "UnkFloat74", FloatUtil.ToString(UnkFloat74));
-            YftXml.ValueTag(sb, indent, "UnkFloat78", FloatUtil.ToString(UnkFloat78));
-            YftXml.ValueTag(sb, indent, "UnkFloatA8", FloatUtil.ToString(UnkFloatA8));
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Name = new FragPhysNameStruct_s(Xml.GetChildInnerText(node, "Name"));
-            ParentIndex = (byte)Xml.GetChildUIntAttribute(node, "ParentIndex", "value");
-            GlassWindowIndex = (byte)Xml.GetChildUIntAttribute(node, "GlassWindowIndex", "value");
-            GlassFlags = (byte)Xml.GetChildUIntAttribute(node, "GlassFlags", "value");
-            Strength = Xml.GetChildFloatAttribute(node, "Strength", "value");
-            ForceTransmissionScaleUp = Xml.GetChildFloatAttribute(node, "ForceTransmissionScaleUp", "value");
-            ForceTransmissionScaleDown = Xml.GetChildFloatAttribute(node, "ForceTransmissionScaleDown", "value");
-            JointStiffness = Xml.GetChildFloatAttribute(node, "JointStiffness", "value");
-            MinSoftAngle1 = Xml.GetChildFloatAttribute(node, "MinSoftAngle1", "value");
-            MaxSoftAngle1 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle1", "value");
-            MaxSoftAngle2 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle2", "value");
-            MaxSoftAngle3 = Xml.GetChildFloatAttribute(node, "MaxSoftAngle3", "value");
-            RotationSpeed = Xml.GetChildFloatAttribute(node, "RotationSpeed", "value");
-            RotationStrength = Xml.GetChildFloatAttribute(node, "RotationStrength", "value");
-            RestoringStrength = Xml.GetChildFloatAttribute(node, "RestoringStrength", "value");
-            RestoringMaxTorque = Xml.GetChildFloatAttribute(node, "RestoringMaxTorque", "value");
-            LatchStrength = Xml.GetChildFloatAttribute(node, "LatchStrength", "value");
-            Mass = Xml.GetChildFloatAttribute(node, "Mass", "value");
-            MinDamageForce = Xml.GetChildFloatAttribute(node, "MinDamageForce", "value");
-            DamageHealth = Xml.GetChildFloatAttribute(node, "DamageHealth", "value");
-            UnkFloat5C = Xml.GetChildFloatAttribute(node, "UnkFloat5C", "value");
-            UnkFloat60 = Xml.GetChildFloatAttribute(node, "UnkFloat60", "value");
-            UnkFloat64 = Xml.GetChildFloatAttribute(node, "UnkFloat64", "value");
-            UnkFloat68 = Xml.GetChildFloatAttribute(node, "UnkFloat68", "value");
-            UnkFloat6C = Xml.GetChildFloatAttribute(node, "UnkFloat6C", "value");
-            UnkFloat70 = Xml.GetChildFloatAttribute(node, "UnkFloat70", "value");
-            UnkFloat74 = Xml.GetChildFloatAttribute(node, "UnkFloat74", "value");
-            UnkFloat78 = Xml.GetChildFloatAttribute(node, "UnkFloat78", "value");
-            UnkFloatA8 = Xml.GetChildFloatAttribute(node, "UnkFloatA8", "value");
-        }
 
         public override string ToString()
         {
             return Name.ToString();
         }
-
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class FragPhysGroupNamesBlock : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FragPhysGroupNamesBlock : ResourceSystemBlock
     {
+        public FragPhysTypeGroup[] Groups; //for writing purposes
 
-        public override long BlockLength
-        {
-            get { return (data_items?.Length ?? 0) * 8 + 8; }
-        }
+        public override long BlockLength => (data_items?.Length ?? 0) * 8 + 8;
 
 
         public ulong[] data_pointers { get; set; }
@@ -4312,20 +4280,13 @@ namespace CodeWalker.GameFiles
         public uint UnkUint1 { get; set; } = 1;
 
 
-        public FragPhysTypeGroup[] Groups;//for writing purposes
-
-
-
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             int numElements = Convert.ToInt32(parameters[0]);
             Groups = parameters[1] as FragPhysTypeGroup[];
 
             data_pointers = new ulong[numElements];
-            for (int i = 0; i < numElements; i++)
-            {
-                data_pointers[i] = reader.ReadUInt64();
-            }
+            for (int i = 0; i < numElements; i++) data_pointers[i] = reader.ReadUInt64();
 
             UnkVFT = reader.ReadUInt32();
             UnkUint1 = reader.ReadUInt32();
@@ -4359,46 +4320,34 @@ namespace CodeWalker.GameFiles
 
             data_items = new FragPhysNameStruct_s[numElements];
             for (int i = 0; i < numElements; i++)
-            {
                 data_items[i] = reader.ReadStructAt<FragPhysNameStruct_s>((long)data_pointers[i]);
-            }
-
         }
 
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
-
-
             List<ulong> gnplist = new List<ulong>();
-            foreach (FragPhysTypeGroup grp in Groups)
-            {
-                gnplist.Add((ulong)grp.FilePosition + 128);//manually write group names pointers as offsets to the groups
-            }
+            foreach (FragPhysTypeGroup grp in
+                     Groups)
+                gnplist.Add((ulong)grp.FilePosition +
+                            128); //manually write group names pointers as offsets to the groups
             data_pointers = gnplist.ToArray();
 
 
-
-            foreach (ulong x in data_pointers)
-            {
-                writer.Write(x);
-            }
+            foreach (ulong x in data_pointers) writer.Write(x);
 
             writer.Write(UnkVFT);
             writer.Write(UnkUint1);
-
         }
-
-
 
 
         public override string ToString()
         {
-            return "(Count: " + ((data_items != null) ? data_items.Length : 0).ToString() + ")";
+            return "(Count: " + (data_items != null ? data_items.Length : 0) + ")";
         }
-
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct FragPhysNameStruct_s
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct FragPhysNameStruct_s
     {
         // structure data
         public uint Unknown_00h { get; set; }
@@ -4416,7 +4365,13 @@ namespace CodeWalker.GameFiles
         public FragPhysNameStruct_s(string s)
         {
             s = s.PadRight(40, '\0');
-            uint u(int i) => ((s[i]&0xFFu) + ((s[i+1]&0xFFu)<<8) + ((s[i+2]&0xFFu)<<16) + ((s[i+3]&0xFFu)<<24));
+
+            uint u(int i)
+            {
+                return (s[i] & 0xFFu) + ((s[i + 1] & 0xFFu) << 8) + ((s[i + 2] & 0xFFu) << 16) +
+                       ((s[i + 3] & 0xFFu) << 24);
+            }
+
             Unknown_00h = u(0);
             Unknown_04h = u(4);
             Unknown_08h = u(8);
@@ -4464,6 +4419,4 @@ namespace CodeWalker.GameFiles
             return sb.ToString().Replace("\0", "");
         }
     }
-
-
 }

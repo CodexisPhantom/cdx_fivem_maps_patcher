@@ -22,7 +22,6 @@ namespace CodeWalker.GameFiles
 
         public void Load(XmlDocument doc)
         {
-
             XmlElement root = doc.DocumentElement;
             deviceName = Xml.GetChildInnerText(root, "deviceName");
             datFile = Xml.GetChildInnerText(root, "datFile");
@@ -44,12 +43,15 @@ namespace CodeWalker.GameFiles
             }
 
             if (root.ChildNodes.Count > 15)
-            { }
+            {
+            }
         }
 
         public override string ToString()
         {
-            return deviceName + ", " + datFile + ", " + nameHash + ", " + type + ", " + order.ToString() + ", " + ((contentChangeSetGroups != null) ? contentChangeSetGroups.Count.ToString() : "0") + " groups, " + timeStamp;
+            return deviceName + ", " + datFile + ", " + nameHash + ", " + type + ", " + order + ", " +
+                   (contentChangeSetGroups != null ? contentChangeSetGroups.Count.ToString() : "0") + " groups, " +
+                   timeStamp;
         }
     }
 
@@ -61,19 +63,19 @@ namespace CodeWalker.GameFiles
         public void Load(XmlNode node)
         {
             if (node.ChildNodes.Count != 2)
-            { }
+            {
+            }
+
             NameHash = Xml.GetChildInnerText(node, "NameHash");
             ContentChangeSets = new List<string>();
             XmlNodeList changesets = node.SelectNodes("ContentChangeSets/Item");
-            foreach (XmlNode changeset in changesets)
-            {
-                ContentChangeSets.Add(changeset.InnerText);
-            }
+            foreach (XmlNode changeset in changesets) ContentChangeSets.Add(changeset.InnerText);
         }
 
         public override string ToString()
         {
-            return NameHash + " (" + ((ContentChangeSets != null) ? ContentChangeSets.Count.ToString() : "0") + " changesets)";
+            return NameHash + " (" + (ContentChangeSets != null ? ContentChangeSets.Count.ToString() : "0") +
+                   " changesets)";
         }
     }
 }

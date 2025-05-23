@@ -7,8 +7,20 @@ using SharpDX;
 
 namespace CodeWalker.GameFiles
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YnvFile : GameFile, PackedFile, BasePathData
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YnvFile : GameFile, PackedFile, BasePathData
     {
+        public List<string> SaveWarnings = null;
+
+
+        public YnvFile() : base(null, GameFileType.Ynv)
+        {
+        }
+
+        public YnvFile(RpfFileEntry entry) : base(entry, GameFileType.Ynv)
+        {
+        }
+
         public NavMesh Nav { get; set; }
 
         public List<Vector3> Vertices { get; set; }
@@ -26,7 +38,6 @@ namespace CodeWalker.GameFiles
 
         //fields used by the editor:
         public bool HasChanged { get; set; } = false;
-        public List<string> SaveWarnings = null;
 
         public bool BuildStructsOnSave { get; set; } = true;
 
@@ -36,45 +47,48 @@ namespace CodeWalker.GameFiles
 
         public int AreaID
         {
-            get
-            {
-                return (int)(Nav?.AreaID ?? 0);
-            }
+            get => (int)(Nav?.AreaID ?? 0);
             set
             {
                 if (Nav != null) Nav.AreaID = (uint)value;
             }
         }
-        public int CellX { get { return AreaID % 100; } set { AreaID = (CellY * 100) + value; } }
-        public int CellY { get { return AreaID / 100; } set { AreaID = (value * 100) + CellX; } }
 
+        public int CellX
+        {
+            get => AreaID % 100;
+            set => AreaID = CellY * 100 + value;
+        }
+
+        public int CellY
+        {
+            get => AreaID / 100;
+            set => AreaID = value * 100 + CellX;
+        }
 
 
         //getters for property grids viewing of the lists
-        public Vector3[] AllVertices { get { return Vertices?.ToArray(); } }
-        public ushort[] AllIndices { get { return Indices?.ToArray(); } }
-        public YnvEdge[] AllEdges { get { return Edges?.ToArray(); } }
-        public YnvPoly[] AllPolys { get { return Polys?.ToArray(); } }
-        public YnvPortal[] AllPortals { get { return Portals?.ToArray(); } }
-        public YnvPoint[] AllPoints { get { return Points?.ToArray(); } }
+        public Vector3[] AllVertices => Vertices?.ToArray();
+        public ushort[] AllIndices => Indices?.ToArray();
+        public YnvEdge[] AllEdges => Edges?.ToArray();
+        public YnvPoly[] AllPolys => Polys?.ToArray();
+        public YnvPortal[] AllPortals => Portals?.ToArray();
+        public YnvPoint[] AllPoints => Points?.ToArray();
 
 
-
-
-        public YnvFile() : base(null, GameFileType.Ynv)
+        public EditorVertex[] GetPathVertices()
         {
-        }
-        public YnvFile(RpfFileEntry entry) : base(entry, GameFileType.Ynv)
-        {
+            return PathVertices;
         }
 
-        public void Load(byte[] data)
+        public EditorVertex[] GetTriangleVertices()
         {
-            //direct load from a raw, compressed ynv file (openIV-compatible format)
+            return TriangleVerts;
+        }
 
-            RpfFile.LoadResourceFile(this, data, 2);
-
-            Loaded = true;
+        public Vector4[] GetNodePositions()
+        {
+            return NodePositions;
         }
 
         public void Load(byte[] data, RpfFileEntry entry)
@@ -83,10 +97,7 @@ namespace CodeWalker.GameFiles
             RpfFileEntry = entry;
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
@@ -107,6 +118,15 @@ namespace CodeWalker.GameFiles
             LoadQueued = true;
         }
 
+        public void Load(byte[] data)
+        {
+            //direct load from a raw, compressed ynv file (openIV-compatible format)
+
+            RpfFile.LoadResourceFile(this, data, 2);
+
+            Loaded = true;
+        }
+
         public void InitFromNav()
         {
             if (Nav == null) return;
@@ -124,10 +144,8 @@ namespace CodeWalker.GameFiles
                     Vertices.Add(posoffset + ov * aabbsize);
                 }
             }
-            if (Nav.Indices != null)
-            {
-                Indices = Nav.Indices.GetFullList();
-            }
+
+            if (Nav.Indices != null) Indices = Nav.Indices.GetFullList();
             if (Nav.Edges != null)
             {
                 List<NavMeshEdge> edges = Nav.Edges.GetFullList();
@@ -139,6 +157,7 @@ namespace CodeWalker.GameFiles
                     Edges.Add(edge);
                 }
             }
+
             if (Nav.Polys != null)
             {
                 List<NavMeshPoly> polys = Nav.Polys.GetFullList();
@@ -151,6 +170,7 @@ namespace CodeWalker.GameFiles
                     Polys.Add(poly);
                 }
             }
+
             if (Nav.Portals != null)
             {
                 NavMeshPortal[] portals = Nav.Portals;
@@ -170,10 +190,7 @@ namespace CodeWalker.GameFiles
             ////### add points to the list and calculate positions...
             Stack<NavMeshSector> treestack = new Stack<NavMeshSector>();
             int pointi = 0;
-            if (Nav.SectorTree != null)
-            {
-                treestack.Push(Nav.SectorTree);
-            }
+            if (Nav.SectorTree != null) treestack.Push(Nav.SectorTree);
             while (treestack.Count > 0)
             {
                 NavMeshSector sector = treestack.Pop();
@@ -182,37 +199,30 @@ namespace CodeWalker.GameFiles
                     NavMeshPoint[] points = sector.Data.Points;
                     if (points != null)
                     {
-                        if (Points == null)
-                        {
-                            Points = new List<YnvPoint>();
-                        }
+                        if (Points == null) Points = new List<YnvPoint>();
                         for (int i = 0; i < points.Length; i++)
                         {
                             YnvPoint point = new YnvPoint();
                             point.Init(this, points[i]);
-                            point.Index = pointi; pointi++;
+                            point.Index = pointi;
+                            pointi++;
                             point.Position = posoffset + point._RawData.Position * aabbsize;
                             Points.Add(point);
                         }
                     }
                 }
+
                 if (sector.SubTree1 != null) treestack.Push(sector.SubTree1);
                 if (sector.SubTree2 != null) treestack.Push(sector.SubTree2);
                 if (sector.SubTree3 != null) treestack.Push(sector.SubTree3);
                 if (sector.SubTree4 != null) treestack.Push(sector.SubTree4);
             }
-
         }
-
-
 
 
         public byte[] Save()
         {
-            if (BuildStructsOnSave)
-            {
-                BuildStructs();
-            }
+            if (BuildStructsOnSave) BuildStructs();
 
             byte[] data = ResourceBuilder.Build(Nav, 2); //ynv is version 2...
 
@@ -245,9 +255,7 @@ namespace CodeWalker.GameFiles
             EnsureEdgeAreaID(areaid + 100, areadict, arealist);
 
 
-
             if (Polys != null) //rebuild vertices, indices, edges and polys lists from poly data.
-            {
                 for (int i = 0; i < Polys.Count; i++)
                 {
                     YnvPoly poly = Polys[i];
@@ -257,18 +265,17 @@ namespace CodeWalker.GameFiles
                     for (int n = 0; n < vc; n++)
                     {
                         Vector3 v = poly.Vertices[n];
-                        YnvEdge e = ((poly.Edges != null) && (n < poly.Edges.Length)) ? poly.Edges[n] : null;
+                        YnvEdge e = poly.Edges != null && n < poly.Edges.Length ? poly.Edges[n] : null;
                         ushort ind;
                         if (!vertdict.TryGetValue(v, out ind))
                         {
                             ind = (ushort)vertlist.Count;
                             vertdict[v] = ind;
-                            vertlist.Add(NavMeshVertex.Create(Vector3.Clamp((v - posoffset) * aabbsizeinv, Vector3.Zero, Vector3.One)));
+                            vertlist.Add(NavMeshVertex.Create(Vector3.Clamp((v - posoffset) * aabbsizeinv, Vector3.Zero,
+                                Vector3.One)));
                         }
-                        if ((poly.Indices != null) && (n < poly.Indices.Length))
-                        {
-                            poly.Indices[n] = ind;
-                        }
+
+                        if (poly.Indices != null && n < poly.Indices.Length) poly.Indices[n] = ind;
                         indslist.Add(ind);
 
                         NavMeshEdge edge;
@@ -279,17 +286,23 @@ namespace CodeWalker.GameFiles
                                 e.PolyID1 = (uint)e.Poly1.Index;
                                 e.AreaID1 = e.Poly1.AreaID;
                                 if (e.AreaID1 == 0x3FFF)
-                                { }//debug
+                                {
+                                } //debug
                             }
+
                             if (e.Poly2 != null)
                             {
                                 e.PolyID2 = (uint)e.Poly2.Index;
                                 e.AreaID2 = e.Poly2.AreaID;
                                 if (e.AreaID2 == 0x3FFF)
-                                { }//debug
+                                {
+                                } //debug
                             }
-                            if ((e.AreaID1 == 0) || (e.AreaID2 == 0))
-                            { }//debug
+
+                            if (e.AreaID1 == 0 || e.AreaID2 == 0)
+                            {
+                            } //debug
+
                             e._RawData._Poly1.AreaIDInd = EnsureEdgeAreaID(e.AreaID1, areadict, arealist);
                             e._RawData._Poly2.AreaIDInd = EnsureEdgeAreaID(e.AreaID2, areadict, arealist);
                             edge = e.RawData;
@@ -297,29 +310,26 @@ namespace CodeWalker.GameFiles
                         else
                         {
                             uint areaind = EnsureEdgeAreaID(0x3FFF, areadict, arealist);
-                            edge = new NavMeshEdge();//create an empty edge
+                            edge = new NavMeshEdge(); //create an empty edge
                             edge._Poly1.PolyID = 0x3FFF;
                             edge._Poly2.PolyID = 0x3FFF;
                             edge._Poly1.AreaIDInd = areaind;
                             edge._Poly2.AreaIDInd = areaind;
                         }
+
                         edgelist.Add(edge);
                     }
+
                     poly._RawData.IndexCount = vc;
-                    poly._RawData.PortalLinkID = (uint)portallinks.Count;//these shouldn't be directly editable!
+                    poly._RawData.PortalLinkID = (uint)portallinks.Count; //these shouldn't be directly editable!
                     poly._RawData.PortalLinkCount = (byte)(poly.PortalLinks?.Length ?? 0);
-                    if (poly.PortalLinks != null)
-                    {
-                        portallinks.AddRange(poly.PortalLinks);
-                    }
-                    poly.Index = i;//this should be redundant...
-                    poly.CalculateAABB();//make sure this is up to date!
+                    if (poly.PortalLinks != null) portallinks.AddRange(poly.PortalLinks);
+                    poly.Index = i; //this should be redundant...
+                    poly.CalculateAABB(); //make sure this is up to date!
                     polylist.Add(poly.RawData);
                 }
-            }
 
             if (Portals != null)
-            {
                 for (int i = 0; i < Portals.Count; i++)
                 {
                     YnvPortal portal = Portals[i];
@@ -328,10 +338,8 @@ namespace CodeWalker.GameFiles
                     pdata.PositionTo = NavMeshVertex.Create((portal.PositionTo - posoffset) * aabbsizeinv);
                     portallist.Add(pdata);
                 }
-            }
 
             if (Points != null) //points will be built into the sector tree
-            {
                 for (int i = 0; i < Points.Count; i++)
                 {
                     YnvPoint point = Points[i];
@@ -339,7 +347,6 @@ namespace CodeWalker.GameFiles
                     pdata.Position = (point.Position - posoffset) * aabbsizeinv;
                     point.RawData = pdata;
                 }
-            }
 
 
             if (Nav.Vertices == null)
@@ -347,16 +354,19 @@ namespace CodeWalker.GameFiles
                 Nav.Vertices = new NavMeshList<NavMeshVertex>();
                 Nav.Vertices.VFT = 1080158456;
             }
+
             if (Nav.Indices == null)
             {
                 Nav.Indices = new NavMeshList<ushort>();
                 Nav.Indices.VFT = 1080158424;
             }
+
             if (Nav.Edges == null)
             {
                 Nav.Edges = new NavMeshList<NavMeshEdge>();
                 Nav.Edges.VFT = 1080158440;
             }
+
             if (Nav.Polys == null)
             {
                 Nav.Polys = new NavMeshList<NavMeshPoly>();
@@ -375,9 +385,9 @@ namespace CodeWalker.GameFiles
             Nav.Polys.RebuildList(polylist);
             Nav.PolysCount = Nav.Polys.ItemCount;
 
-            Nav.Portals = (portallist.Count > 0) ? portallist.ToArray() : null;
+            Nav.Portals = portallist.Count > 0 ? portallist.ToArray() : null;
             Nav.PortalsCount = (uint)(Nav.Portals?.Length ?? 0);
-            Nav.PortalLinks = (portallinks.Count > 0) ? portallinks.ToArray() : null;
+            Nav.PortalLinks = portallinks.Count > 0 ? portallinks.ToArray() : null;
             Nav.PortalLinksCount = (uint)(Nav.PortalLinks?.Length ?? 0);
 
             NavMeshUintArray adjAreaIds = new NavMeshUintArray();
@@ -391,12 +401,8 @@ namespace CodeWalker.GameFiles
                 NavMeshPoly[] partitems = listpart?.Items;
                 if (partitems == null) continue;
                 ushort iu = (ushort)i;
-                for (int j = 0; j < partitems.Length; j++)
-                {
-                    partitems[j].PartID = iu;
-                }
+                for (int j = 0; j < partitems.Length; j++) partitems[j].PartID = iu;
             }
-
 
 
             //Build Sector Tree
@@ -414,7 +420,6 @@ namespace CodeWalker.GameFiles
             BuildSectorTree(root, depth, ref pointindex, pointflags);
 
             Nav.SectorTree = root;
-
         }
 
         private uint EnsureEdgeAreaID(uint areaid, Dictionary<uint, uint> areadict, List<uint> arealist)
@@ -426,6 +431,7 @@ namespace CodeWalker.GameFiles
                 areadict[areaid] = ind;
                 arealist.Add(areaid);
             }
+
             return ind;
         }
 
@@ -453,15 +459,10 @@ namespace CodeWalker.GameFiles
                     {
                         YnvPoly poly = Polys[i];
                         NavMeshAABB b = poly._RawData.CellAABB;
-                        if (BoxOverlaps(b, node.CellAABB))
-                        {
-                            polyids.Add((ushort)poly.Index);
-                        }
+                        if (BoxOverlaps(b, node.CellAABB)) polyids.Add((ushort)poly.Index);
                     }
-                    if (polyids.Count > 0)
-                    {
-                        data.PolyIDs = polyids.ToArray();
-                    }
+
+                    if (polyids.Count > 0) data.PolyIDs = polyids.ToArray();
                 }
 
                 if (Points != null)
@@ -470,12 +471,13 @@ namespace CodeWalker.GameFiles
                     for (int i = 0; i < Points.Count; i++)
                     {
                         YnvPoint point = Points[i];
-                        if (IsInBox(point.Position, min, max, true) && (pointflags[i] == false))
+                        if (IsInBox(point.Position, min, max, true) && pointflags[i] == false)
                         {
                             points.Add(point.RawData);
                             pointflags[i] = true;
                         }
                     }
+
                     if (points.Count > 0)
                     {
                         data.Points = points.ToArray();
@@ -483,7 +485,6 @@ namespace CodeWalker.GameFiles
                         pointindex += (uint)points.Count;
                     }
                 }
-
             }
             else
             {
@@ -493,7 +494,8 @@ namespace CodeWalker.GameFiles
                 node.SubTree2 = new NavMeshSector();
                 node.SubTree3 = new NavMeshSector();
                 node.SubTree4 = new NavMeshSector();
-                node.SubTree1.SetAABBs(new Vector3(cen.X, cen.Y, cen.Z), new Vector3(max.X, max.Y, max.Z)); //for some reason Z values seem to get arranged like this...
+                node.SubTree1.SetAABBs(new Vector3(cen.X, cen.Y, cen.Z),
+                    new Vector3(max.X, max.Y, max.Z)); //for some reason Z values seem to get arranged like this...
                 node.SubTree2.SetAABBs(new Vector3(cen.X, min.Y, 0.0f), new Vector3(max.X, cen.Y, 0.0f));
                 node.SubTree3.SetAABBs(new Vector3(min.X, min.Y, min.Z), new Vector3(cen.X, cen.Y, cen.Z));
                 node.SubTree4.SetAABBs(new Vector3(min.X, cen.Y, 0.0f), new Vector3(cen.X, max.Y, 0.0f));
@@ -503,10 +505,6 @@ namespace CodeWalker.GameFiles
                 BuildSectorTree(node.SubTree4, cdepth, ref pointindex, pointflags);
             }
         }
-
-
-
-
 
 
         public void WriteXml(StringBuilder sb, int indent)
@@ -520,6 +518,7 @@ namespace CodeWalker.GameFiles
             YnvXml.WriteItemArray(sb, AllPortals, indent, "Portals");
             YnvXml.WriteItemArray(sb, AllPoints, indent, "Points");
         }
+
         public void ReadXml(XmlNode node)
         {
             Nav = new NavMesh();
@@ -534,7 +533,6 @@ namespace CodeWalker.GameFiles
             Points = XmlYnv.ReadItemList<YnvPoint>(node, "Points");
 
             if (Polys != null)
-            {
                 for (int i = 0; i < Polys.Count; i++)
                 {
                     YnvPoly poly = Polys[i];
@@ -542,9 +540,8 @@ namespace CodeWalker.GameFiles
                     poly.Index = i;
                     poly.AreaID = (ushort)AreaID;
                 }
-            }
+
             if (Portals != null)
-            {
                 for (int i = 0; i < Portals.Count; i++)
                 {
                     YnvPortal portal = Portals[i];
@@ -553,52 +550,45 @@ namespace CodeWalker.GameFiles
                     portal.AreaIDFrom = (ushort)AreaID;
                     portal.AreaIDTo = (ushort)AreaID;
                 }
-            }
+
             if (Points != null)
-            {
                 for (int i = 0; i < Points.Count; i++)
                 {
                     YnvPoint point = Points[i];
                     point.Ynv = this;
                     point.Index = i;
                 }
-            }
 
 
-            bool vehicle = ((Nav.ContentFlags & NavMeshFlags.Vehicle) != 0);
+            bool vehicle = (Nav.ContentFlags & NavMeshFlags.Vehicle) != 0;
             Nav.VersionUnk1 = 0x00010011;
             Nav.VersionUnk2 = vehicle ? 0 : 0x85CB3561;
             Nav.Transform = Matrix.Identity;
-
-
         }
-
-
-
-
 
 
         private bool IsInBox(Vector3 p, Vector3 min, Vector3 max, bool outer)
         {
             if (outer)
-                return (p.X >= min.X) && (p.X <= max.X) &&
-                       (p.Y >= min.Y) && (p.Y <= max.Y);// && 
-                        //(p.Z >= min.Z) && (p.Z < max.Z);
-            else
-                return (p.X >= min.X) && (p.X < max.X) &&
-                       (p.Y >= min.Y) && (p.Y < max.Y);// && 
-                        //(p.Z >= min.Z) && (p.Z < max.Z);
+                return p.X >= min.X && p.X <= max.X &&
+                       p.Y >= min.Y && p.Y <= max.Y; // && 
+            //(p.Z >= min.Z) && (p.Z < max.Z);
+            return p.X >= min.X && p.X < max.X &&
+                   p.Y >= min.Y && p.Y < max.Y; // && 
+            //(p.Z >= min.Z) && (p.Z < max.Z);
         }
+
         private bool BoxOverlaps(Vector3 bmin, Vector3 bmax, Vector3 min, Vector3 max)
         {
-            return (bmax.X >= min.X) && (bmin.X <= max.X) &&
-                   (bmax.Y >= min.Y) && (bmin.Y <= max.Y);// && 
-                   //(bmax.Z >= min.Z) && (bmin.Z <= max.Z);
+            return bmax.X >= min.X && bmin.X <= max.X &&
+                   bmax.Y >= min.Y && bmin.Y <= max.Y; // && 
+            //(bmax.Z >= min.Z) && (bmin.Z <= max.Z);
         }
+
         private bool BoxOverlaps(NavMeshAABB a, NavMeshAABB b)
         {
-            return (a.MaxX >= b.MinX) && (a.MinX <= b.MaxX) &&
-                   (a.MaxY >= b.MinY) && (a.MinY <= b.MaxY);
+            return a.MaxX >= b.MinX && a.MinX <= b.MaxX &&
+                   a.MaxY >= b.MinY && a.MinY <= b.MaxY;
         }
 
 
@@ -606,16 +596,16 @@ namespace CodeWalker.GameFiles
         {
             return false;
         }
+
         public bool RemovePoint(YnvPoint point)
         {
             return false;
         }
+
         public bool RemovePortal(YnvPortal portal)
         {
             return false;
         }
-
-
 
 
         public void UpdateAllNodePositions()
@@ -635,33 +625,29 @@ namespace CodeWalker.GameFiles
             ////### add portal positions to the node list, also add links to the link vertex array
             int cnt = Portals?.Count ?? 0;
             if (cnt > 0)
-            {
                 for (int i = 0; i < cnt; i++)
                 {
                     YnvPortal portal = Portals[i];
                     nv.Add(new Vector4(portal.PositionFrom, 1.0f));
-                    v.Position = portal.PositionFrom; lv.Add(v);
-                    v.Position = portal.PositionTo; lv.Add(v);
+                    v.Position = portal.PositionFrom;
+                    lv.Add(v);
+                    v.Position = portal.PositionTo;
+                    lv.Add(v);
                 }
-            }
 
 
             ////### add point positions to the node list
             cnt = Points?.Count ?? 0;
             if (cnt >= 0)
-            {
                 for (int i = 0; i < cnt; i++)
                 {
                     YnvPoint point = Points[i];
                     nv.Add(new Vector4(point.Position, 1.0f));
                 }
-            }
 
 
-            NodePositions = (nv.Count > 0) ? nv.ToArray() : null;
-            PathVertices = (lv.Count > 0) ? lv.ToArray() : null;
-
-
+            NodePositions = nv.Count > 0 ? nv.ToArray() : null;
+            PathVertices = lv.Count > 0 ? lv.ToArray() : null;
         }
 
         public void UpdateTriangleVertices()
@@ -671,7 +657,7 @@ namespace CodeWalker.GameFiles
 
             //go through the nav mesh polys and generate verts to render...
 
-            if ((Polys == null) || (Polys.Count == 0)) return;
+            if (Polys == null || Polys.Count == 0) return;
 
 
             int vc = Vertices.Count;
@@ -682,8 +668,7 @@ namespace CodeWalker.GameFiles
             EditorVertex p2 = new EditorVertex();
             foreach (YnvPoly ypoly in Polys)
             {
-                if ((ypoly.Vertices == null) || (ypoly.Vertices.Length < 3))
-                { continue; }
+                if (ypoly.Vertices == null || ypoly.Vertices.Length < 3) continue;
 
                 Color4 colour = ypoly.GetColour();
                 uint colourval = (uint)colour.ToRgba();
@@ -707,9 +692,7 @@ namespace CodeWalker.GameFiles
             }
 
             TriangleVerts = rverts.ToArray();
-
         }
-
 
 
         public void UpdateContentFlags(bool vehicle)
@@ -723,8 +706,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
-
         public void BuildBVH()
         {
             List<BasePathNode> nodes = new List<BasePathNode>();
@@ -732,76 +713,285 @@ namespace CodeWalker.GameFiles
             if (Points != null) nodes.AddRange(Points);
             BVH = new PathBVH(nodes, 10, 10);
         }
-
-
-
-        public EditorVertex[] GetPathVertices()
-        {
-            return PathVertices;
-        }
-        public EditorVertex[] GetTriangleVertices()
-        {
-            return TriangleVerts;
-        }
-        public Vector4[] GetNodePositions()
-        {
-            return NodePositions;
-        }
     }
 
 
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YnvPoly : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YnvPoly : IMetaXmlItem
     {
         public NavMeshPoly _RawData;
-        public NavMeshPoly RawData { get { return _RawData; } set { _RawData = value; } }
+
+        public NavMeshPoly RawData
+        {
+            get => _RawData;
+            set => _RawData = value;
+        }
 
         public YnvFile Ynv { get; set; }
 
-        public ushort AreaID { get { return _RawData.AreaID; } set { _RawData.AreaID = value; } }
-        public ushort PartID { get { return _RawData.PartID; } set { _RawData.PartID = value; } }
-        public uint PortalLinkID { get { return _RawData.PortalLinkID; } set { _RawData.PortalLinkID = value; } }
-        public byte PortalLinkCount { get { return _RawData.PortalLinkCount; } set { _RawData.PortalLinkCount = value; } }
-        public byte Flags1 { get { return _RawData.Flags1; } set { _RawData.Flags1 = value; } }
-        public byte Flags2 { get { return _RawData.Flags2; } set { _RawData.Flags2 = value; } }
-        public byte Flags3 { get { return _RawData.Flags3; } set { _RawData.Flags3 = value; } }
-        public byte Flags4 { get { return _RawData.Flags4; } set { _RawData.Flags4 = value; } }
-        public byte Flags5 { get { return _RawData.Flags5; } set { _RawData.Flags5 = value; } }
-        public bool B00_AvoidUnk        { get { return (_RawData.PolyFlags0 & 1) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 0, value); } }
-        public bool B01_AvoidUnk        { get { return (_RawData.PolyFlags0 & 2) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 1, value); } }
-        public bool B02_IsFootpath      { get { return (_RawData.PolyFlags0 & 4) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 2, value); } }
-        public bool B03_IsUnderground   { get { return (_RawData.PolyFlags0 & 8) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 3, value); } }
-        public bool B04_Unused          { get { return (_RawData.PolyFlags0 & 16) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 4, value); } }
-        public bool B05_Unused          { get { return (_RawData.PolyFlags0 & 32) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 5, value); } }
-        public bool B06_SteepSlope      { get { return (_RawData.PolyFlags0 & 64) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 6, value); } }
-        public bool B07_IsWater         { get { return (_RawData.PolyFlags0 & 128) > 0; } set { _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 7, value); } }
-        public bool B08_UndergroundUnk0 { get { return (_RawData.PolyFlags1 & 1) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 0, value); } }
-        public bool B09_UndergroundUnk1 { get { return (_RawData.PolyFlags1 & 2) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 1, value); } }
-        public bool B10_UndergroundUnk2 { get { return (_RawData.PolyFlags1 & 4) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 2, value); } }
-        public bool B11_UndergroundUnk3 { get { return (_RawData.PolyFlags1 & 8) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 3, value); } }
-        public bool B12_Unused          { get { return (_RawData.PolyFlags1 & 16) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 4, value); } }
-        public bool B13_HasPathNode     { get { return (_RawData.PolyFlags1 & 32) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 5, value); } }
-        public bool B14_IsInterior      { get { return (_RawData.PolyFlags1 & 64) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 6, value); } }
-        public bool B15_InteractionUnk  { get { return (_RawData.PolyFlags1 & 128) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 7, value); } }
-        public bool B16_Unused          { get { return (_RawData.PolyFlags1 & 256) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 8, value); } }
-        public bool B17_IsFlatGround    { get { return (_RawData.PolyFlags1 & 512) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 9, value); } }
-        public bool B18_IsRoad          { get { return (_RawData.PolyFlags1 & 1024) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 10, value); } }
-        public bool B19_IsCellEdge      { get { return (_RawData.PolyFlags1 & 2048) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 11, value); } }
-        public bool B20_IsTrainTrack    { get { return (_RawData.PolyFlags1 & 4096) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 12, value); } }
-        public bool B21_IsShallowWater  { get { return (_RawData.PolyFlags1 & 8192) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 13, value); } }
-        public bool B22_FootpathUnk1    { get { return (_RawData.PolyFlags1 & 16384) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 14, value); } }
-        public bool B23_FootpathUnk2    { get { return (_RawData.PolyFlags1 & 32768) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 15, value); } }
-        public bool B24_FootpathMall    { get { return (_RawData.PolyFlags1 & 65536) > 0; } set { _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 16, value); } }
-        public bool B25_SlopeSouth      { get { return (_RawData.PolyFlags2 & 65536) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 16, value); } }
-        public bool B26_SlopeSouthEast  { get { return (_RawData.PolyFlags2 & 131072) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 17, value); } }
-        public bool B27_SlopeEast       { get { return (_RawData.PolyFlags2 & 262144) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 18, value); } }
-        public bool B28_SlopeNorthEast  { get { return (_RawData.PolyFlags2 & 524288) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 19, value); } }
-        public bool B29_SlopeNorth      { get { return (_RawData.PolyFlags2 & 1048576) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 20, value); } }
-        public bool B30_SlopeNorthWest  { get { return (_RawData.PolyFlags2 & 2097152) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 21, value); } }
-        public bool B31_SlopeWest       { get { return (_RawData.PolyFlags2 & 4194304) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 22, value); } }
-        public bool B32_SlopeSouthWest  { get { return (_RawData.PolyFlags2 & 8388608) > 0; } set { _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 23, value); } }
-        public byte UnkX { get { return _RawData.UnkX; } set { _RawData.UnkX = value; } }
-        public byte UnkY { get { return _RawData.UnkY; } set { _RawData.UnkY = value; } }
+        public ushort AreaID
+        {
+            get => _RawData.AreaID;
+            set => _RawData.AreaID = value;
+        }
+
+        public ushort PartID
+        {
+            get => _RawData.PartID;
+            set => _RawData.PartID = value;
+        }
+
+        public uint PortalLinkID
+        {
+            get => _RawData.PortalLinkID;
+            set => _RawData.PortalLinkID = value;
+        }
+
+        public byte PortalLinkCount
+        {
+            get => _RawData.PortalLinkCount;
+            set => _RawData.PortalLinkCount = value;
+        }
+
+        public byte Flags1
+        {
+            get => _RawData.Flags1;
+            set => _RawData.Flags1 = value;
+        }
+
+        public byte Flags2
+        {
+            get => _RawData.Flags2;
+            set => _RawData.Flags2 = value;
+        }
+
+        public byte Flags3
+        {
+            get => _RawData.Flags3;
+            set => _RawData.Flags3 = value;
+        }
+
+        public byte Flags4
+        {
+            get => _RawData.Flags4;
+            set => _RawData.Flags4 = value;
+        }
+
+        public byte Flags5
+        {
+            get => _RawData.Flags5;
+            set => _RawData.Flags5 = value;
+        }
+
+        public bool B00_AvoidUnk
+        {
+            get => (_RawData.PolyFlags0 & 1) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 0, value);
+        }
+
+        public bool B01_AvoidUnk
+        {
+            get => (_RawData.PolyFlags0 & 2) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 1, value);
+        }
+
+        public bool B02_IsFootpath
+        {
+            get => (_RawData.PolyFlags0 & 4) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 2, value);
+        }
+
+        public bool B03_IsUnderground
+        {
+            get => (_RawData.PolyFlags0 & 8) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 3, value);
+        }
+
+        public bool B04_Unused
+        {
+            get => (_RawData.PolyFlags0 & 16) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 4, value);
+        }
+
+        public bool B05_Unused
+        {
+            get => (_RawData.PolyFlags0 & 32) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 5, value);
+        }
+
+        public bool B06_SteepSlope
+        {
+            get => (_RawData.PolyFlags0 & 64) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 6, value);
+        }
+
+        public bool B07_IsWater
+        {
+            get => (_RawData.PolyFlags0 & 128) > 0;
+            set => _RawData.PolyFlags0 = (ushort)BitUtil.UpdateBit(_RawData.PolyFlags0, 7, value);
+        }
+
+        public bool B08_UndergroundUnk0
+        {
+            get => (_RawData.PolyFlags1 & 1) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 0, value);
+        }
+
+        public bool B09_UndergroundUnk1
+        {
+            get => (_RawData.PolyFlags1 & 2) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 1, value);
+        }
+
+        public bool B10_UndergroundUnk2
+        {
+            get => (_RawData.PolyFlags1 & 4) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 2, value);
+        }
+
+        public bool B11_UndergroundUnk3
+        {
+            get => (_RawData.PolyFlags1 & 8) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 3, value);
+        }
+
+        public bool B12_Unused
+        {
+            get => (_RawData.PolyFlags1 & 16) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 4, value);
+        }
+
+        public bool B13_HasPathNode
+        {
+            get => (_RawData.PolyFlags1 & 32) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 5, value);
+        }
+
+        public bool B14_IsInterior
+        {
+            get => (_RawData.PolyFlags1 & 64) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 6, value);
+        }
+
+        public bool B15_InteractionUnk
+        {
+            get => (_RawData.PolyFlags1 & 128) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 7, value);
+        }
+
+        public bool B16_Unused
+        {
+            get => (_RawData.PolyFlags1 & 256) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 8, value);
+        }
+
+        public bool B17_IsFlatGround
+        {
+            get => (_RawData.PolyFlags1 & 512) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 9, value);
+        }
+
+        public bool B18_IsRoad
+        {
+            get => (_RawData.PolyFlags1 & 1024) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 10, value);
+        }
+
+        public bool B19_IsCellEdge
+        {
+            get => (_RawData.PolyFlags1 & 2048) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 11, value);
+        }
+
+        public bool B20_IsTrainTrack
+        {
+            get => (_RawData.PolyFlags1 & 4096) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 12, value);
+        }
+
+        public bool B21_IsShallowWater
+        {
+            get => (_RawData.PolyFlags1 & 8192) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 13, value);
+        }
+
+        public bool B22_FootpathUnk1
+        {
+            get => (_RawData.PolyFlags1 & 16384) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 14, value);
+        }
+
+        public bool B23_FootpathUnk2
+        {
+            get => (_RawData.PolyFlags1 & 32768) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 15, value);
+        }
+
+        public bool B24_FootpathMall
+        {
+            get => (_RawData.PolyFlags1 & 65536) > 0;
+            set => _RawData.PolyFlags1 = BitUtil.UpdateBit(_RawData.PolyFlags1, 16, value);
+        }
+
+        public bool B25_SlopeSouth
+        {
+            get => (_RawData.PolyFlags2 & 65536) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 16, value);
+        }
+
+        public bool B26_SlopeSouthEast
+        {
+            get => (_RawData.PolyFlags2 & 131072) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 17, value);
+        }
+
+        public bool B27_SlopeEast
+        {
+            get => (_RawData.PolyFlags2 & 262144) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 18, value);
+        }
+
+        public bool B28_SlopeNorthEast
+        {
+            get => (_RawData.PolyFlags2 & 524288) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 19, value);
+        }
+
+        public bool B29_SlopeNorth
+        {
+            get => (_RawData.PolyFlags2 & 1048576) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 20, value);
+        }
+
+        public bool B30_SlopeNorthWest
+        {
+            get => (_RawData.PolyFlags2 & 2097152) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 21, value);
+        }
+
+        public bool B31_SlopeWest
+        {
+            get => (_RawData.PolyFlags2 & 4194304) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 22, value);
+        }
+
+        public bool B32_SlopeSouthWest
+        {
+            get => (_RawData.PolyFlags2 & 8388608) > 0;
+            set => _RawData.PolyFlags2 = BitUtil.UpdateBit(_RawData.PolyFlags2, 23, value);
+        }
+
+        public byte UnkX
+        {
+            get => _RawData.UnkX;
+            set => _RawData.UnkX = value;
+        }
+
+        public byte UnkY
+        {
+            get => _RawData.UnkY;
+            set => _RawData.UnkY = value;
+        }
 
 
         public Vector3 Position { get; set; }
@@ -811,6 +1001,107 @@ namespace CodeWalker.GameFiles
         public Vector3[] Vertices { get; set; }
         public YnvEdge[] Edges { get; set; }
         public ushort[] PortalLinks { get; set; }
+
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            byte[] flags = { Flags1, Flags2, Flags3, Flags4, UnkX, UnkY, Flags5 };
+            YnvXml.WriteRawArray(sb, flags, indent, "Flags", "");
+            YnvXml.WriteRawArray(sb, Vertices, indent, "Vertices", "", YnvXml.FormatVector3, 1);
+            int cind = indent + 1;
+            YnvXml.OpenTag(sb, indent, "Edges");
+            foreach (YnvEdge e in Edges)
+            {
+                YnvXml.Indent(sb, cind);
+                sb.AppendFormat("{0}:{1}, {2}:{3}", e.AreaID1, e.PolyID1, e.AreaID2, e.PolyID2);
+                sb.AppendLine();
+            }
+
+            YnvXml.CloseTag(sb, indent, "Edges");
+            YnvXml.OpenTag(sb, indent, "EdgesFlags");
+            foreach (YnvEdge e in Edges)
+            {
+                YnvXml.Indent(sb, cind);
+                sb.AppendFormat("{0}:{1}, {2}:{3}", e.Poly1Unk2, e.Poly1Unk3, e.Poly2Unk2, e.Poly2Unk3);
+                sb.AppendLine();
+            }
+
+            YnvXml.CloseTag(sb, indent, "EdgesFlags");
+            if (PortalLinks != null && PortalLinks.Length > 0)
+                YnvXml.WriteRawArray(sb, PortalLinks, indent, "Portals", "");
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            byte[] flags = Xml.GetChildRawByteArrayNullable(node, "Flags", 10);
+            if (flags != null)
+            {
+                Flags1 = flags.Length > 0 ? flags[0] : (byte)0;
+                Flags2 = flags.Length > 1 ? flags[1] : (byte)0;
+                Flags3 = flags.Length > 2 ? flags[2] : (byte)0;
+                Flags4 = flags.Length > 3 ? flags[3] : (byte)0;
+                UnkX = flags.Length > 4 ? flags[4] : (byte)0;
+                UnkY = flags.Length > 5 ? flags[5] : (byte)0;
+                Flags5 = flags.Length > 6 ? flags[6] : (byte)0;
+            }
+
+            Vertices = Xml.GetChildRawVector3Array(node, "Vertices");
+            Indices = new ushort[Vertices?.Length ?? 0]; //needs to be present for later
+            string edgesstr = Xml.GetChildInnerText(node, "Edges");
+            string[] edgesstrarr = edgesstr.Trim().Split('\n');
+            List<YnvEdge> edges = new List<YnvEdge>();
+            foreach (string edgestr in edgesstrarr)
+            {
+                string[] estrparts = edgestr.Trim().Split(',');
+                if (estrparts.Length != 2) continue;
+                string[] estrp0 = estrparts[0].Trim().Split(':');
+                string[] estrp1 = estrparts[1].Trim().Split(':');
+                if (estrp0.Length != 2) continue;
+                if (estrp1.Length != 2) continue;
+
+                uint aid1, aid2, pid1, pid2;
+                uint.TryParse(estrp0[0].Trim(), out aid1);
+                uint.TryParse(estrp0[1].Trim(), out pid1);
+                uint.TryParse(estrp1[0].Trim(), out aid2);
+                uint.TryParse(estrp1[1].Trim(), out pid2);
+
+                YnvEdge e = new YnvEdge();
+                e.AreaID1 = aid1;
+                e.AreaID2 = aid2;
+                e.PolyID1 = pid1;
+                e.PolyID2 = pid2;
+                edges.Add(e);
+            }
+
+            if (edges.Count > 0) Edges = edges.ToArray();
+            string edgesflagsstr = Xml.GetChildInnerText(node, "EdgesFlags");
+            string[] edgesflagsstrarr = edgesflagsstr.Trim().Split('\n');
+            int edgeflagidx = -1;
+            foreach (string edgeflagsstr in edgesflagsstrarr)
+            {
+                edgeflagidx++;
+                string[] estrparts = edgeflagsstr.Trim().Split(',');
+                if (estrparts.Length != 2) continue;
+                string[] estrp0 = estrparts[0].Trim().Split(':');
+                string[] estrp1 = estrparts[1].Trim().Split(':');
+                if (estrp0.Length != 2) continue;
+                if (estrp1.Length != 2) continue;
+
+                uint p1u2, p1u3, p2u2, p2u3;
+                uint.TryParse(estrp0[0].Trim(), out p1u2);
+                uint.TryParse(estrp0[1].Trim(), out p1u3);
+                uint.TryParse(estrp1[0].Trim(), out p2u2);
+                uint.TryParse(estrp1[1].Trim(), out p2u3);
+
+                YnvEdge e = Edges[edgeflagidx];
+                e.Poly1Unk2 = p1u2;
+                e.Poly1Unk3 = p1u3;
+                e.Poly2Unk2 = p2u2;
+                e.Poly2Unk3 = p2u3;
+            }
+
+            PortalLinks = Xml.GetChildRawUshortArrayNullable(node, "Portals");
+        }
 
 
         public void Init(YnvFile ynv, NavMeshPoly poly)
@@ -830,18 +1121,14 @@ namespace CodeWalker.GameFiles
             List<ushort> indices = Ynv.Indices;
             List<Vector3> vertices = Ynv.Vertices;
             List<YnvEdge> edges = Ynv.Edges;
-            if ((indices == null) || (vertices == null) || (edges == null))
-            { return; }
+            if (indices == null || vertices == null || edges == null) return;
             int vc = vertices.Count;
             int ic = _RawData.IndexCount;
             ushort startid = _RawData.IndexID;
             int endid = startid + ic;
-            if (startid >= indices.Count)
-            { return; }
-            if (endid > indices.Count)
-            { return; }
-            if (endid > edges.Count)
-            { return; }
+            if (startid >= indices.Count) return;
+            if (endid > indices.Count) return;
+            if (endid > edges.Count) return;
 
             Indices = new ushort[ic];
             Vertices = new Vector3[ic];
@@ -853,7 +1140,7 @@ namespace CodeWalker.GameFiles
                 ushort ind = indices[id];
 
                 Indices[i] = ind;
-                Vertices[i] = (ind < vc) ? vertices[ind] : Vector3.Zero;
+                Vertices[i] = ind < vc ? vertices[ind] : Vector3.Zero;
                 Edges[i] = edges[id];
 
                 i++;
@@ -862,11 +1149,9 @@ namespace CodeWalker.GameFiles
 
         public void LoadPortalLinks()
         {
-            if (PortalLinkCount == 0)
-            { return; }
+            if (PortalLinkCount == 0) return;
             ushort[] links = Ynv.Nav?.PortalLinks;
-            if (links == null)
-            { return; }
+            if (links == null) return;
 
             int ll = links.Length;
 
@@ -876,12 +1161,12 @@ namespace CodeWalker.GameFiles
             for (int i = 0; i < PortalLinkCount; i++)
             {
                 int idx = offset + i;
-                PortalLinks[i] = (idx < ll) ? links[idx] : (ushort)0;
+                PortalLinks[i] = idx < ll ? links[idx] : (ushort)0;
             }
 
             if (PortalLinkCount != 2)
-            { }//debug
-
+            {
+            } //debug
         }
 
 
@@ -896,7 +1181,7 @@ namespace CodeWalker.GameFiles
         {
             Color4 colour = new Color4();
             ushort u0 = _RawData.PolyFlags0;
-            if ((u0 & 1) > 0) colour.Red += 0.01f;//avoid? loiter?
+            if ((u0 & 1) > 0) colour.Red += 0.01f; //avoid? loiter?
             if ((u0 & 2) > 0) colour.Red += 0.01f; //avoid?
             if ((u0 & 4) > 0) colour.Green += 0.25f; //ped/footpath
             if ((u0 & 8) > 0) colour.Green += 0.02f; //underground?
@@ -917,14 +1202,14 @@ namespace CodeWalker.GameFiles
             if ((u2 & 64) > 0) colour.Blue += 0.1f; //is interior?
             //if ((u2 & 128) > 0) colour.Red += 1.0f; //interacting areas? veg branches, roofs, vents, worker areas?
             //if ((u2 & 256) > 0) colour.Green += 1.0f; //not used?
-            if ((u2 & 512) > 0) colour.Green += 0.1f;//is flat ground? ped-navigable?
-            if ((u2 & 1024) > 0) colour.Blue += 0.03f;//is a road
+            if ((u2 & 512) > 0) colour.Green += 0.1f; //is flat ground? ped-navigable?
+            if ((u2 & 1024) > 0) colour.Blue += 0.03f; //is a road
             //if ((u2 & 2048) > 0) colour.Green += 1.0f; //poly is on a cell edge
             if ((u2 & 4096) > 0) colour.Green += 0.75f; //is a train track
-            if ((u2 & 8192) > 0) colour.Blue += 0.75f;//shallow water/moving water
+            if ((u2 & 8192) > 0) colour.Blue += 0.75f; //shallow water/moving water
             if ((u2 & 16384) > 0) colour.Red += 0.2f; //footpaths/beach - peds walking?
             if ((u2 & 32768) > 0) colour.Blue += 0.2f; //footpaths - special?
-            if ((u2 & 65536) > 0) colour.Green = 0.2f;//footpaths - mall areas? eg mall, vinewood blvd
+            if ((u2 & 65536) > 0) colour.Green = 0.2f; //footpaths - mall areas? eg mall, vinewood blvd
             //if (u2 >= 131072) { }//other bits unused
 
             uint u5 = _RawData.PolyFlags2; //32 bits
@@ -958,19 +1243,15 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         public void CalculatePosition()
         {
             //calc poly center for display purposes.
             Vector3 pcenter = Vector3.Zero;
             if (Vertices != null)
-            {
                 for (int i = 0; i < Vertices.Length; i++)
-                {
                     pcenter += Vertices[i];
-                }
-            }
-            float c = ((float)Vertices?.Length);
+
+            float c = (float)Vertices?.Length;
             if (c == 0.0f) c = 1.0f;
             Position = pcenter * (1.0f / c);
         }
@@ -979,7 +1260,7 @@ namespace CodeWalker.GameFiles
         {
             Vector3 min = Vector3.Zero;
             Vector3 max = Vector3.Zero;
-            if ((Vertices != null) && (Vertices.Length > 0))
+            if (Vertices != null && Vertices.Length > 0)
             {
                 min = new Vector3(float.MaxValue);
                 max = new Vector3(float.MinValue);
@@ -990,149 +1271,47 @@ namespace CodeWalker.GameFiles
                 }
             }
 
-            _RawData.CellAABB = new NavMeshAABB() { Min = min, Max = max };
-        }
-
-
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            byte[] flags = { Flags1, Flags2, Flags3, Flags4, UnkX, UnkY, Flags5 };
-            YnvXml.WriteRawArray(sb, flags, indent, "Flags", "");
-            YnvXml.WriteRawArray(sb, Vertices, indent, "Vertices", "", YnvXml.FormatVector3, 1);
-            int cind = indent + 1;
-            YnvXml.OpenTag(sb, indent, "Edges");
-            foreach (YnvEdge e in Edges)
-            {
-                YnvXml.Indent(sb, cind);
-                sb.AppendFormat("{0}:{1}, {2}:{3}", e.AreaID1, e.PolyID1, e.AreaID2, e.PolyID2);
-                sb.AppendLine();
-            }
-            YnvXml.CloseTag(sb, indent, "Edges");
-            YnvXml.OpenTag(sb, indent, "EdgesFlags");
-            foreach (YnvEdge e in Edges)
-            {
-                YnvXml.Indent(sb, cind);
-                sb.AppendFormat("{0}:{1}, {2}:{3}", e.Poly1Unk2, e.Poly1Unk3, e.Poly2Unk2, e.Poly2Unk3);
-                sb.AppendLine();
-            }
-            YnvXml.CloseTag(sb, indent, "EdgesFlags");
-            if ((PortalLinks != null) && (PortalLinks.Length > 0))
-            {
-                YnvXml.WriteRawArray(sb, PortalLinks, indent, "Portals", "");
-            }
-        }
-        public void ReadXml(XmlNode node)
-        {
-            byte[] flags = Xml.GetChildRawByteArrayNullable(node, "Flags", 10);
-            if (flags != null)
-            {
-                Flags1 = (flags.Length > 0) ? flags[0] : (byte)0;
-                Flags2 = (flags.Length > 1) ? flags[1] : (byte)0;
-                Flags3 = (flags.Length > 2) ? flags[2] : (byte)0;
-                Flags4 = (flags.Length > 3) ? flags[3] : (byte)0;
-                UnkX = (flags.Length > 4) ? flags[4] : (byte)0;
-                UnkY = (flags.Length > 5) ? flags[5] : (byte)0;
-                Flags5 = (flags.Length > 6) ? flags[6] : (byte)0;
-            }
-            Vertices = Xml.GetChildRawVector3Array(node, "Vertices");
-            Indices = new ushort[Vertices?.Length ?? 0];//needs to be present for later
-            string edgesstr = Xml.GetChildInnerText(node, "Edges");
-            string[] edgesstrarr = edgesstr.Trim().Split('\n');
-            List<YnvEdge> edges = new List<YnvEdge>();
-            foreach (string edgestr in edgesstrarr)
-            {
-                string[] estrparts = edgestr.Trim().Split(',');
-                if (estrparts.Length != 2)
-                { continue; }
-                string[] estrp0 = estrparts[0].Trim().Split(':');
-                string[] estrp1 = estrparts[1].Trim().Split(':');
-                if (estrp0.Length != 2)
-                { continue; }
-                if (estrp1.Length != 2)
-                { continue; }
-
-                uint aid1, aid2, pid1, pid2;
-                uint.TryParse(estrp0[0].Trim(), out aid1);
-                uint.TryParse(estrp0[1].Trim(), out pid1);
-                uint.TryParse(estrp1[0].Trim(), out aid2);
-                uint.TryParse(estrp1[1].Trim(), out pid2);
-
-                YnvEdge e = new YnvEdge();
-                e.AreaID1 = aid1;
-                e.AreaID2 = aid2;
-                e.PolyID1 = pid1;
-                e.PolyID2 = pid2;
-                edges.Add(e);
-            }
-            if (edges.Count > 0)
-            {
-                Edges = edges.ToArray();
-            }
-            string edgesflagsstr = Xml.GetChildInnerText(node, "EdgesFlags");
-            string[] edgesflagsstrarr = edgesflagsstr.Trim().Split('\n');
-            int edgeflagidx = -1;
-            foreach (string edgeflagsstr in edgesflagsstrarr)
-            {
-                edgeflagidx++;
-                string[] estrparts = edgeflagsstr.Trim().Split(',');
-                if (estrparts.Length != 2)
-                { continue; }
-                string[] estrp0 = estrparts[0].Trim().Split(':');
-                string[] estrp1 = estrparts[1].Trim().Split(':');
-                if (estrp0.Length != 2)
-                { continue; }
-                if (estrp1.Length != 2)
-                { continue; }
-
-                uint p1u2, p1u3, p2u2, p2u3;
-                uint.TryParse(estrp0[0].Trim(), out p1u2);
-                uint.TryParse(estrp0[1].Trim(), out p1u3);
-                uint.TryParse(estrp1[0].Trim(), out p2u2);
-                uint.TryParse(estrp1[1].Trim(), out p2u3);
-
-                YnvEdge e = Edges[edgeflagidx];
-                e.Poly1Unk2 = p1u2;
-                e.Poly1Unk3 = p1u3;
-                e.Poly2Unk2 = p2u2;
-                e.Poly2Unk3 = p2u3;
-            }
-
-            PortalLinks = Xml.GetChildRawUshortArrayNullable(node, "Portals");
+            _RawData.CellAABB = new NavMeshAABB { Min = min, Max = max };
         }
 
 
         public override string ToString()
         {
-            return AreaID.ToString() + ", " + Index.ToString();
+            return AreaID + ", " + Index;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YnvPortal : BasePathNode, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YnvPortal : BasePathNode, IMetaXmlItem
     {
         public NavMeshPortal _RawData;
 
         public YnvFile Ynv { get; set; }
-        public NavMeshPortal RawData { get { return _RawData; } set { _RawData = value; } }
 
-        public Vector3 Position { get { return PositionFrom; } set { PositionFrom = value; } }
+        public NavMeshPortal RawData
+        {
+            get => _RawData;
+            set => _RawData = value;
+        }
+
         public Vector3 PositionFrom { get; set; }
         public Vector3 PositionTo { get; set; }
 
-        public byte Angle { get { return _RawData.Angle; } set { _RawData.Angle = value; } }
+        public byte Angle
+        {
+            get => _RawData.Angle;
+            set => _RawData.Angle = value;
+        }
+
         public float Direction
         {
-            get
-            {
-                return (float)Math.PI * 2.0f * Angle / 255.0f;
-            }
-            set
-            {
-                Angle = (byte)Math.Round(value * 255.0f / ((float)Math.PI * 2.0f));
-            }
+            get => (float)Math.PI * 2.0f * Angle / 255.0f;
+            set => Angle = (byte)Math.Round(value * 255.0f / ((float)Math.PI * 2.0f));
         }
+
         public Quaternion Orientation
         {
-            get { return Quaternion.RotationAxis(Vector3.UnitZ, Direction); }
+            get => Quaternion.RotationAxis(Vector3.UnitZ, Direction);
             set
             {
                 Vector3 dir = value.Multiply(Vector3.UnitX);
@@ -1142,15 +1321,86 @@ namespace CodeWalker.GameFiles
         }
 
         public int Index { get; set; }
-        public byte Type { get { return _RawData.Type; } set { _RawData.Type = value; } }//1,2,3
-        public ushort AreaIDFrom { get { return _RawData.AreaIDFrom; } set { _RawData.AreaIDFrom = value; } }//always Ynv.AreaID
-        public ushort AreaIDTo { get { return _RawData.AreaIDTo; } set { _RawData.AreaIDTo = value; } }//always Ynv.AreaID
-        public ushort PolyIDFrom1 { get { return _RawData.PolyIDFrom1; } set { _RawData.PolyIDFrom1 = value; } }
-        public ushort PolyIDFrom2 { get { return _RawData.PolyIDFrom2; } set { _RawData.PolyIDFrom2 = value; } }
-        public ushort PolyIDTo1 { get { return _RawData.PolyIDTo1; } set { _RawData.PolyIDTo1 = value; } }
-        public ushort PolyIDTo2 { get { return _RawData.PolyIDTo2; } set { _RawData.PolyIDTo2 = value; } }
-        public ushort Unk1 { get { return _RawData.FlagsUnk; } set { _RawData.FlagsUnk = value; } }//always 0
-        public byte Unk2 { get { return _RawData.AreaUnk; } set { _RawData.AreaUnk = value; } }//always 0
+
+        public byte Type
+        {
+            get => _RawData.Type;
+            set => _RawData.Type = value;
+        } //1,2,3
+
+        public ushort AreaIDFrom
+        {
+            get => _RawData.AreaIDFrom;
+            set => _RawData.AreaIDFrom = value;
+        } //always Ynv.AreaID
+
+        public ushort AreaIDTo
+        {
+            get => _RawData.AreaIDTo;
+            set => _RawData.AreaIDTo = value;
+        } //always Ynv.AreaID
+
+        public ushort PolyIDFrom1
+        {
+            get => _RawData.PolyIDFrom1;
+            set => _RawData.PolyIDFrom1 = value;
+        }
+
+        public ushort PolyIDFrom2
+        {
+            get => _RawData.PolyIDFrom2;
+            set => _RawData.PolyIDFrom2 = value;
+        }
+
+        public ushort PolyIDTo1
+        {
+            get => _RawData.PolyIDTo1;
+            set => _RawData.PolyIDTo1 = value;
+        }
+
+        public ushort PolyIDTo2
+        {
+            get => _RawData.PolyIDTo2;
+            set => _RawData.PolyIDTo2 = value;
+        }
+
+        public ushort Unk1
+        {
+            get => _RawData.FlagsUnk;
+            set => _RawData.FlagsUnk = value;
+        } //always 0
+
+        public byte Unk2
+        {
+            get => _RawData.AreaUnk;
+            set => _RawData.AreaUnk = value;
+        } //always 0
+
+        public Vector3 Position
+        {
+            get => PositionFrom;
+            set => PositionFrom = value;
+        }
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            YnvXml.ValueTag(sb, indent, "Type", Type.ToString());
+            YnvXml.ValueTag(sb, indent, "Angle", FloatUtil.ToString(Direction));
+            YnvXml.ValueTag(sb, indent, "PolyFrom", PolyIDFrom1.ToString());
+            YnvXml.ValueTag(sb, indent, "PolyTo", PolyIDTo1.ToString());
+            YnvXml.SelfClosingTag(sb, indent, "PositionFrom " + FloatUtil.GetVector3XmlString(PositionFrom));
+            YnvXml.SelfClosingTag(sb, indent, "PositionTo " + FloatUtil.GetVector3XmlString(PositionTo));
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Type = (byte)Xml.GetChildUIntAttribute(node, "Type");
+            Direction = Xml.GetChildFloatAttribute(node, "Angle");
+            PolyIDFrom1 = PolyIDFrom2 = (ushort)Xml.GetChildUIntAttribute(node, "PolyFrom");
+            PolyIDTo1 = PolyIDTo2 = (ushort)Xml.GetChildUIntAttribute(node, "PolyTo");
+            PositionFrom = Xml.GetChildVector3Attributes(node, "PositionFrom");
+            PositionTo = Xml.GetChildVector3Attributes(node, "PositionTo");
+        }
 
 
         public void Init(YnvFile ynv, NavMeshPortal portal)
@@ -1166,28 +1416,10 @@ namespace CodeWalker.GameFiles
             PositionTo += delta;
             //TODO: update _RawData positions!
         }
+
         public void SetOrientation(Quaternion orientation)
         {
             Orientation = orientation;
-        }
-
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            YnvXml.ValueTag(sb, indent, "Type", Type.ToString());
-            YnvXml.ValueTag(sb, indent, "Angle", FloatUtil.ToString(Direction));
-            YnvXml.ValueTag(sb, indent, "PolyFrom", PolyIDFrom1.ToString());
-            YnvXml.ValueTag(sb, indent, "PolyTo", PolyIDTo1.ToString());
-            YnvXml.SelfClosingTag(sb, indent, "PositionFrom " + FloatUtil.GetVector3XmlString(PositionFrom));
-            YnvXml.SelfClosingTag(sb, indent, "PositionTo " + FloatUtil.GetVector3XmlString(PositionTo));
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Type = (byte)Xml.GetChildUIntAttribute(node, "Type");
-            Direction = Xml.GetChildFloatAttribute(node, "Angle");
-            PolyIDFrom1 = PolyIDFrom2 = (ushort)Xml.GetChildUIntAttribute(node, "PolyFrom");
-            PolyIDTo1 = PolyIDTo2 = (ushort)Xml.GetChildUIntAttribute(node, "PolyTo");
-            PositionFrom = Xml.GetChildVector3Attributes(node, "PositionFrom");
-            PositionTo = Xml.GetChildVector3Attributes(node, "PositionTo");
         }
 
         public override string ToString()
@@ -1196,29 +1428,34 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YnvPoint : BasePathNode, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YnvPoint : BasePathNode, IMetaXmlItem
     {
         public NavMeshPoint _RawData;
 
         public YnvFile Ynv { get; set; }
-        public NavMeshPoint RawData { get { return _RawData; } set { _RawData = value; } }
 
-        public Vector3 Position { get; set; }
-        public byte Angle { get { return _RawData.Angle; } set { _RawData.Angle = value; } }
+        public NavMeshPoint RawData
+        {
+            get => _RawData;
+            set => _RawData = value;
+        }
+
+        public byte Angle
+        {
+            get => _RawData.Angle;
+            set => _RawData.Angle = value;
+        }
+
         public float Direction
         {
-            get
-            {
-                return (float)Math.PI * 2.0f * Angle / 255.0f;
-            }
-            set
-            {
-                Angle = (byte)Math.Round(value * 255.0f / ((float)Math.PI * 2.0f));
-            }
+            get => (float)Math.PI * 2.0f * Angle / 255.0f;
+            set => Angle = (byte)Math.Round(value * 255.0f / ((float)Math.PI * 2.0f));
         }
+
         public Quaternion Orientation
         {
-            get { return Quaternion.RotationAxis(Vector3.UnitZ, Direction); }
+            get => Quaternion.RotationAxis(Vector3.UnitZ, Direction);
             set
             {
                 Vector3 dir = value.Multiply(Vector3.UnitX);
@@ -1228,7 +1465,28 @@ namespace CodeWalker.GameFiles
         }
 
         public int Index { get; set; }
-        public byte Type { get { return _RawData.Type; } set { _RawData.Type = value; } }//0,1,2,3,4,5,128,171,254
+
+        public byte Type
+        {
+            get => _RawData.Type;
+            set => _RawData.Type = value;
+        } //0,1,2,3,4,5,128,171,254
+
+        public Vector3 Position { get; set; }
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            YnvXml.ValueTag(sb, indent, "Type", Type.ToString());
+            YnvXml.ValueTag(sb, indent, "Angle", FloatUtil.ToString(Direction));
+            YnvXml.SelfClosingTag(sb, indent, "Position " + FloatUtil.GetVector3XmlString(Position));
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Type = (byte)Xml.GetChildUIntAttribute(node, "Type");
+            Direction = Xml.GetChildFloatAttribute(node, "Angle");
+            Position = Xml.GetChildVector3Attributes(node, "Position");
+        }
 
         public void Init(YnvFile ynv, NavMeshPoint point)
         {
@@ -1241,52 +1499,29 @@ namespace CodeWalker.GameFiles
             Position = pos;
             //TODO! update _RawData.Position!!!
         }
+
         public void SetOrientation(Quaternion orientation)
         {
             Orientation = orientation;
         }
 
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            YnvXml.ValueTag(sb, indent, "Type", Type.ToString());
-            YnvXml.ValueTag(sb, indent, "Angle", FloatUtil.ToString(Direction));
-            YnvXml.SelfClosingTag(sb, indent, "Position " + FloatUtil.GetVector3XmlString(Position));
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Type = (byte)Xml.GetChildUIntAttribute(node, "Type");
-            Direction = Xml.GetChildFloatAttribute(node, "Angle");
-            Position = Xml.GetChildVector3Attributes(node, "Position");
-        }
-
         public override string ToString()
         {
-            return Index.ToString() + ": " + Type.ToString();
+            return Index + ": " + Type;
         }
     }
 
 
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class YnvEdge
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class YnvEdge
     {
         public NavMeshEdge _RawData;
-        public NavMeshEdge RawData { get { return _RawData; } set { _RawData = value; } }
-        public YnvFile Ynv { get; set; }
 
 
-        public uint AreaID1 { get; set; }
-        public uint AreaID2 { get; set; }
-        public uint PolyID1 { get { return _RawData._Poly1.PolyID; } set { _RawData._Poly1.PolyID = value; } }
-        public uint PolyID2 { get { return _RawData._Poly2.PolyID; } set { _RawData._Poly2.PolyID = value; } }
-        public uint Poly1Unk2 { get { return _RawData._Poly1.Unk2; } set { _RawData._Poly1.Unk2 = value; } }
-        public uint Poly2Unk2 { get { return _RawData._Poly2.Unk2; } set { _RawData._Poly2.Unk2 = value; } }
-        public uint Poly1Unk3 { get { return _RawData._Poly1.Unk3; } set { _RawData._Poly1.Unk3 = value; } }
-        public uint Poly2Unk3 { get { return _RawData._Poly2.Unk3; } set { _RawData._Poly2.Unk3 = value; } }
-        public YnvPoly Poly1 { get; set; }
-        public YnvPoly Poly2 { get; set; }
+        public YnvEdge()
+        {
+        }
 
-
-        public YnvEdge() { }
         public YnvEdge(YnvEdge copy, YnvPoly poly)
         {
             _RawData = copy._RawData;
@@ -1297,6 +1532,57 @@ namespace CodeWalker.GameFiles
             AreaID1 = 0x3FFF;
             AreaID2 = 0x3FFF;
         }
+
+        public NavMeshEdge RawData
+        {
+            get => _RawData;
+            set => _RawData = value;
+        }
+
+        public YnvFile Ynv { get; set; }
+
+
+        public uint AreaID1 { get; set; }
+        public uint AreaID2 { get; set; }
+
+        public uint PolyID1
+        {
+            get => _RawData._Poly1.PolyID;
+            set => _RawData._Poly1.PolyID = value;
+        }
+
+        public uint PolyID2
+        {
+            get => _RawData._Poly2.PolyID;
+            set => _RawData._Poly2.PolyID = value;
+        }
+
+        public uint Poly1Unk2
+        {
+            get => _RawData._Poly1.Unk2;
+            set => _RawData._Poly1.Unk2 = value;
+        }
+
+        public uint Poly2Unk2
+        {
+            get => _RawData._Poly2.Unk2;
+            set => _RawData._Poly2.Unk2 = value;
+        }
+
+        public uint Poly1Unk3
+        {
+            get => _RawData._Poly1.Unk3;
+            set => _RawData._Poly1.Unk3 = value;
+        }
+
+        public uint Poly2Unk3
+        {
+            get => _RawData._Poly2.Unk3;
+            set => _RawData._Poly2.Unk3 = value;
+        }
+
+        public YnvPoly Poly1 { get; set; }
+        public YnvPoly Poly2 { get; set; }
 
         public void Init(YnvFile ynv, NavMeshEdge edge)
         {
@@ -1309,37 +1595,27 @@ namespace CodeWalker.GameFiles
             uint ai1 = edge.Poly1.AreaIDInd;
             uint ai2 = edge.Poly2.AreaIDInd;
 
-            AreaID1 = (ai1 < n.AdjAreaIDs.Count) ? n.AdjAreaIDs.Get(ai1) : 16383;
-            AreaID2 = (ai2 < n.AdjAreaIDs.Count) ? n.AdjAreaIDs.Get(ai2) : 16383;
-
+            AreaID1 = ai1 < n.AdjAreaIDs.Count ? n.AdjAreaIDs.Get(ai1) : 16383;
+            AreaID2 = ai2 < n.AdjAreaIDs.Count ? n.AdjAreaIDs.Get(ai2) : 16383;
         }
 
         public override string ToString()
         {
-            return AreaID1.ToString() + ", " + AreaID2.ToString() + ", " + PolyID1.ToString() + ", " + PolyID2.ToString() + ", " +
-                _RawData._Poly1.Unk2.ToString() + ", " + _RawData._Poly2.Unk2.ToString() + ", " +
-                _RawData._Poly1.Unk3.ToString() + ", " + _RawData._Poly2.Unk3.ToString();
+            return AreaID1 + ", " + AreaID2 + ", " + PolyID1 + ", " + PolyID2 + ", " +
+                   _RawData._Poly1.Unk2 + ", " + _RawData._Poly2.Unk2 + ", " +
+                   _RawData._Poly1.Unk3 + ", " + _RawData._Poly2.Unk3;
         }
-
     }
-
-
-
-
-
-
-
 
 
     public class YnvXml : MetaXmlBase
     {
-
         public static string GetXml(YnvFile ynv)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if ((ynv != null) && (ynv.Nav != null))
+            if (ynv != null && ynv.Nav != null)
             {
                 string name = "NavMesh";
 
@@ -1352,14 +1628,11 @@ namespace CodeWalker.GameFiles
 
             return sb.ToString();
         }
-
-
     }
 
 
     public class XmlYnv
     {
-
         public static YnvFile GetYnv(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -1373,9 +1646,6 @@ namespace CodeWalker.GameFiles
             ynv.ReadXml(doc.DocumentElement);
             return ynv;
         }
-
-
-
 
 
         public static List<T> ReadItemList<T>(XmlNode node, string name) where T : IMetaXmlItem, new()
@@ -1393,12 +1663,12 @@ namespace CodeWalker.GameFiles
                         v.ReadXml(inode);
                         vlist.Add(v);
                     }
+
                     return vlist;
                 }
             }
+
             return null;
         }
-
     }
-
 }

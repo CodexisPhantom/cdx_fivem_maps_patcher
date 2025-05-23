@@ -1,16 +1,34 @@
 ﻿using System.Collections.Generic;
-using System.Text;
-using TC = System.ComponentModel.TypeConverterAttribute;
-using EXP = System.ComponentModel.ExpandableObjectConverter;
 using System.IO;
+using System.Text;
 using System.Xml;
 using SharpDX;
+using TC = System.ComponentModel.TypeConverterAttribute;
+using EXP = System.ComponentModel.ExpandableObjectConverter;
 
 namespace CodeWalker.GameFiles
 {
     [TC(typeof(EXP))]
     public class WatermapFile : GameFile, PackedFile
     {
+        public enum WaterItemType
+        {
+            None = 0,
+            River = 1,
+            Lake = 2,
+            Pool = 3
+        }
+
+
+        public WatermapFile() : base(null, GameFileType.Watermap)
+        {
+        }
+
+        public WatermapFile(RpfFileEntry entry) : base(entry, GameFileType.Watermap)
+        {
+            RpfFileEntry = entry;
+        }
+
         public byte[] RawFileData { get; set; }
 
         public uint Magic { get; set; } = 0x574D4150; //'WMAP'
@@ -30,32 +48,23 @@ namespace CodeWalker.GameFiles
         public ushort LakeCount { get; set; } //15
         public ushort PoolCount { get; set; } //314
         public ushort ColoursOffset { get; set; } //13316 
-        public byte[] Unks1 { get; set; }//2,2,16,48,16,48,32,0   ..?
+        public byte[] Unks1 { get; set; } //2,2,16,48,16,48,32,0   ..?
 
         public CompHeader[] CompHeaders { get; set; }
-        public short[] CompWatermapInds { get; set; }//indices into CompWatermapRefs
-        public WaterItemRef[] CompWatermapRefs { get; set; }//contains multibit, type, index1, [index2](optional)
-        public byte[] Zeros1 { get; set; }//x12
+        public short[] CompWatermapInds { get; set; } //indices into CompWatermapRefs
+        public WaterItemRef[] CompWatermapRefs { get; set; } //contains multibit, type, index1, [index2](optional)
+        public byte[] Zeros1 { get; set; } //x12
         public Vector4[] RiverVecs { get; set; }
         public WaterFlow[] Rivers { get; set; }
         public Vector4[] LakeVecs { get; set; }
         public WaterFlow[] Lakes { get; set; }
         public WaterPool[] Pools { get; set; }
-        public Color[] Colours { get; set; }//x342
-        public uint ColourCount { get; set; }//342 (RiverCount + LakeCount + PoolCount)
+        public Color[] Colours { get; set; } //x342
+        public uint ColourCount { get; set; } //342 (RiverCount + LakeCount + PoolCount)
 
 
         public short[] GridWatermapInds { get; set; } //expanded from CompWatermapInds.
         public WaterItemRef[][] GridWatermapRefs { get; set; } //expanded from CompWatermapHeaders. ends up max 7 items
-
-
-        public WatermapFile() : base(null, GameFileType.Watermap)
-        {
-        }
-        public WatermapFile(RpfFileEntry entry) : base(entry, GameFileType.Watermap)
-        {
-            RpfFileEntry = entry;
-        }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -90,57 +99,58 @@ namespace CodeWalker.GameFiles
 
         private void Read(DataReader r)
         {
-            Magic = r.ReadUInt32();//'WMAP'
-            Version = r.ReadUInt32();//100 - version?
-            DataLength = r.ReadUInt32();//59360 - data length (excluding last flags array!)
-            CornerX = r.ReadSingle();//-4050.0f  - min XY?
-            CornerY = r.ReadSingle();//8400.0f   - max XY?
-            TileX = r.ReadSingle();//50.0f  - tile size X
-            TileY = r.ReadSingle();//50.0f  - tile size Y
-            Width = r.ReadUInt16();//183  - image Width
-            Height = r.ReadUInt16();//249  - image Height
-            WatermapIndsCount = r.ReadUInt32();//10668
-            WatermapRefsCount = r.ReadUInt32();//11796
-            RiverVecsCount = r.ReadUInt16();//99
-            RiverCount = r.ReadUInt16();//13
-            LakeVecsCount = r.ReadUInt16();//28
-            LakeCount = r.ReadUInt16();//15
-            PoolCount = r.ReadUInt16();//314
-            ColoursOffset = r.ReadUInt16();//13316    
-            Unks1 = r.ReadBytes(8);//2,2,16,48,16,48,32,0      flags..?
+            Magic = r.ReadUInt32(); //'WMAP'
+            Version = r.ReadUInt32(); //100 - version?
+            DataLength = r.ReadUInt32(); //59360 - data length (excluding last flags array!)
+            CornerX = r.ReadSingle(); //-4050.0f  - min XY?
+            CornerY = r.ReadSingle(); //8400.0f   - max XY?
+            TileX = r.ReadSingle(); //50.0f  - tile size X
+            TileY = r.ReadSingle(); //50.0f  - tile size Y
+            Width = r.ReadUInt16(); //183  - image Width
+            Height = r.ReadUInt16(); //249  - image Height
+            WatermapIndsCount = r.ReadUInt32(); //10668
+            WatermapRefsCount = r.ReadUInt32(); //11796
+            RiverVecsCount = r.ReadUInt16(); //99
+            RiverCount = r.ReadUInt16(); //13
+            LakeVecsCount = r.ReadUInt16(); //28
+            LakeCount = r.ReadUInt16(); //15
+            PoolCount = r.ReadUInt16(); //314
+            ColoursOffset = r.ReadUInt16(); //13316    
+            Unks1 = r.ReadBytes(8); //2,2,16,48,16,48,32,0      flags..?
 
 
-            int shortslen = (int)((WatermapIndsCount + WatermapRefsCount) * 2) + (Height * 4);//offset from here to Zeros1
-            int padcount = (16 - (shortslen % 16)) % 16;//12 .. is this right? all are zeroes.
-            int strucslen = ((RiverVecsCount + LakeVecsCount) * 16) + ((RiverCount + LakeCount) * 48) + (PoolCount * 32);
+            int shortslen =
+                (int)((WatermapIndsCount + WatermapRefsCount) * 2) + Height * 4; //offset from here to Zeros1
+            int padcount = (16 - shortslen % 16) % 16; //12 .. is this right? all are zeroes.
+            int strucslen = (RiverVecsCount + LakeVecsCount) * 16 + (RiverCount + LakeCount) * 48 + PoolCount * 32;
             int datalen = shortslen + padcount + strucslen; //DataLength calculation
-            int extoffs = padcount + strucslen - 60 - 60;//ExtraFlagsOffset calculation
+            int extoffs = padcount + strucslen - 60 - 60; //ExtraFlagsOffset calculation
 
 
-            CompHeaders = new CompHeader[Height];//249 - image height
+            CompHeaders = new CompHeader[Height]; //249 - image height
             for (int i = 0; i < Height; i++) CompHeaders[i].Read(r);
 
-            CompWatermapInds = new short[WatermapIndsCount];//10668
+            CompWatermapInds = new short[WatermapIndsCount]; //10668
             for (int i = 0; i < WatermapIndsCount; i++) CompWatermapInds[i] = r.ReadInt16();
 
-            CompWatermapRefs = new WaterItemRef[WatermapRefsCount];//11796
+            CompWatermapRefs = new WaterItemRef[WatermapRefsCount]; //11796
             for (int i = 0; i < WatermapRefsCount; i++) CompWatermapRefs[i] = new WaterItemRef(r.ReadUInt16());
 
-            Zeros1 = r.ReadBytes(padcount);//align to 16 bytes (position:45984)
-            
-            RiverVecs = new Vector4[RiverVecsCount];//99
+            Zeros1 = r.ReadBytes(padcount); //align to 16 bytes (position:45984)
+
+            RiverVecs = new Vector4[RiverVecsCount]; //99
             for (int i = 0; i < RiverVecsCount; i++) RiverVecs[i] = r.ReadVector4();
-            
-            Rivers = new WaterFlow[RiverCount];//13
+
+            Rivers = new WaterFlow[RiverCount]; //13
             for (int i = 0; i < RiverCount; i++) Rivers[i] = new WaterFlow(WaterItemType.River, r, RiverVecs);
-            
-            LakeVecs = new Vector4[LakeVecsCount];//28
+
+            LakeVecs = new Vector4[LakeVecsCount]; //28
             for (int i = 0; i < LakeVecsCount; i++) LakeVecs[i] = r.ReadVector4();
-            
-            Lakes = new WaterFlow[LakeCount];//15
+
+            Lakes = new WaterFlow[LakeCount]; //15
             for (int i = 0; i < LakeCount; i++) Lakes[i] = new WaterFlow(WaterItemType.Lake, r, LakeVecs);
-            
-            Pools = new WaterPool[PoolCount];//314
+
+            Pools = new WaterPool[PoolCount]; //314
             for (int i = 0; i < PoolCount; i++) Pools[i] = new WaterPool(r);
 
             ColourCount = (uint)(RiverCount + LakeCount + PoolCount); //342
@@ -154,17 +164,18 @@ namespace CodeWalker.GameFiles
                 WaterFlow river = Rivers[i];
                 river.Colour = Colours[flagoff++];
             }
+
             for (int i = 0; i < Lakes.Length; i++)
             {
                 WaterFlow lake = Lakes[i];
                 lake.Colour = Colours[flagoff++];
             }
+
             for (int i = 0; i < Pools.Length; i++)
             {
                 WaterPool pool = Pools[i];
                 pool.Colour = Colours[flagoff++];
             }
-
 
 
             for (int i = 0; i < CompWatermapRefs.Length; i++) //assign items to CompWatermapRefs
@@ -179,7 +190,6 @@ namespace CodeWalker.GameFiles
             }
 
 
-
             //decompress main data into grid form
             GridWatermapInds = new short[Width * Height];
             GridWatermapRefs = new WaterItemRef[Width * Height][];
@@ -192,7 +202,7 @@ namespace CodeWalker.GameFiles
                     int x = ch.Start + i;
                     short n = CompWatermapInds[ch.Offset + i];
                     int o = y * Width + x;
-                    
+
                     reflist.Clear();
                     WaterItemRef[] refarr = null;
                     if (n >= 0)
@@ -216,22 +226,13 @@ namespace CodeWalker.GameFiles
             }
 
 
-
-
-
-
-
             //var pgm = GetPGM();
 
 
-            long rem = r.Length - r.Position;//60788
+            long rem = r.Length - r.Position; //60788
             if (rem != 0)
-            { }
-
-
-
-
-
+            {
+            }
 
 
             //var sb = new StringBuilder();
@@ -246,17 +247,11 @@ namespace CodeWalker.GameFiles
             //    sb.AppendLine();
             //}
             //var hstr = sb.ToString();
-
-
-
-
         }
+
         private void Write(DataWriter w)
         {
-
-
             w.Write(Magic);
-
         }
 
 
@@ -269,6 +264,7 @@ namespace CodeWalker.GameFiles
             //HmapXml.WriteRawArray(sb, InvertImage(MaxHeights, Width, Height), indent, "MaxHeights", "", HmapXml.FormatHexByte, Width);
             //HmapXml.WriteRawArray(sb, InvertImage(MinHeights, Width, Height), indent, "MinHeights", "", HmapXml.FormatHexByte, Width);
         }
+
         public void ReadXml(XmlNode node)
         {
             //Width = (ushort)Xml.GetChildUIntAttribute(node, "Width");
@@ -279,6 +275,29 @@ namespace CodeWalker.GameFiles
             //MinHeights = InvertImage(Xml.GetChildRawByteArray(node, "MinHeights"), Width, Height);
         }
 
+
+        public string GetPGM()
+        {
+            if (GridWatermapInds == null) return string.Empty;
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("P2\n{0} {1}\n65535\n", Width, Height);
+            //sb.AppendFormat("P2\n{0} {1}\n255\n", Width, Height);
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    short h = GridWatermapInds[y * Width + x];
+                    sb.Append(h.ToString());
+                    sb.Append(" ");
+                }
+
+                sb.Append("\n");
+            }
+
+            return sb.ToString();
+        }
 
 
         public struct CompHeader
@@ -306,23 +325,27 @@ namespace CodeWalker.GameFiles
         {
             public ushort RawValue { get; set; }
 
-            public bool EndOfList { get { return ((RawValue >> 15) & 0x1) == 1; } } //highest bit indicates if it's at the end of the list
-            public WaterItemType Type { get { return (WaterItemType)((RawValue >> 13) & 0x3); } } //next 2 bits are the item type
-            public ushort ItemIndex 
-            { 
-                get 
+            public bool EndOfList =>
+                ((RawValue >> 15) & 0x1) == 1; //highest bit indicates if it's at the end of the list
+
+            public WaterItemType Type => (WaterItemType)((RawValue >> 13) & 0x3); //next 2 bits are the item type
+
+            public ushort ItemIndex
+            {
+                get
                 {
                     switch (Type)
                     {
                         case WaterItemType.River:
-                        case WaterItemType.Lake: 
+                        case WaterItemType.Lake:
                             return (ushort)((RawValue >> 7) & 0x3F);
                         case WaterItemType.Pool:
                         default:
                             return (ushort)(RawValue & 0x7FF);
                     }
-                } 
+                }
             }
+
             public ushort VectorIndex
             {
                 get
@@ -340,6 +363,7 @@ namespace CodeWalker.GameFiles
             }
 
             public WaterItem Item { get; set; } //lookup reference
+
             public Vector4 Vector
             {
                 get
@@ -350,38 +374,36 @@ namespace CodeWalker.GameFiles
                 }
             }
 
-            public WaterItemRef(ushort rawval) { RawValue = rawval; Item = null; }
+            public WaterItemRef(ushort rawval)
+            {
+                RawValue = rawval;
+                Item = null;
+            }
 
             public override string ToString()
             {
-                if (Item != null) return Item.ToString() + ": " + Vector.ToString();
-                return Type.ToString() + ": " + ItemIndex.ToString() + ": " + VectorIndex.ToString();
+                if (Item != null) return Item + ": " + Vector;
+                return Type + ": " + ItemIndex + ": " + VectorIndex;
             }
         }
-        public enum WaterItemType
-        {
-            None = 0,
-            River = 1,
-            Lake = 2,
-            Pool = 3,
-        }
+
         public abstract class WaterItem
         {
-            //length:32
-            public Vector3 Position { get; set; }
-            public uint Unk04 { get; set; }//0
-            public Vector3 Size { get; set; }
-            public uint Unk09 { get; set; }//0
-
-            public WaterItemType Type { get; private set; }
-
-            public Vector4[] Vectors { get; set; }//built from packed data
-            public Color Colour { get; set; } //from the end of the file
-
             public WaterItem(WaterItemType type)
             {
                 Type = type;
             }
+
+            //length:32
+            public Vector3 Position { get; set; }
+            public uint Unk04 { get; set; } //0
+            public Vector3 Size { get; set; }
+            public uint Unk09 { get; set; } //0
+
+            public WaterItemType Type { get; }
+
+            public Vector4[] Vectors { get; set; } //built from packed data
+            public Color Colour { get; set; } //from the end of the file
 
             public virtual void Read(DataReader r)
             {
@@ -391,9 +413,12 @@ namespace CodeWalker.GameFiles
                 Unk09 = r.ReadUInt32();
 
                 if (Unk04 != 0)
-                { }
+                {
+                }
+
                 if (Unk09 != 0)
-                { }
+                {
+                }
             }
 
             public override string ToString()
@@ -401,30 +426,31 @@ namespace CodeWalker.GameFiles
                 return string.Format("{0} - Size: {1},  Pos: {2}", Type, Size, Position);
             }
         }
+
         public class WaterFlow : WaterItem
         {
-            //length:48 (including base)
-            public byte VectorCount { get; set; }
-            public byte Unk11 { get; set; }//0
-            public ushort VectorOffset { get; set; }
-            public uint Unk13 { get; set; }//0
-            public uint Unk14 { get; set; }//0
-            public uint Unk15 { get; set; }//0
+            public WaterFlow(WaterItemType type) : base(type)
+            {
+            }
 
-            public WaterFlow(WaterItemType type) : base(type) { }
             public WaterFlow(WaterItemType type, DataReader r, Vector4[] vecs) : base(type)
-            { 
+            {
                 Read(r);
 
                 if (VectorCount > 0)
                 {
                     Vectors = new Vector4[VectorCount];
-                    for (int i = 0; i < VectorCount; i++)
-                    {
-                        Vectors[i] = vecs[VectorOffset + i];
-                    }
+                    for (int i = 0; i < VectorCount; i++) Vectors[i] = vecs[VectorOffset + i];
                 }
             }
+
+            //length:48 (including base)
+            public byte VectorCount { get; set; }
+            public byte Unk11 { get; set; } //0
+            public ushort VectorOffset { get; set; }
+            public uint Unk13 { get; set; } //0
+            public uint Unk14 { get; set; } //0
+            public uint Unk15 { get; set; } //0
 
             public override void Read(DataReader r)
             {
@@ -444,20 +470,26 @@ namespace CodeWalker.GameFiles
                 //{ }
                 //if (Unk15 != 0)
                 //{ }
-
             }
 
             public override string ToString()
             {
-                return base.ToString() + " : " + VectorCount.ToString();
+                return base.ToString() + " : " + VectorCount;
             }
         }
+
         public class WaterPool : WaterItem
         {
             //length:32 (from base)
 
-            public WaterPool() : base(WaterItemType.Pool) { }
-            public WaterPool(DataReader r) : base(WaterItemType.Pool) { Read(r); }
+            public WaterPool() : base(WaterItemType.Pool)
+            {
+            }
+
+            public WaterPool(DataReader r) : base(WaterItemType.Pool)
+            {
+                Read(r);
+            }
 
             public override void Read(DataReader r)
             {
@@ -469,46 +501,17 @@ namespace CodeWalker.GameFiles
                 return base.ToString();
             }
         }
-
-
-
-
-        public string GetPGM()
-        {
-            if (GridWatermapInds == null) return string.Empty;
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendFormat("P2\n{0} {1}\n65535\n", Width, Height);
-            //sb.AppendFormat("P2\n{0} {1}\n255\n", Width, Height);
-
-            for (int y = 0; y < Height; y++)
-            {
-                for (int x = 0; x < Width; x++)
-                {
-                    short h = GridWatermapInds[y * Width + x];
-                    sb.Append(h.ToString());
-                    sb.Append(" ");
-                }
-                sb.Append("\n");
-            }
-
-            return sb.ToString();
-        }
-
-
-
     }
 
 
     public class WatermapXml : MetaXmlBase
     {
-
         public static string GetXml(WatermapFile wmf)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if ((wmf != null))
+            if (wmf != null)
             {
                 string name = "Watermap";
 
@@ -521,14 +524,11 @@ namespace CodeWalker.GameFiles
 
             return sb.ToString();
         }
-
-
     }
 
 
     public class XmlWatermap
     {
-
         public static WatermapFile GetWatermap(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -542,8 +542,5 @@ namespace CodeWalker.GameFiles
             wmf.ReadXml(doc.DocumentElement);
             return wmf;
         }
-
-
     }
-
 }

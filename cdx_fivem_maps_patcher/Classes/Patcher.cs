@@ -4,9 +4,9 @@ namespace cdx_fivem_maps_patcher.Classes;
 
 public class Patcher
 {
-    private string _serverPath;
-    private RpfManager _rpfManager;
-    private GameFileCache _gameFileCache;
+    private readonly GameFileCache _gameFileCache;
+    private readonly RpfManager _rpfManager;
+    private readonly string _serverPath;
 
     public Patcher(GameFileCache gameFileCache, string serverPath)
     {
@@ -14,7 +14,7 @@ public class Patcher
         _gameFileCache = gameFileCache;
         _serverPath = serverPath;
     }
-    
+
     public void Init()
     {
         while (true)
@@ -35,7 +35,7 @@ public class Patcher
             }
         }
     }
-    
+
     private void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));
@@ -51,69 +51,68 @@ public class Patcher
             Console.WriteLine(Messages.Get("no_duplicates_found"));
             return;
         }
+
         Console.WriteLine(Messages.Get("duplicates_found"));
-        foreach (KeyValuePair<string, List<string>> entry in duplicates)
-        {
-            PatchYmap(entry.Key, entry.Value);
-        }
+        foreach (KeyValuePair<string, List<string>> entry in duplicates) PatchYmap(entry.Key, entry.Value);
     }
-    
+
     private void PatchYmap(string name, List<string> files)
     {
         //Console.WriteLine($"Patching {name}...");
         Dictionary<uint, RpfFileEntry> ymapDict = _gameFileCache.YmapDict;
-        
-        uint ymapHash = (from entry in _gameFileCache.YmapDict where entry.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase) select entry.Key).FirstOrDefault();
-        if (ymapHash == 0) 
-        {
+
+        uint ymapHash =
+            (from entry in _gameFileCache.YmapDict
+                where entry.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                select entry.Key).FirstOrDefault();
+        if (ymapHash == 0)
             //Console.WriteLine($"Ymap {name} not found in cache.");
             return;
-        }
-        
+
         RpfFileEntry ymapEntry = ymapDict[ymapHash];
-        YmapFile mainYmap = _rpfManager.GetFile<YmapFile>(ymapEntry);
-        
+        YmapFile? mainYmap = _rpfManager.GetFile<YmapFile>(ymapEntry);
+
         List<YmapFile> ymapFiles = [];
         foreach (string filePath in files)
-        {
             try
             {
                 YmapFile ymap = OpenFile(filePath);
                 ymapFiles.Add(ymap);
+                //File.Move(filePath, filePath + ".backup", true);
             }
             catch (Exception ex)
             {
                 //Console.WriteLine($"Error patching {filePath}: {ex.Message}");
             }
-        }
-        
+
         if (ymapFiles.Count == 0)
-        {
             //Console.WriteLine($"No valid Ymap files found to patch {name}.");
             return;
-        }
 
-        if (mainYmap.AllEntities != null && mainYmap.AllEntities.Length != 0)
-        {
-            MergeYmapEntities(mainYmap, ymapFiles);
-        }
+        if (mainYmap.AllEntities != null && mainYmap.AllEntities.Length != 0) MergeYmapEntities(mainYmap, ymapFiles);
     }
-    
+
     private YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
     {
-        YmapEntityDef[] mainEntities = mainYmap.AllEntities;
-        
-        Console.WriteLine($"Merging {ymapFiles.Count} Ymap files into {mainYmap}");
-        Console.WriteLine($"Main Ymap has {mainEntities.Length} entities.");
-        foreach (YmapFile ymapFile in ymapFiles)
+        List<YmapEntityDef> mainEntities = mainYmap.AllEntities.ToList();
+
+        List<YmapEntityDef> entitiesToAdd = [];
+        List<YmapEntityDef> entitiesToRemove = [];
+
+        YmapEntityDef[] entites = mainYmap.AllEntities;
+
+        foreach (YmapFile ymap in ymapFiles)
         {
-            YmapEntityDef[] patchEntities = ymapFile.AllEntities;
-            Console.WriteLine($"Patching Ymap {ymapFile} with {patchEntities.Length} entities.");
+            if (ymap.AllEntities == null || ymap.AllEntities.Length == 0) continue;
+
+            foreach (YmapEntityDef? entity in ymap.AllEntities)
+                if (!entites.Contains(entity))
+                    entitiesToAdd.Add(entity);
         }
-        
-        return mainEntities;
+
+        return mainEntities.ToArray();
     }
-    
+
     public YmapFile OpenFile(string path)
     {
         byte[] data = File.ReadAllBytes(path);
@@ -123,7 +122,7 @@ public class Patcher
         ymap.FilePath = path;
         return ymap;
     }
-    
+
     private RpfFileEntry CreateFileEntry(string name, string path, ref byte[] data)
     {
         RpfFileEntry e;
@@ -142,6 +141,7 @@ public class Patcher
             be.FileUncompressedSize = be.FileSize;
             e = be;
         }
+
         e.Name = name;
         e.NameLower = name.ToLowerInvariant();
         e.NameHash = JenkHash.GenHash(e.NameLower);
@@ -157,18 +157,12 @@ public class Patcher
         try
         {
             if (!Directory.Exists(directoryPath))
-            {
                 throw new DirectoryNotFoundException($"Directory {directoryPath} does not exist.");
-            }
-            
+
             string[] ymapFiles = Directory.GetFiles(directoryPath, "*.ymap", SearchOption.AllDirectories);
-            if (ymapFiles.Length == 0)
-            {
-                return nameToFiles;
-            }
+            if (ymapFiles.Length == 0) return nameToFiles;
 
             foreach (string filePath in ymapFiles)
-            {
                 try
                 {
                     string fileName = Path.GetFileName(filePath);
@@ -184,7 +178,6 @@ public class Patcher
                 {
                     Console.WriteLine($"Error accessing file {filePath}: {ex.Message}");
                 }
-            }
 
             return nameToFiles
                 .Where(kvp => kvp.Value.Count > 1)
@@ -196,6 +189,4 @@ public class Patcher
             return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         }
     }
-
 }
-

@@ -23,12 +23,11 @@
 //shamelessly stolen
 
 
-
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using SharpDX;
 
 namespace CodeWalker.GameFiles
 {
@@ -49,60 +48,44 @@ namespace CodeWalker.GameFiles
         Uint64 = 6,
         Float = 7,
         Double = 8,
-        String = 9,
+        String = 9
     }
 
     public class DataReader
     {
-        private Stream baseStream;
+        private readonly Stream baseStream;
 
         /// <summary>
-        /// Gets or sets the endianess of the underlying stream.
-        /// </summary>
-        public Endianess Endianess
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Gets the length of the underlying stream.
-        /// </summary>
-        public virtual long Length
-        {
-            get
-            {
-                return baseStream.Length;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the position within the underlying stream.
-        /// </summary>
-        public virtual long Position
-        {
-            get
-            {
-                return baseStream.Position;
-            }
-            set
-            {
-                baseStream.Position = value;
-            }
-        }
-
-        /// <summary>
-        /// Initializes a new data reader for the specified stream.
+        ///     Initializes a new data reader for the specified stream.
         /// </summary>
         public DataReader(Stream stream, Endianess endianess = Endianess.LittleEndian)
         {
-            this.baseStream = stream;
-            this.Endianess = endianess;
+            baseStream = stream;
+            Endianess = endianess;
         }
 
         /// <summary>
-        /// Reads data from the underlying stream. This is the only method that directly accesses
-        /// the data in the underlying stream.
+        ///     Gets or sets the endianess of the underlying stream.
+        /// </summary>
+        public Endianess Endianess { get; set; }
+
+        /// <summary>
+        ///     Gets the length of the underlying stream.
+        /// </summary>
+        public virtual long Length => baseStream.Length;
+
+        /// <summary>
+        ///     Gets or sets the position within the underlying stream.
+        /// </summary>
+        public virtual long Position
+        {
+            get => baseStream.Position;
+            set => baseStream.Position = value;
+        }
+
+        /// <summary>
+        ///     Reads data from the underlying stream. This is the only method that directly accesses
+        ///     the data in the underlying stream.
         /// </summary>
         protected virtual byte[] ReadFromStream(int count, bool ignoreEndianess = false)
         {
@@ -110,16 +93,13 @@ namespace CodeWalker.GameFiles
             baseStream.Read(buffer, 0, count);
 
             // handle endianess
-            if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
-            {
-                Array.Reverse(buffer);
-            }
+            if (!ignoreEndianess && Endianess == Endianess.BigEndian) Array.Reverse(buffer);
 
             return buffer;
         }
 
         /// <summary>
-        /// Reads a byte.
+        ///     Reads a byte.
         /// </summary>
         public byte ReadByte()
         {
@@ -127,7 +107,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a sequence of bytes.
+        ///     Reads a sequence of bytes.
         /// </summary>
         public byte[] ReadBytes(int count)
         {
@@ -135,7 +115,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a signed 16-bit value.
+        ///     Reads a signed 16-bit value.
         /// </summary>
         public short ReadInt16()
         {
@@ -143,7 +123,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a signed 32-bit value.
+        ///     Reads a signed 32-bit value.
         /// </summary>
         public int ReadInt32()
         {
@@ -151,7 +131,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a signed 64-bit value.
+        ///     Reads a signed 64-bit value.
         /// </summary>
         public long ReadInt64()
         {
@@ -159,7 +139,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads an unsigned 16-bit value.
+        ///     Reads an unsigned 16-bit value.
         /// </summary>
         public ushort ReadUInt16()
         {
@@ -167,7 +147,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads an unsigned 32-bit value.
+        ///     Reads an unsigned 32-bit value.
         /// </summary>
         public uint ReadUInt32()
         {
@@ -175,7 +155,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads an unsigned 64-bit value.
+        ///     Reads an unsigned 64-bit value.
         /// </summary>
         public ulong ReadUInt64()
         {
@@ -183,7 +163,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a single precision floating point value.
+        ///     Reads a single precision floating point value.
         /// </summary>
         public float ReadSingle()
         {
@@ -191,7 +171,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a double precision floating point value.
+        ///     Reads a double precision floating point value.
         /// </summary>
         public double ReadDouble()
         {
@@ -199,7 +179,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a string.
+        ///     Reads a string.
         /// </summary>
         public string ReadString()
         {
@@ -223,6 +203,7 @@ namespace CodeWalker.GameFiles
             v.Z = ReadSingle();
             return v;
         }
+
         public Vector4 ReadVector4()
         {
             Vector4 v = new Vector4();
@@ -256,8 +237,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
-
         //TODO: put this somewhere else...
         public static uint SizeOf(DataType type)
         {
@@ -276,67 +255,47 @@ namespace CodeWalker.GameFiles
                 case DataType.String: return 0; //how long is a string..?
             }
         }
-
-
-
-
     }
 
     public class DataWriter
     {
-        private Stream baseStream;
+        private readonly Stream baseStream;
 
         /// <summary>
-        /// Gets or sets the endianess of the underlying stream.
-        /// </summary>
-        public Endianess Endianess
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Gets the length of the underlying stream.
-        /// </summary>
-        public virtual long Length
-        {
-            get
-            {
-                return baseStream.Length;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the position within the underlying stream.
-        /// </summary>
-        public virtual long Position
-        {
-            get
-            {
-                return baseStream.Position;
-            }
-            set
-            {
-                baseStream.Position = value;
-            }
-        }
-
-        /// <summary>
-        /// Initializes a new data writer for the specified stream.
+        ///     Initializes a new data writer for the specified stream.
         /// </summary>
         public DataWriter(Stream stream, Endianess endianess = Endianess.LittleEndian)
         {
-            this.baseStream = stream;
-            this.Endianess = endianess;
+            baseStream = stream;
+            Endianess = endianess;
         }
 
         /// <summary>
-        /// Writes data to the underlying stream. This is the only method that directly accesses
-        /// the data in the underlying stream.
+        ///     Gets or sets the endianess of the underlying stream.
+        /// </summary>
+        public Endianess Endianess { get; set; }
+
+        /// <summary>
+        ///     Gets the length of the underlying stream.
+        /// </summary>
+        public virtual long Length => baseStream.Length;
+
+        /// <summary>
+        ///     Gets or sets the position within the underlying stream.
+        /// </summary>
+        public virtual long Position
+        {
+            get => baseStream.Position;
+            set => baseStream.Position = value;
+        }
+
+        /// <summary>
+        ///     Writes data to the underlying stream. This is the only method that directly accesses
+        ///     the data in the underlying stream.
         /// </summary>
         protected virtual void WriteToStream(byte[] value, bool ignoreEndianess = false)
         {
-            if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
+            if (!ignoreEndianess && Endianess == Endianess.BigEndian)
             {
                 byte[] buffer = (byte[])value.Clone();
                 Array.Reverse(buffer);
@@ -349,15 +308,15 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a byte.
+        ///     Writes a byte.
         /// </summary>
         public void Write(byte value)
         {
-            WriteToStream(new byte[] { value });
+            WriteToStream(new[] { value });
         }
 
         /// <summary>
-        /// Writes a sequence of bytes.
+        ///     Writes a sequence of bytes.
         /// </summary>
         public void Write(byte[] value)
         {
@@ -365,7 +324,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a signed 16-bit value.
+        ///     Writes a signed 16-bit value.
         /// </summary>
         public void Write(short value)
         {
@@ -373,7 +332,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a signed 32-bit value.
+        ///     Writes a signed 32-bit value.
         /// </summary>
         public void Write(int value)
         {
@@ -381,7 +340,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a signed 64-bit value.
+        ///     Writes a signed 64-bit value.
         /// </summary>
         public void Write(long value)
         {
@@ -389,7 +348,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes an unsigned 16-bit value.
+        ///     Writes an unsigned 16-bit value.
         /// </summary>
         public void Write(ushort value)
         {
@@ -397,7 +356,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes an unsigned 32-bit value.
+        ///     Writes an unsigned 32-bit value.
         /// </summary>
         public void Write(uint value)
         {
@@ -405,7 +364,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes an unsigned 64-bit value.
+        ///     Writes an unsigned 64-bit value.
         /// </summary>
         public void Write(ulong value)
         {
@@ -413,7 +372,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a single precision floating point value.
+        ///     Writes a single precision floating point value.
         /// </summary>
         public void Write(float value)
         {
@@ -421,7 +380,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a double precision floating point value.
+        ///     Writes a double precision floating point value.
         /// </summary>
         public void Write(double value)
         {
@@ -429,7 +388,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a string.
+        ///     Writes a string.
         /// </summary>
         public void Write(string value)
         {
@@ -439,13 +398,13 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         public void Write(Vector3 value)
         {
             Write(value.X);
             Write(value.Y);
             Write(value.Z);
         }
+
         public void Write(Vector4 value)
         {
             Write(value.X);
@@ -473,9 +432,5 @@ namespace CodeWalker.GameFiles
             Write(value.M34);
             Write(value.M44);
         }
-
     }
-
-
-
 }

@@ -19,7 +19,7 @@ namespace CodeWalker.GameFiles
         Unk2 = 12,
         Unk3 = 13,
         Unk4 = 14,
-        Unk5 = 15,
+        Unk5 = 15
     }
 
     public static class VertexComponentTypes
@@ -61,7 +61,6 @@ namespace CodeWalker.GameFiles
                 default: return 0;
             }
         }
-
     }
 
     public enum VertexDeclarationTypes : ulong
@@ -69,7 +68,7 @@ namespace CodeWalker.GameFiles
         GTAV1 = 0x7755555555996996, // GTAV - used by most drawables
         GTAV2 = 0x030000000199A006, // GTAV - used on cloth?
         GTAV3 = 0x0300000001996006, // GTAV - used on cloth?
-        GTAV4 = 0x7655555555996996, // GTAV - used by FragGlassWindow
+        GTAV4 = 0x7655555555996996 // GTAV - used by FragGlassWindow
 
         //Types4 = 0x0000000007097007, // Max Payne 3
         //Types5 = 0x0700000007097977, // Max Payne 3
@@ -78,7 +77,7 @@ namespace CodeWalker.GameFiles
         //Types8 = 0x0700007777997977, // Max Payne 3
     }
 
-    public enum VertexSemantics : int
+    public enum VertexSemantics
     {
         Position = 0,
         BlendWeights = 1,
@@ -95,7 +94,7 @@ namespace CodeWalker.GameFiles
         TexCoord6 = 12,
         TexCoord7 = 13,
         Tangent = 14,
-        Binormal = 15,
+        Binormal = 15
     }
 
     public enum VertexType : uint
@@ -125,8 +124,8 @@ namespace CodeWalker.GameFiles
         PC = 17,
         PCC = 7,
         PCCH2H4 = 2147500121, //0x80004059  (16473 + 0x80000000) DefaultEx Cloth?
-        PNCH2 =   2147483737, //0x80000059  (89 + 0x80000000) Default Cloth?
-        PNCTTTTX = 19673,  //normal_spec_detail_dpm_vertdecal_tnt
+        PNCH2 = 2147483737, //0x80000059  (89 + 0x80000000) Default Cloth?
+        PNCTTTTX = 19673, //normal_spec_detail_dpm_vertdecal_tnt
         PNCTTTT = 985,
         PBBNCCTT = 255,
         PCTT = 209,
@@ -137,10 +136,10 @@ namespace CodeWalker.GameFiles
         PBBNCTTT = 479,
         PNCTT = 217,
         PNCTTT = 473,
-        PBBNCTTTX = 16863,
+        PBBNCTTTX = 16863
     }
 
-    public struct VertexTypeGTAV1    //0x7755555555996996
+    public struct VertexTypeGTAV1 //0x7755555555996996
     {
         public Vector3 Position;
         public uint BlendWeights;
@@ -160,7 +159,7 @@ namespace CodeWalker.GameFiles
         public Vector4 Binormal;
     }
 
-    public struct VertexTypeGTAV2    //0x030000000199A006
+    public struct VertexTypeGTAV2 //0x030000000199A006
     {
         public Vector3 Position;
         public uint Normal; // Packed as Dec3N 
@@ -170,7 +169,7 @@ namespace CodeWalker.GameFiles
         public Half4 Tangent;
     }
 
-    public struct VertexTypeGTAV3    //0x0300000001996006
+    public struct VertexTypeGTAV3 //0x0300000001996006
     {
         public Vector3 Position;
         public Vector3 Normal;
@@ -180,11 +179,9 @@ namespace CodeWalker.GameFiles
         public Half4 Tangent;
     }
 
-    public struct EditorVertex    //vertex data to be used by the editor. TODO: maybe move somewhere else.
+    public struct EditorVertex //vertex data to be used by the editor. TODO: maybe move somewhere else.
     {
         public Vector3 Position;
         public uint Colour;
     }
-
-
 }

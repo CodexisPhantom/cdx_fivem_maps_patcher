@@ -8,17 +8,17 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YfdFile : GameFile, PackedFile
     {
-        public FrameFilterDictionary FrameFilterDictionary { get; set; }
-
-        public string LoadException { get; set; }
-
-
         public YfdFile() : base(null, GameFileType.Yfd)
         {
         }
+
         public YfdFile(RpfFileEntry entry) : base(entry, GameFileType.Yfd)
         {
         }
+
+        public FrameFilterDictionary FrameFilterDictionary { get; set; }
+
+        public string LoadException { get; set; }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -28,10 +28,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = null;
             try
@@ -45,7 +42,6 @@ namespace CodeWalker.GameFiles
             }
 
             FrameFilterDictionary = rd?.ReadBlock<FrameFilterDictionary>();
-
         }
 
         public byte[] Save()
@@ -65,13 +61,10 @@ namespace CodeWalker.GameFiles
             sb.AppendLine(XmlHeader);
 
             if (yfd?.FrameFilterDictionary != null)
-            {
                 FrameFilterDictionary.WriteXmlNode(yfd.FrameFilterDictionary, sb, 0);
-            }
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYfd

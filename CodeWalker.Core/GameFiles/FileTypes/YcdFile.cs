@@ -12,23 +12,30 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YcdFile : GameFile, PackedFile
     {
+        public YcdFile() : base(null, GameFileType.Ycd)
+        {
+        }
+
+        public YcdFile(RpfFileEntry entry) : base(entry, GameFileType.Ycd)
+        {
+        }
+
         public ClipDictionary ClipDictionary { get; set; }
 
         public Dictionary<MetaHash, ClipMapEntry> ClipMap { get; set; }
         public Dictionary<MetaHash, AnimationMapEntry> AnimMap { get; set; }
-        public Dictionary<MetaHash, ClipMapEntry> CutsceneMap { get; set; } //used for ycd's that are indexed in cutscenes, since name hashes all appended with -n
+
+        public Dictionary<MetaHash, ClipMapEntry>
+            CutsceneMap
+        {
+            get;
+            set;
+        } //used for ycd's that are indexed in cutscenes, since name hashes all appended with -n
 
         public ClipMapEntry[] ClipMapEntries { get; set; }
         public AnimationMapEntry[] AnimMapEntries { get; set; }
 
         public string LoadException { get; set; }
-
-        public YcdFile() : base(null, GameFileType.Ycd)
-        {
-        }
-        public YcdFile(RpfFileEntry entry) : base(entry, GameFileType.Ycd)
-        {
-        }
 
 
         public void Load(byte[] data, RpfFileEntry entry)
@@ -39,10 +46,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = null;
             try
@@ -66,43 +70,32 @@ namespace CodeWalker.GameFiles
             AnimMap = ClipDictionary?.AnimMap ?? new Dictionary<MetaHash, AnimationMapEntry>();
 
             foreach (ClipMapEntry cme in ClipMap.Values)
-            {
-                if (cme?.Clip != null) cme.Clip.Ycd = this;
-            }
+                if (cme?.Clip != null)
+                    cme.Clip.Ycd = this;
             foreach (AnimationMapEntry ame in AnimMap.Values)
-            {
-                if (ame?.Animation != null) ame.Animation.Ycd = this;
-            }
+                if (ame?.Animation != null)
+                    ame.Animation.Ycd = this;
 
             ClipMapEntries = ClipMap.Values.ToArray();
             AnimMapEntries = AnimMap.Values.ToArray();
-
         }
 
         public void BuildCutsceneMap(int cutIndex)
         {
             CutsceneMap = new Dictionary<MetaHash, ClipMapEntry>();
 
-            string replstr = "-" + cutIndex.ToString();
+            string replstr = "-" + cutIndex;
 
             foreach (ClipMapEntry cme in ClipMapEntries)
             {
                 string sn = cme?.Clip?.ShortName ?? "";
-                if (sn.EndsWith(replstr))
-                {
-                    sn = sn.Substring(0, sn.Length - replstr.Length);
-                }
-                if (sn.EndsWith("_dual"))
-                {
-                    sn = sn.Substring(0, sn.Length - 5);
-                }
+                if (sn.EndsWith(replstr)) sn = sn.Substring(0, sn.Length - replstr.Length);
+                if (sn.EndsWith("_dual")) sn = sn.Substring(0, sn.Length - 5);
                 JenkIndex.Ensure(sn);
                 uint h = JenkHash.GenHash(sn);
                 CutsceneMap[h] = cme;
             }
         }
-
-
 
 
         public byte[] Save()
@@ -118,14 +111,10 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         public void SaveOpenFormatsAnimation(Animation crAnim, Stream outStream)
         {
-            int[] seqs = new int[(crAnim.Frames / crAnim.SequenceFrameLimit) + 1];
-            for (int s = 0; s < seqs.Length; s++)
-            {
-                seqs[s] = crAnim.SequenceFrameLimit + 1;
-            }
+            int[] seqs = new int[crAnim.Frames / crAnim.SequenceFrameLimit + 1];
+            for (int s = 0; s < seqs.Length; s++) seqs[s] = crAnim.SequenceFrameLimit + 1;
 
             seqs[seqs.Length - 1] = crAnim.Frames % crAnim.SequenceFrameLimit;
 
@@ -149,35 +138,23 @@ namespace CodeWalker.GameFiles
             foreach (AnimationBoneId list in crAnim.BoneIds.data_items)
             {
                 // for now, we only support BonePosition and BoneRotation tracks
-                if (list.Track != 0 && list.Track != 1)
-                {
-                    continue;
-                }
+                if (list.Track != 0 && list.Track != 1) continue;
 
                 bool isRotation = false;
 
                 AnimChannel[] chList = crAnim.Sequences.data_items[0].Sequences[i].Channels;
 
                 if (chList.Length == 4)
-                {
                     isRotation = true;
-                }
                 else if (chList.Length == 1)
-                {
                     if (chList[0] is AnimChannelStaticQuaternion)
-                    {
                         isRotation = true;
-                    }
-                }
 
                 // temp placeholder
-                if (list.Track == 1 && !isRotation)
-                {
-                    continue;
-                }
+                if (list.Track == 1 && !isRotation) continue;
 
-                string type = (!isRotation) ? "BonePosition" : "BoneRotation";
-                string dataType = (!isRotation) ? "Float3" : "Float4";
+                string type = !isRotation ? "BonePosition" : "BoneRotation";
+                string dataType = !isRotation ? "Float3" : "Float4";
 
                 StringBuilder sb = new StringBuilder();
 
@@ -189,12 +166,12 @@ namespace CodeWalker.GameFiles
                     {
                         if (seq.Sequences[i].IsType7Quat)
                         {
-                            if (seq.Sequences[i].Channels[0] is AnimChannelStaticFloat && seq.Sequences[i].Channels[1] is AnimChannelStaticFloat && seq.Sequences[i].Channels[2] is AnimChannelStaticFloat)
-                            {
-                                return " Static";
-                            }
+                            if (seq.Sequences[i].Channels[0] is AnimChannelStaticFloat &&
+                                seq.Sequences[i].Channels[1] is AnimChannelStaticFloat &&
+                                seq.Sequences[i].Channels[2] is AnimChannelStaticFloat) return " Static";
                         }
-                        else if (chan is AnimChannelStaticFloat || chan is AnimChannelStaticVector3 || chan is AnimChannelStaticQuaternion)
+                        else if (chan is AnimChannelStaticFloat || chan is AnimChannelStaticVector3 ||
+                                 chan is AnimChannelStaticQuaternion)
                         {
                             return " Static";
                         }
@@ -210,16 +187,16 @@ namespace CodeWalker.GameFiles
                             int index = 0;
 
                             for (int j = 0; j < seq.Sequences[i].Channels.Length; j++)
-                            {
                                 if (seq.Sequences[i].Channels[j] == chan)
                                 {
                                     index = j;
                                     break;
                                 }
-                            }
 
                             // actually we should only export Static for 'real' channels, but as mapping for these is stupid, we'll just repeat the same value even if one channel is supposed to be static
-                            if (seq.Sequences[i].Channels[0] is AnimChannelStaticFloat && seq.Sequences[i].Channels[1] is AnimChannelStaticFloat && seq.Sequences[i].Channels[2] is AnimChannelStaticFloat)
+                            if (seq.Sequences[i].Channels[0] is AnimChannelStaticFloat &&
+                                seq.Sequences[i].Channels[1] is AnimChannelStaticFloat &&
+                                seq.Sequences[i].Channels[2] is AnimChannelStaticFloat)
                             {
                                 Quaternion q = seq.Sequences[i].EvaluateQuaternionType7(0);
 
@@ -228,9 +205,7 @@ namespace CodeWalker.GameFiles
 
                             StringBuilder db = new StringBuilder();
                             for (int f = 0; f < seq.NumFrames; f++)
-                            {
                                 db.AppendLine($"					{seq.Sequences[i].EvaluateQuaternionType7(f)[index]}");
-                            }
 
                             return db.ToString();
                         }
@@ -244,15 +219,12 @@ namespace CodeWalker.GameFiles
                             case AnimChannelStaticQuaternion q3:
                                 return $"					{q3.Value[0]} {q3.Value[1]} {q3.Value[2]} {q3.Value[3]}\r\n";
                             default:
-                                {
-                                    StringBuilder db = new StringBuilder();
-                                    for (int f = 0; f < seq.NumFrames; f++)
-                                    {
-                                        db.AppendLine($"					{chan.EvaluateFloat(f)}");
-                                    }
+                            {
+                                StringBuilder db = new StringBuilder();
+                                for (int f = 0; f < seq.NumFrames; f++) db.AppendLine($"					{chan.EvaluateFloat(f)}");
 
-                                    return db.ToString();
-                                }
+                                return db.ToString();
+                            }
                         }
                     }
 
@@ -289,8 +261,8 @@ namespace CodeWalker.GameFiles
                 i++;
             }
 
-            writer.Write($@"}}
-}}
+            writer.Write(@"}
+}
 ");
 
             writer.Flush();
@@ -298,23 +270,14 @@ namespace CodeWalker.GameFiles
     }
 
 
-
-
-
-
-
-
-
-
     public class YcdXml : MetaXmlBase
     {
-
         public static string GetXml(YcdFile ycd)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if ((ycd != null) && (ycd.ClipDictionary != null))
+            if (ycd != null && ycd.ClipDictionary != null)
             {
                 string name = "ClipDictionary";
 
@@ -327,12 +290,10 @@ namespace CodeWalker.GameFiles
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYcd
     {
-
         public static YcdFile GetYcd(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -349,8 +310,5 @@ namespace CodeWalker.GameFiles
             //ycd.BuildStructsOnSave = false; //structs don't need to be rebuilt here!
             return ycd;
         }
-
     }
-
-
 }

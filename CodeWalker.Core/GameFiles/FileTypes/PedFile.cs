@@ -4,8 +4,17 @@ using EXP = System.ComponentModel.ExpandableObjectConverter;
 
 namespace CodeWalker.GameFiles
 {
-    [TC(typeof(EXP))] public class PedFile : GameFile, PackedFile
+    [TC(typeof(EXP))]
+    public class PedFile : GameFile, PackedFile
     {
+        public PedFile() : base(null, GameFileType.Ped)
+        {
+        }
+
+        public PedFile(RpfFileEntry entry) : base(entry, GameFileType.Ped)
+        {
+        }
+
         public Meta Meta { get; set; }
         public PsoFile Pso { get; set; }
         public RbfFile Rbf { get; set; }
@@ -14,16 +23,7 @@ namespace CodeWalker.GameFiles
         public MCPedVariationInfo VariationInfo { get; set; }
 
 
-
         public string[] Strings { get; set; }
-
-
-
-
-        public PedFile() : base(null, GameFileType.Ped)
-        { }
-        public PedFile(RpfFileEntry entry) : base(entry, GameFileType.Ped)
-        { }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -49,10 +49,8 @@ namespace CodeWalker.GameFiles
             LoadMeta();
 
 
-
             Loaded = true;
         }
-
 
 
         private void LoadMeta()
@@ -63,22 +61,16 @@ namespace CodeWalker.GameFiles
 
             Strings = MetaTypes.GetStrings(Meta);
             if (Strings != null)
-            {
                 foreach (string str in Strings)
-                {
                     JenkIndex.Ensure(str); //just shove them in there
-                }
-            }
         }
+
         private void LoadPso()
         {
-
             CPedVariationInfo vVariationInfo = PsoTypes.GetRootItem<CPedVariationInfo>(Pso);
             VariationInfo = new MCPedVariationInfo();
             VariationInfo.Load(Pso, vVariationInfo);
-
         }
-
 
 
         private void NonMetaLoad(byte[] data)
@@ -96,22 +88,6 @@ namespace CodeWalker.GameFiles
                 Pso.Load(ms);
                 LoadPso();
             }
-            else
-            {
-            }
-
         }
-
-
-
-
-
-
-
-
-
-
-
-
     }
 }

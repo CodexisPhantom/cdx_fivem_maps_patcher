@@ -19,16 +19,14 @@ using System.Text.RegularExpressions;
 
 namespace CodeWalker
 {
-
     /// <summary>
-    /// Static read and write methods
+    ///     Static read and write methods
     /// </summary>
     public static class FbxIO
     {
-
         /// <summary>
-        /// Read binary or ASCII FBX from memory. Decides which based on the header.
-        /// (This method added by dexyfex)
+        ///     Read binary or ASCII FBX from memory. Decides which based on the header.
+        ///     (This method added by dexyfex)
         /// </summary>
         /// <param name="data">FBX byte array.</param>
         /// <returns></returns>
@@ -52,7 +50,7 @@ namespace CodeWalker
 
 
         /// <summary>
-        /// Reads a binary FBX file
+        ///     Reads a binary FBX file
         /// </summary>
         /// <param name="path"></param>
         /// <returns>The top level document node</returns>
@@ -68,7 +66,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Reads an ASCII FBX file
+        ///     Reads an ASCII FBX file
         /// </summary>
         /// <param name="path"></param>
         /// <returns>The top level document node</returns>
@@ -84,7 +82,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Writes an FBX document
+        ///     Writes an FBX document
         /// </summary>
         /// <param name="document">The top level document node</param>
         /// <param name="path"></param>
@@ -100,7 +98,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Writes an FBX document
+        ///     Writes an FBX document
         /// </summary>
         /// <param name="document">The top level document node</param>
         /// <param name="path"></param>
@@ -117,21 +115,31 @@ namespace CodeWalker
     }
 
 
-
-
     /// <summary>
-    /// Reads FBX nodes from a text stream
+    ///     Reads FBX nodes from a text stream
     /// </summary>
     public class FbxAsciiReader
     {
-        private readonly Stream stream;
         private readonly FbxErrorLevel errorLevel;
 
-        private int line = 1;
+        // We read bytes a lot, so we should make a more efficient method here
+        // (The normal one makes a new byte array each time)
+
+        private readonly byte[] singleChar = new byte[1];
+        private readonly Stream stream;
         private int column = 1;
+        private bool endStream;
+
+        private int line = 1;
+        private char? prevChar;
+
+        private object prevToken;
+
+        private object prevTokenSingle;
+        private bool wasCr;
 
         /// <summary>
-        /// Creates a new reader
+        ///     Creates a new reader
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="errorLevel"></param>
@@ -144,25 +152,17 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// The maximum array size that will be allocated
+        ///     The maximum array size that will be allocated
         /// </summary>
         /// <remarks>
-        /// If you trust the source, you can expand this value as necessary.
-        /// Malformed files could cause large amounts of memory to be allocated
-        /// and slow or crash the system as a result.
+        ///     If you trust the source, you can expand this value as necessary.
+        ///     Malformed files could cause large amounts of memory to be allocated
+        ///     and slow or crash the system as a result.
         /// </remarks>
-        public int MaxArrayLength { get; set; } = (1 << 24);
-
-        // We read bytes a lot, so we should make a more efficient method here
-        // (The normal one makes a new byte array each time)
-
-        readonly byte[] singleChar = new byte[1];
-        private char? prevChar;
-        private bool endStream;
-        private bool wasCr;
+        public int MaxArrayLength { get; set; } = 1 << 24;
 
         // Reads a char, allows peeking and checks for end of stream
-        char ReadChar()
+        private char ReadChar()
         {
             if (prevChar != null)
             {
@@ -170,11 +170,13 @@ namespace CodeWalker
                 prevChar = null;
                 return c;
             }
+
             if (stream.Read(singleChar, 0, 1) < 1)
             {
                 endStream = true;
                 return '\0';
             }
+
             char ch = (char)singleChar[0];
             // Handle line and column numbers here;
             // This isn't terribly accurate, but good enough for diagnostics
@@ -191,14 +193,16 @@ namespace CodeWalker
                     line++;
                     column = 0;
                 }
+
                 wasCr = false;
             }
+
             column++;
             return ch;
         }
 
         // Checks if a character is valid in a real number
-        static bool IsDigit(char c, bool first)
+        private static bool IsDigit(char c, bool first)
         {
             if (char.IsDigit(c))
                 return true;
@@ -214,58 +218,18 @@ namespace CodeWalker
                 case 'x':
                     return !first;
             }
+
             return false;
         }
 
-        static bool IsLineEnd(char c)
+        private static bool IsLineEnd(char c)
         {
             return c == '\r' || c == '\n';
         }
 
-        // Token to mark the end of the stream
-        class EndOfStream
-        {
-            public override string ToString()
-            {
-                return "end of stream";
-            }
-        }
-
-        // Wrapper around a string to mark it as an identifier
-        // (as opposed to a string literal)
-        class Identifier
-        {
-            public readonly string String;
-
-            public override bool Equals(object obj)
-            {
-                Identifier id = obj as Identifier;
-                if (id != null)
-                    return String == id.String;
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                return String?.GetHashCode() ?? 0;
-            }
-
-            public Identifier(string str)
-            {
-                String = str;
-            }
-
-            public override string ToString()
-            {
-                return String + ":";
-            }
-        }
-
-        private object prevTokenSingle;
-
         // Reads a single token, allows peeking
         // Can return 'null' for a comment or whitespace
-        object ReadTokenSingle()
+        private object ReadTokenSingle()
         {
             if (prevTokenSingle != null)
             {
@@ -273,13 +237,17 @@ namespace CodeWalker
                 prevTokenSingle = null;
                 return ret;
             }
+
             char c = ReadChar();
             if (endStream)
                 return new EndOfStream();
             switch (c)
             {
                 case ';': // Comments
-                    while (!IsLineEnd(ReadChar()) && !endStream) { } // Skip a line
+                    while (!IsLineEnd(ReadChar()) && !endStream)
+                    {
+                    } // Skip a line
+
                     return null;
                 case '{': // Operators
                 case '}':
@@ -296,16 +264,21 @@ namespace CodeWalker
                                 "Unexpected end of stream; expecting end quote");
                         sb1.Append(c);
                     }
+
                     return sb1.ToString();
                 default:
                     if (char.IsWhiteSpace(c))
                     {
                         // Merge whitespace
-                        while (char.IsWhiteSpace(c = ReadChar()) && !endStream) { }
+                        while (char.IsWhiteSpace(c = ReadChar()) && !endStream)
+                        {
+                        }
+
                         if (!endStream)
                             prevChar = c;
                         return null;
                     }
+
                     if (IsDigit(c, true)) // Number
                     {
                         StringBuilder sb2 = new StringBuilder();
@@ -314,6 +287,7 @@ namespace CodeWalker
                             sb2.Append(c);
                             c = ReadChar();
                         } while (IsDigit(c, false) && !endStream);
+
                         if (!endStream)
                             prevChar = c;
                         string str = sb2.ToString();
@@ -327,15 +301,14 @@ namespace CodeWalker
                                         "Invalid number");
                                 return d;
                             }
-                            else
-                            {
-                                float f;
-                                if (!float.TryParse(str, out f))
-                                    throw new FbxException(line, column,
-                                        "Invalid number");
-                                return f;
-                            }
+
+                            float f;
+                            if (!float.TryParse(str, out f))
+                                throw new FbxException(line, column,
+                                    "Invalid number");
+                            return f;
                         }
+
                         long l;
                         if (!long.TryParse(str, out l))
                             throw new FbxException(line, column,
@@ -347,6 +320,7 @@ namespace CodeWalker
                             return (int)l;
                         return l;
                     }
+
                     if (char.IsLetter(c) || c == '_') // Identifier
                     {
                         StringBuilder sb3 = new StringBuilder();
@@ -355,22 +329,23 @@ namespace CodeWalker
                             sb3.Append(c);
                             c = ReadChar();
                         } while ((char.IsLetterOrDigit(c) || c == '_') && !endStream);
+
                         if (!endStream)
                             prevChar = c;
                         return new Identifier(sb3.ToString());
                     }
+
                     break;
             }
+
             throw new FbxException(line, column,
                 "Unknown character " + c);
         }
 
-        private object prevToken;
-
         // Use a loop rather than recursion to prevent stack overflow
         // Here we can also merge string+colon into an identifier,
         // returning single-character bare strings (for C-type properties)
-        object ReadToken()
+        private object ReadToken()
         {
             object ret;
             if (prevToken != null)
@@ -379,10 +354,12 @@ namespace CodeWalker
                 prevToken = null;
                 return ret;
             }
+
             do
             {
                 ret = ReadTokenSingle();
             } while (ret == null);
+
             Identifier id = ret as Identifier;
             if (id != null)
             {
@@ -391,6 +368,7 @@ namespace CodeWalker
                 {
                     colon = ReadTokenSingle();
                 } while (colon == null);
+
                 if (!':'.Equals(colon))
                 {
                     if (id.String.Length > 1)
@@ -400,10 +378,11 @@ namespace CodeWalker
                     prevTokenSingle = colon;
                 }
             }
+
             return ret;
         }
 
-        void ExpectToken(object token)
+        private void ExpectToken(object token)
         {
             object t = ReadToken();
             if (!token.Equals(t))
@@ -411,16 +390,7 @@ namespace CodeWalker
                     "Unexpected '" + t + "', expected " + token);
         }
 
-        private enum ArrayType
-        {
-            Byte = 0,
-            Int = 1,
-            Long = 2,
-            Float = 3,
-            Double = 4,
-        };
-
-        Array ReadArray()
+        private Array ReadArray()
         {
             // Read array length and header
             object len = ReadToken();
@@ -459,6 +429,7 @@ namespace CodeWalker
                     expectComma = false;
                     continue;
                 }
+
                 if (pos >= array.Length)
                 {
                     if (errorLevel >= FbxErrorLevel.Checked)
@@ -493,7 +464,8 @@ namespace CodeWalker
                     d = (float)token;
                     // A long can't be accurately represented by a float
                     arrayType = arrayType < ArrayType.Long
-                        ? ArrayType.Float : ArrayType.Double;
+                        ? ArrayType.Float
+                        : ArrayType.Double;
                 }
                 else if (token is double)
                 {
@@ -502,11 +474,15 @@ namespace CodeWalker
                         arrayType = ArrayType.Double;
                 }
                 else
+                {
                     throw new FbxException(line, column,
-                            "Unexpected '" + token + "', expected a number");
+                        "Unexpected '" + token + "', expected a number");
+                }
+
                 array[pos++] = d;
                 expectComma = true;
             }
+
             if (pos < array.Length && errorLevel >= FbxErrorLevel.Checked)
                 throw new FbxException(line, column,
                     "Too few elements in array - expected " + (array.Length - pos) + " more");
@@ -543,11 +519,12 @@ namespace CodeWalker
                     ret = array;
                     break;
             }
+
             return ret;
         }
 
         /// <summary>
-        /// Reads the next node from the stream
+        ///     Reads the next node from the stream
         /// </summary>
         /// <returns>The read node, or <c>null</c></returns>
         public FbxNode ReadNode()
@@ -561,6 +538,7 @@ namespace CodeWalker
                 throw new FbxException(line, column,
                     "Unexpected '" + first + "', expected an identifier");
             }
+
             FbxNode node = new FbxNode { Name = id.String };
 
             // Read properties
@@ -576,6 +554,7 @@ namespace CodeWalker
                     expectComma = false;
                     continue;
                 }
+
                 if (token is char)
                 {
                     char c = (char)token;
@@ -591,9 +570,11 @@ namespace CodeWalker
                                 "Unexpected '" + c + "' in property list");
                     }
                 }
+
                 node.Properties.Add(token);
                 expectComma = true; // The final comma before the open brace isn't required
             }
+
             // TODO: Merge property list into an array as necessary
             // Now we're either at an open brace, close brace or a new node
             if (token is Identifier || '}'.Equals(token))
@@ -601,6 +582,7 @@ namespace CodeWalker
                 prevToken = token;
                 return node;
             }
+
             // The while loop can't end unless we're at an open brace, so we can continue right on
             object endBrace;
             while (!'}'.Equals(endBrace = ReadToken()))
@@ -608,13 +590,14 @@ namespace CodeWalker
                 prevToken = endBrace; // If it's not an end brace, the next node will need it
                 node.Nodes.Add(ReadNode());
             }
+
             if (node.Nodes.Count < 1) // If there's an open brace, we want that to be preserved
                 node.Nodes.Add(null);
             return node;
         }
 
         /// <summary>
-        /// Reads a full document from the stream
+        ///     Reads a full document from the stream
         /// </summary>
         /// <returns>The complete document object</returns>
         public FbxDocument Read()
@@ -624,7 +607,10 @@ namespace CodeWalker
             // Read version string
             const string versionString = @"; FBX (\d)\.(\d)\.(\d) project file";
             char c;
-            while (char.IsWhiteSpace(c = ReadChar()) && !endStream) { } // Skip whitespace
+            while (char.IsWhiteSpace(c = ReadChar()) && !endStream)
+            {
+            } // Skip whitespace
+
             bool hasVersionString = false;
             if (c == ';')
             {
@@ -633,6 +619,7 @@ namespace CodeWalker
                 {
                     sb.Append(c);
                 } while (!IsLineEnd(c = ReadChar()) && !endStream);
+
                 Match match = Regex.Match(sb.ToString(), versionString);
                 hasVersionString = match.Success;
                 if (hasVersionString)
@@ -642,6 +629,7 @@ namespace CodeWalker
                         int.Parse(match.Groups[3].Value) * 10
                     );
             }
+
             if (!hasVersionString && errorLevel >= FbxErrorLevel.Strict)
                 throw new FbxException(line, column,
                     "Invalid version string; first line must match \"" + versionString + "\"");
@@ -650,17 +638,66 @@ namespace CodeWalker
                 ret.Nodes.Add(node);
             return ret;
         }
+
+        // Token to mark the end of the stream
+        private class EndOfStream
+        {
+            public override string ToString()
+            {
+                return "end of stream";
+            }
+        }
+
+        // Wrapper around a string to mark it as an identifier
+        // (as opposed to a string literal)
+        private class Identifier
+        {
+            public readonly string String;
+
+            public Identifier(string str)
+            {
+                String = str;
+            }
+
+            public override bool Equals(object obj)
+            {
+                Identifier id = obj as Identifier;
+                if (id != null)
+                    return String == id.String;
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return String?.GetHashCode() ?? 0;
+            }
+
+            public override string ToString()
+            {
+                return String + ":";
+            }
+        }
+
+        private enum ArrayType
+        {
+            Byte = 0,
+            Int = 1,
+            Long = 2,
+            Float = 3,
+            Double = 4
+        }
     }
 
     /// <summary>
-    /// Writes an FBX document in a text format
+    ///     Writes an FBX document in a text format
     /// </summary>
     public class FbxAsciiWriter
     {
+        private readonly Stack<string> nodePath = new Stack<string>();
         private readonly Stream stream;
 
         /// <summary>
-        /// Creates a new reader
+        ///     Creates a new reader
         /// </summary>
         /// <param name="stream"></param>
         public FbxAsciiWriter(Stream stream)
@@ -671,18 +708,16 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// The maximum line length in characters when outputting arrays
+        ///     The maximum line length in characters when outputting arrays
         /// </summary>
         /// <remarks>
-        /// Lines might end up being a few characters longer than this, visibly and otherwise,
-        /// so don't rely on it as a hard limit in code!
+        ///     Lines might end up being a few characters longer than this, visibly and otherwise,
+        ///     so don't rely on it as a hard limit in code!
         /// </remarks>
         public int MaxLineLength { get; set; } = 260;
 
-        readonly Stack<string> nodePath = new Stack<string>();
-
         // Adds the given node text to the string
-        void BuildString(FbxNode node, StringBuilder sb, bool writeArrayLength, int indentLevel = 0)
+        private void BuildString(FbxNode node, StringBuilder sb, bool writeArrayLength, int indentLevel = 0)
         {
             nodePath.Push(node.Name ?? "");
             int lineStart = sb.Length;
@@ -722,20 +757,23 @@ namespace CodeWalker
                             sb.Append('\t');
                         sb.Append("a: ");
                     }
+
                     bool pFirst = true;
                     foreach (object v in (Array)p)
                     {
                         if (!pFirst)
                             sb.Append(',');
                         string vstr = v.ToString();
-                        if ((sb.Length - lineStart) + vstr.Length >= MaxLineLength)
+                        if (sb.Length - lineStart + vstr.Length >= MaxLineLength)
                         {
                             sb.Append('\n');
                             lineStart = sb.Length;
                         }
+
                         sb.Append(vstr);
                         pFirst = false;
                     }
+
                     if (writeArrayLength)
                     {
                         sb.Append('\n');
@@ -745,12 +783,19 @@ namespace CodeWalker
                     }
                 }
                 else if (p is char)
+                {
                     sb.Append((char)p);
+                }
                 else if (p.GetType().IsPrimitive && p is IFormattable)
+                {
                     sb.Append(p);
+                }
                 else
+                {
                     throw new FbxException(nodePath, j,
                         "Invalid property type " + p.GetType());
+                }
+
                 first = false;
             }
 
@@ -764,21 +809,23 @@ namespace CodeWalker
                         continue;
                     BuildString(n, sb, writeArrayLength, indentLevel + 1);
                 }
+
                 for (int i = 0; i < indentLevel; i++)
                     sb.Append('\t');
                 sb.Append('}');
             }
+
             sb.Append('\n');
 
             nodePath.Pop();
         }
 
         /// <summary>
-        /// Writes an FBX document to the stream
+        ///     Writes an FBX document to the stream
         /// </summary>
         /// <param name="document"></param>
         /// <remarks>
-        /// ASCII FBX files have no header or footer, so you can call this multiple times
+        ///     ASCII FBX files have no header or footer, so you can call this multiple times
         /// </remarks>
         public void Write(FbxDocument document)
         {
@@ -788,8 +835,8 @@ namespace CodeWalker
 
             // Write version header (a comment, but required for many importers)
             int vMajor = (int)document.Version / 1000;
-            int vMinor = ((int)document.Version % 1000) / 100;
-            int vRev = ((int)document.Version % 100) / 10;
+            int vMinor = (int)document.Version % 1000 / 100;
+            int vRev = (int)document.Version % 100 / 10;
             sb.Append($"; FBX {vMajor}.{vMinor}.{vRev} project file\n\n");
 
             nodePath.Clear();
@@ -800,6 +847,7 @@ namespace CodeWalker
                 BuildString(n, sb, document.Version >= FbxVersion.v7_1);
                 sb.Append('\n');
             }
+
             byte[] b = Encoding.ASCII.GetBytes(sb.ToString());
             stream.Write(b, 0, b.Length);
         }
@@ -807,10 +855,35 @@ namespace CodeWalker
 
 
     /// <summary>
-    /// Base class for binary stream wrappers
+    ///     Base class for binary stream wrappers
     /// </summary>
     public abstract class FbxBinary
     {
+        // Number of null bytes between the footer code and the version
+        private const int footerZeroes1 = 20;
+
+        // Number of null bytes between the footer version and extension code
+        private const int footerZeroes2 = 120;
+
+        /// <summary>
+        ///     The size of the footer code
+        /// </summary>
+        protected const int footerCodeSize = 16;
+
+        /// <summary>
+        ///     The namespace separator in the binary format (remember to reverse the identifiers)
+        /// </summary>
+        protected const string binarySeparator = "\0\x1";
+
+        /// <summary>
+        ///     The namespace separator in the ASCII format and in object data
+        /// </summary>
+        protected const string asciiSeparator = "::";
+
+        private const string timePath1 = "FBXHeaderExtension";
+
+        private const string timePath2 = "CreationTimeStamp";
+
         // Header string, found at the top of all compliant files
         private static readonly byte[] headerString
             = Encoding.ASCII.GetBytes("Kaydara FBX Binary  \0\x1a\0");
@@ -818,34 +891,18 @@ namespace CodeWalker
         // This data was entirely calculated by me, honest. Turns out it works, fancy that!
         private static readonly byte[] sourceId =
             { 0x58, 0xAB, 0xA9, 0xF0, 0x6C, 0xA2, 0xD8, 0x3F, 0x4D, 0x47, 0x49, 0xA3, 0xB4, 0xB2, 0xE7, 0x3D };
+
         private static readonly byte[] key =
             { 0xE2, 0x4F, 0x7B, 0x5F, 0xCD, 0xE4, 0xC8, 0x6D, 0xDB, 0xD8, 0xFB, 0xD7, 0x40, 0x58, 0xC6, 0x78 };
+
         // This wasn't - it just appears at the end of every compliant file
         private static readonly byte[] extension =
             { 0xF8, 0x5A, 0x8C, 0x6A, 0xDE, 0xF5, 0xD9, 0x7E, 0xEC, 0xE9, 0x0C, 0xE3, 0x75, 0x8F, 0x29, 0x0B };
 
-        // Number of null bytes between the footer code and the version
-        private const int footerZeroes1 = 20;
-        // Number of null bytes between the footer version and extension code
-        private const int footerZeroes2 = 120;
+        private static readonly Stack<string> timePath = new Stack<string>(new[] { timePath1, timePath2 });
 
         /// <summary>
-        /// The size of the footer code
-        /// </summary>
-        protected const int footerCodeSize = 16;
-
-        /// <summary>
-        /// The namespace separator in the binary format (remember to reverse the identifiers)
-        /// </summary>
-        protected const string binarySeparator = "\0\x1";
-
-        /// <summary>
-        /// The namespace separator in the ASCII format and in object data
-        /// </summary>
-        protected const string asciiSeparator = "::";
-
-        /// <summary>
-        /// Checks if the first part of 'data' matches 'original'
+        ///     Checks if the first part of 'data' matches 'original'
         /// </summary>
         /// <param name="data"></param>
         /// <param name="original"></param>
@@ -867,9 +924,8 @@ namespace CodeWalker
         }
 
 
-
         /// <summary>
-        /// Writes the FBX header string
+        ///     Writes the FBX header string
         /// </summary>
         /// <param name="stream"></param>
         protected static void WriteHeader(Stream stream)
@@ -878,7 +934,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Reads the FBX header string
+        ///     Reads the FBX header string
         /// </summary>
         /// <param name="stream"></param>
         /// <returns><c>true</c> if it's compliant</returns>
@@ -890,7 +946,7 @@ namespace CodeWalker
         }
 
         // Turns out this is the algorithm they use to generate the footer. Who knew!
-        static void Encrypt(byte[] a, byte[] b)
+        private static void Encrypt(byte[] a, byte[] b)
         {
             byte c = 64;
             for (int i = 0; i < footerCodeSize; i++)
@@ -900,12 +956,8 @@ namespace CodeWalker
             }
         }
 
-        const string timePath1 = "FBXHeaderExtension";
-        const string timePath2 = "CreationTimeStamp";
-        static readonly Stack<string> timePath = new Stack<string>(new[] { timePath1, timePath2 });
-
         // Gets a single timestamp component
-        static int GetTimestampVar(FbxNode timestamp, string element)
+        private static int GetTimestampVar(FbxNode timestamp, string element)
         {
             FbxNode elementNode = timestamp[element];
             if (elementNode != null && elementNode.Properties.Count > 0)
@@ -914,11 +966,12 @@ namespace CodeWalker
                 if (prop is int || prop is long)
                     return (int)prop;
             }
+
             throw new FbxException(timePath, -1, "Timestamp has no " + element);
         }
 
         /// <summary>
-        /// Generates the unique footer code based on the document's timestamp
+        ///     Generates the unique footer code based on the document's timestamp
         /// </summary>
         /// <param name="document"></param>
         /// <returns>A 16-byte code</returns>
@@ -937,7 +990,7 @@ namespace CodeWalker
                     GetTimestampVar(timestamp, "Minute"),
                     GetTimestampVar(timestamp, "Second"),
                     GetTimestampVar(timestamp, "Millisecond")
-                    );
+                );
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -946,7 +999,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Generates a unique footer code based on a timestamp
+        ///     Generates a unique footer code based on a timestamp
         /// </summary>
         /// <param name="year"></param>
         /// <param name="month"></param>
@@ -976,7 +1029,7 @@ namespace CodeWalker
                 throw new ArgumentOutOfRangeException(nameof(millisecond));
 
             byte[] str = (byte[])sourceId.Clone();
-            string mangledTime = $"{second:00}{month:00}{hour:00}{day:00}{(millisecond / 10):00}{year:0000}{minute:00}";
+            string mangledTime = $"{second:00}{month:00}{hour:00}{day:00}{millisecond / 10:00}{year:0000}{minute:00}";
             byte[] mangledBytes = Encoding.ASCII.GetBytes(mangledTime);
             Encrypt(str, mangledBytes);
             Encrypt(str, key);
@@ -985,7 +1038,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Writes the FBX footer extension (NB - not the unique footer code)
+        ///     Writes the FBX footer extension (NB - not the unique footer code)
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="version"></param>
@@ -998,7 +1051,7 @@ namespace CodeWalker
             stream.Write(extension, 0, extension.Length);
         }
 
-        static bool AllZero(byte[] array)
+        private static bool AllZero(byte[] array)
         {
             foreach (byte b in array)
                 if (b != 0)
@@ -1007,7 +1060,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Reads and checks the FBX footer extension (NB - not the unique footer code)
+        ///     Reads and checks the FBX footer extension (NB - not the unique footer code)
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="version"></param>
@@ -1018,7 +1071,7 @@ namespace CodeWalker
             stream.Read(buffer, 0, footerZeroes1);
             bool correct = AllZero(buffer);
             int readVersion = stream.ReadInt32();
-            correct &= (readVersion == (int)version);
+            correct &= readVersion == (int)version;
             stream.Read(buffer, 0, footerZeroes2);
             correct &= AllZero(buffer);
             stream.Read(buffer, 0, extension.Length);
@@ -1028,22 +1081,22 @@ namespace CodeWalker
     }
 
     /// <summary>
-    /// Reads FBX nodes from a binary stream
+    ///     Reads FBX nodes from a binary stream
     /// </summary>
     public class FbxBinaryReader : FbxBinary
     {
-        private readonly BinaryReader stream;
         private readonly FbxErrorLevel errorLevel;
-
-        private delegate object ReadPrimitive(BinaryReader reader);
+        private readonly BinaryReader stream;
 
         /// <summary>
-        /// Creates a new reader
+        ///     Creates a new reader
         /// </summary>
         /// <param name="stream">The stream to read from</param>
-        /// <param name="errorLevel">When to throw an <see cref="FbxException"/></param>
-        /// <exception cref="ArgumentException"><paramref name="stream"/> does
-        /// not support seeking</exception>
+        /// <param name="errorLevel">When to throw an <see cref="FbxException" /></param>
+        /// <exception cref="ArgumentException">
+        ///     <paramref name="stream" /> does
+        ///     not support seeking
+        /// </exception>
         public FbxBinaryReader(Stream stream, FbxErrorLevel errorLevel = FbxErrorLevel.Checked)
         {
             if (stream == null)
@@ -1056,7 +1109,7 @@ namespace CodeWalker
         }
 
         // Reads a single property
-        object ReadProperty()
+        private object ReadProperty()
         {
             char dataType = (char)stream.ReadByte();
             switch (dataType)
@@ -1099,8 +1152,10 @@ namespace CodeWalker
                             sb.Append(tokens[i]);
                             first = false;
                         }
+
                         str = sb.ToString();
                     }
+
                     return str;
                 case 'R':
                     return stream.ReadBytes(stream.ReadInt32());
@@ -1111,7 +1166,7 @@ namespace CodeWalker
         }
 
         // Reads an array, decompressing it if required
-        Array ReadArray(ReadPrimitive readPrimitive, Type arrayType)
+        private Array ReadArray(ReadPrimitive readPrimitive, Type arrayType)
         {
             int len = stream.ReadInt32();
             int encoding = stream.ReadInt32();
@@ -1127,7 +1182,7 @@ namespace CodeWalker
                         throw new FbxException(stream.BaseStream.Position - 1,
                             "Invalid compression encoding (must be 0 or 1)");
                     byte cmf = stream.ReadByte();
-                    if ((cmf & 0xF) != 8 || (cmf >> 4) > 7)
+                    if ((cmf & 0xF) != 8 || cmf >> 4 > 7)
                         throw new FbxException(stream.BaseStream.Position - 1,
                             "Invalid compression format " + cmf);
                     byte flg = stream.ReadByte();
@@ -1142,9 +1197,11 @@ namespace CodeWalker
                 {
                     stream.BaseStream.Position += 2;
                 }
+
                 FbxDeflateWithChecksum codec = new FbxDeflateWithChecksum(stream.BaseStream, CompressionMode.Decompress);
                 s = new BinaryReader(codec);
             }
+
             try
             {
                 for (int i = 0; i < len; i++)
@@ -1155,6 +1212,7 @@ namespace CodeWalker
                 throw new FbxException(stream.BaseStream.Position - 1,
                     "Compressed data was malformed");
             }
+
             if (encoding != 0)
             {
                 if (errorLevel >= FbxErrorLevel.Checked)
@@ -1174,18 +1232,21 @@ namespace CodeWalker
                     stream.BaseStream.Position = endPos;
                 }
             }
+
             return ret;
         }
 
         /// <summary>
-        /// Reads a single node.
+        ///     Reads a single node.
         /// </summary>
         /// <remarks>
-        /// This won't read the file header or footer, and as such will fail if the stream is a full FBX file
+        ///     This won't read the file header or footer, and as such will fail if the stream is a full FBX file
         /// </remarks>
         /// <returns>The node</returns>
-        /// <exception cref="FbxException">The FBX data was malformed
-        /// for the reader's error level</exception>
+        /// <exception cref="FbxException">
+        ///     The FBX data was malformed
+        ///     for the reader's error level
+        /// </exception>
         public FbxNode ReadNode()
         {
             int endOffset = stream.ReadInt32();
@@ -1197,7 +1258,8 @@ namespace CodeWalker
             if (endOffset == 0)
             {
                 // The end offset should only be 0 in a null node
-                if (errorLevel >= FbxErrorLevel.Checked && (numProperties != 0 || propertyListLen != 0 || !string.IsNullOrEmpty(name)))
+                if (errorLevel >= FbxErrorLevel.Checked &&
+                    (numProperties != 0 || propertyListLen != 0 || !string.IsNullOrEmpty(name)))
                     throw new FbxException(stream.BaseStream.Position,
                         "Invalid node; expected NULL record");
                 return null;
@@ -1227,19 +1289,23 @@ namespace CodeWalker
                     nested = ReadNode();
                     node.Nodes.Add(nested);
                 } while (nested != null);
+
                 if (errorLevel >= FbxErrorLevel.Checked && stream.BaseStream.Position != endOffset)
                     throw new FbxException(stream.BaseStream.Position,
                         "Too many bytes in node, end point is " + endOffset);
             }
+
             return node;
         }
 
         /// <summary>
-        /// Reads an FBX document from the stream
+        ///     Reads an FBX document from the stream
         /// </summary>
         /// <returns>The top-level node</returns>
-        /// <exception cref="FbxException">The FBX data was malformed
-        /// for the reader's error level</exception>
+        /// <exception cref="FbxException">
+        ///     The FBX data was malformed
+        ///     for the reader's error level
+        /// </exception>
         public FbxDocument Read()
         {
             // Read header
@@ -1277,26 +1343,44 @@ namespace CodeWalker
                 throw new FbxException(dataPos, "Invalid footer");
             return document;
         }
+
+        private delegate object ReadPrimitive(BinaryReader reader);
     }
 
     /// <summary>
-    /// Writes an FBX document to a binary stream
+    ///     Writes an FBX document to a binary stream
     /// </summary>
     public class FbxBinaryWriter : FbxBinary
     {
-        private readonly Stream output;
+        private static readonly Dictionary<Type, WriterInfo> writePropertyActions
+            = new Dictionary<Type, WriterInfo>
+            {
+                { typeof(int), new WriterInfo('I', (sw, obj) => sw.Write((int)obj)) },
+                { typeof(short), new WriterInfo('Y', (sw, obj) => sw.Write((short)obj)) },
+                { typeof(long), new WriterInfo('L', (sw, obj) => sw.Write((long)obj)) },
+                { typeof(float), new WriterInfo('F', (sw, obj) => sw.Write((float)obj)) },
+                { typeof(double), new WriterInfo('D', (sw, obj) => sw.Write((double)obj)) },
+                { typeof(bool), new WriterInfo('C', (sw, obj) => sw.Write((byte)(char)obj)) },
+                { typeof(byte[]), new WriterInfo('R', WriteRaw) },
+                { typeof(string), new WriterInfo('S', WriteString) },
+                // null elements indicate arrays - they are checked again with their element type
+                { typeof(int[]), new WriterInfo('i', null) },
+                { typeof(long[]), new WriterInfo('l', null) },
+                { typeof(float[]), new WriterInfo('f', null) },
+                { typeof(double[]), new WriterInfo('d', null) },
+                { typeof(bool[]), new WriterInfo('b', null) }
+            };
+
+        // Data for a null node
+        private static readonly byte[] nullData = new byte[13];
         private readonly MemoryStream memory;
+
+        private readonly Stack<string> nodePath = new Stack<string>();
+        private readonly Stream output;
         private readonly BinaryWriter stream;
 
-        readonly Stack<string> nodePath = new Stack<string>();
-
         /// <summary>
-        /// The minimum size of an array in bytes before it is compressed
-        /// </summary>
-        public int CompressionThreshold { get; set; } = 1024;
-
-        /// <summary>
-        /// Creates a new writer
+        ///     Creates a new writer
         /// </summary>
         /// <param name="stream"></param>
         public FbxBinaryWriter(Stream stream)
@@ -1309,47 +1393,19 @@ namespace CodeWalker
             this.stream = new BinaryWriter(memory, Encoding.ASCII);
         }
 
-        private delegate void PropertyWriter(BinaryWriter sw, object obj);
+        /// <summary>
+        ///     The minimum size of an array in bytes before it is compressed
+        /// </summary>
+        public int CompressionThreshold { get; set; } = 1024;
 
-        struct WriterInfo
-        {
-            public readonly char id;
-            public readonly PropertyWriter writer;
-
-            public WriterInfo(char id, PropertyWriter writer)
-            {
-                this.id = id;
-                this.writer = writer;
-            }
-        }
-
-        private static readonly Dictionary<Type, WriterInfo> writePropertyActions
-            = new Dictionary<Type, WriterInfo>
-            {
-                { typeof(int),  new WriterInfo('I', (sw, obj) => sw.Write((int)obj)) },
-                { typeof(short),  new WriterInfo('Y', (sw, obj) => sw.Write((short)obj)) },
-                { typeof(long),   new WriterInfo('L', (sw, obj) => sw.Write((long)obj)) },
-                { typeof(float),  new WriterInfo('F', (sw, obj) => sw.Write((float)obj)) },
-                { typeof(double), new WriterInfo('D', (sw, obj) => sw.Write((double)obj)) },
-                { typeof(bool),   new WriterInfo('C', (sw, obj) => sw.Write((byte)(char)obj)) },
-                { typeof(byte[]), new WriterInfo('R', WriteRaw) },
-                { typeof(string), new WriterInfo('S', WriteString) },
-				// null elements indicate arrays - they are checked again with their element type
-				{ typeof(int[]),    new WriterInfo('i', null) },
-                { typeof(long[]),   new WriterInfo('l', null) },
-                { typeof(float[]),  new WriterInfo('f', null) },
-                { typeof(double[]), new WriterInfo('d', null) },
-                { typeof(bool[]),   new WriterInfo('b', null) },
-            };
-
-        static void WriteRaw(BinaryWriter stream, object obj)
+        private static void WriteRaw(BinaryWriter stream, object obj)
         {
             byte[] bytes = (byte[])obj;
             stream.Write(bytes.Length);
             stream.Write(bytes);
         }
 
-        static void WriteString(BinaryWriter stream, object obj)
+        private static void WriteString(BinaryWriter stream, object obj)
         {
             string str = obj.ToString();
             // Replace "::" with \0\1 and reverse the tokens
@@ -1365,14 +1421,16 @@ namespace CodeWalker
                     sb.Append(tokens[i]);
                     first = false;
                 }
+
                 str = sb.ToString();
             }
+
             byte[] bytes = Encoding.ASCII.GetBytes(str);
             stream.Write(bytes.Length);
             stream.Write(bytes);
         }
 
-        void WriteArray(Array array, Type elementType, PropertyWriter writer)
+        private void WriteArray(Array array, Type elementType, PropertyWriter writer)
         {
             stream.Write(array.Length);
 
@@ -1392,6 +1450,7 @@ namespace CodeWalker
                 codec = new FbxDeflateWithChecksum(stream.BaseStream, CompressionMode.Compress, true);
                 sw = new BinaryWriter(codec);
             }
+
             foreach (object obj in array)
                 writer(sw, obj);
             if (compress)
@@ -1403,7 +1462,7 @@ namespace CodeWalker
                     (byte)((checksum >> 24) & 0xFF),
                     (byte)((checksum >> 16) & 0xFF),
                     (byte)((checksum >> 8) & 0xFF),
-                    (byte)(checksum & 0xFF),
+                    (byte)(checksum & 0xFF)
                 };
                 stream.Write(bytes);
             }
@@ -1418,7 +1477,7 @@ namespace CodeWalker
             }
         }
 
-        void WriteProperty(object obj, int id)
+        private void WriteProperty(object obj, int id)
         {
             if (obj == null)
                 return;
@@ -1434,14 +1493,13 @@ namespace CodeWalker
                 WriteArray((Array)obj, elementType, writePropertyActions[elementType].writer);
             }
             else
+            {
                 writerInfo.writer(stream, obj);
+            }
         }
 
-        // Data for a null node
-        static readonly byte[] nullData = new byte[13];
-
         // Writes a single document to the buffer
-        void WriteNode(FbxNode node)
+        private void WriteNode(FbxNode node)
         {
             if (node == null)
             {
@@ -1467,10 +1525,7 @@ namespace CodeWalker
 
                 // Write properties and length
                 long propertyBegin = stream.BaseStream.Position;
-                for (int i = 0; i < node.Properties.Count; i++)
-                {
-                    WriteProperty(node.Properties[i], i);
-                }
+                for (int i = 0; i < node.Properties.Count; i++) WriteProperty(node.Properties[i], i);
                 long propertyEnd = stream.BaseStream.Position;
                 stream.BaseStream.Position = propertyLengthPos;
                 stream.Write((int)(propertyEnd - propertyBegin));
@@ -1485,6 +1540,7 @@ namespace CodeWalker
                             continue;
                         WriteNode(n);
                     }
+
                     WriteNode(null);
                 }
 
@@ -1499,7 +1555,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Writes an FBX file to the output
+        ///     Writes an FBX file to the output
         /// </summary>
         /// <param name="document"></param>
         public void Write(FbxDocument document)
@@ -1516,29 +1572,42 @@ namespace CodeWalker
             WriteFooter(stream, (int)document.Version);
             output.Write(memory.GetBuffer(), 0, (int)memory.Position);
         }
+
+        private delegate void PropertyWriter(BinaryWriter sw, object obj);
+
+        private struct WriterInfo
+        {
+            public readonly char id;
+            public readonly PropertyWriter writer;
+
+            public WriterInfo(char id, PropertyWriter writer)
+            {
+                this.id = id;
+                this.writer = writer;
+            }
+        }
     }
 
 
-
     /// <summary>
-    /// A top-level FBX node
+    ///     A top-level FBX node
     /// </summary>
     public class FbxDocument : FbxNodeList
     {
         /// <summary>
-        /// Describes the format and data of the document
+        ///     Describes the format and data of the document
         /// </summary>
         /// <remarks>
-        /// It isn't recommended that you change this value directly, because
-        /// it won't change any of the document's data which can be version-specific.
-        /// Most FBX importers can cope with any version.
+        ///     It isn't recommended that you change this value directly, because
+        ///     it won't change any of the document's data which can be version-specific.
+        ///     Most FBX importers can cope with any version.
         /// </remarks>
         public FbxVersion Version { get; set; } = FbxVersion.v7_4;
 
 
         /// <summary>
-        /// Creates connections between objects and returns the root nodes.
-        /// (added by dexyfex)
+        ///     Creates connections between objects and returns the root nodes.
+        ///     (added by dexyfex)
         /// </summary>
         /// <returns></returns>
         public List<FbxNode> GetSceneNodes()
@@ -1558,10 +1627,11 @@ namespace CodeWalker
             {
                 if (node == null) continue;
                 long id = 0;
-                if (node.Value is long)
-                { id = (long)node.Value; }
+                if (node.Value is long) id = (long)node.Value;
                 if (id == 0)
-                { }//shouldn't happen..
+                {
+                } //shouldn't happen..
+
                 fobjdict[id] = node;
             }
 
@@ -1569,43 +1639,36 @@ namespace CodeWalker
             {
                 if (node == null) continue;
                 string connType = node.Value as string;
-                if ((connType == "OO") || (connType == "OP"))
+                if (connType == "OO" || connType == "OP")
                 {
-                    if (node.Properties.Count < 3) { continue; }
-                    if (!(node.Properties[1] is long)) { continue; }
-                    if (!(node.Properties[2] is long)) { continue; }
+                    if (node.Properties.Count < 3) continue;
+                    if (!(node.Properties[1] is long)) continue;
+                    if (!(node.Properties[2] is long)) continue;
                     long cid = (long)node.Properties[1];
                     long pid = (long)node.Properties[2];
                     FbxNode cnode;
                     FbxNode pnode;
                     fobjdict.TryGetValue(cid, out cnode);
                     fobjdict.TryGetValue(pid, out pnode);
-                    if (cnode == null) { continue; }
+                    if (cnode == null) continue;
                     if (pnode == null)
-                    {
                         rootnodes.Add(cnode);
-                    }
                     else
-                    {
                         pnode.Connections.Add(cnode);
-                    }
                 }
-                else
-                { }
             }
 
             return rootnodes;
         }
-
     }
 
     /// <summary>
-    /// An error with the FBX data input
+    ///     An error with the FBX data input
     /// </summary>
     public class FbxException : Exception
     {
         /// <summary>
-        /// An error at a binary stream offset
+        ///     An error at a binary stream offset
         /// </summary>
         /// <param name="position"></param>
         /// <param name="message"></param>
@@ -1615,7 +1678,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// An error in a text file
+        ///     An error in a text file
         /// </summary>
         /// <param name="line"></param>
         /// <param name="column"></param>
@@ -1626,7 +1689,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// An error in a node object
+        ///     An error in a node object
         /// </summary>
         /// <param name="nodePath"></param>
         /// <param name="propertyID"></param>
@@ -1638,38 +1701,38 @@ namespace CodeWalker
     }
 
     /// <summary>
-    /// Represents a node in an FBX file
+    ///     Represents a node in an FBX file
     /// </summary>
     public class FbxNode : FbxNodeList
     {
         /// <summary>
-        /// The node name, which is often a class type
+        ///     The node name, which is often a class type
         /// </summary>
         /// <remarks>
-        /// The name must be smaller than 256 characters to be written to a binary stream
+        ///     The name must be smaller than 256 characters to be written to a binary stream
         /// </remarks>
         public string Name { get; set; }
 
         /// <summary>
-        /// The list of properties associated with the node
+        ///     The list of properties associated with the node
         /// </summary>
         /// <remarks>
-        /// Supported types are primitives (apart from byte and char),arrays of primitives, and strings
+        ///     Supported types are primitives (apart from byte and char),arrays of primitives, and strings
         /// </remarks>
         public List<object> Properties { get; } = new List<object>();
 
         /// <summary>
-        /// List of FbxNodes that are connected to this node via the Connections section.
-        /// (Added by dexyfex, used by FbxConverter)
+        ///     List of FbxNodes that are connected to this node via the Connections section.
+        ///     (Added by dexyfex, used by FbxConverter)
         /// </summary>
         public List<FbxNode> Connections { get; } = new List<FbxNode>();
 
         /// <summary>
-        /// The first property element
+        ///     The first property element
         /// </summary>
         public object Value
         {
-            get { return Properties.Count < 1 ? null : Properties[0]; }
+            get => Properties.Count < 1 ? null : Properties[0];
             set
             {
                 if (Properties.Count < 1)
@@ -1680,39 +1743,42 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Whether the node is empty of data
+        ///     Whether the node is empty of data
         /// </summary>
         public bool IsEmpty => string.IsNullOrEmpty(Name) && Properties.Count == 0 && Nodes.Count == 0;
 
         public override string ToString()
         {
-            return Name + ((Value != null) ? (": " + Value.ToString()) : "");
+            return Name + (Value != null ? ": " + Value : "");
         }
     }
 
     /// <summary>
-    /// Base class for nodes and documents
+    ///     Base class for nodes and documents
     /// </summary>
     public abstract class FbxNodeList
     {
         /// <summary>
-        /// The list of child/nested nodes
+        ///     The list of child/nested nodes
         /// </summary>
         /// <remarks>
-        /// A list with one or more null elements is treated differently than an empty list,
-        /// and represented differently in all FBX output files.
+        ///     A list with one or more null elements is treated differently than an empty list,
+        ///     and represented differently in all FBX output files.
         /// </remarks>
         public List<FbxNode> Nodes { get; } = new List<FbxNode>();
 
         /// <summary>
-        /// Gets a named child node
+        ///     Gets a named child node
         /// </summary>
         /// <param name="name"></param>
         /// <returns>The child node, or null</returns>
-        public FbxNode this[string name] { get { return Nodes.Find(n => n != null && n.Name == name); } }
+        public FbxNode this[string name]
+        {
+            get { return Nodes.Find(n => n != null && n.Name == name); }
+        }
 
         /// <summary>
-        /// Gets a child node, using a '/' separated path
+        ///     Gets a child node, using a '/' separated path
         /// </summary>
         /// <param name="path"></param>
         /// <returns>The child node, or null</returns>
@@ -1728,77 +1794,77 @@ namespace CodeWalker
                 if (n == null)
                     break;
             }
+
             return n as FbxNode;
         }
     }
 
     /// <summary>
-    /// Enumerates the FBX file versions
+    ///     Enumerates the FBX file versions
     /// </summary>
     public enum FbxVersion
     {
         /// <summary>
-        /// FBX version 6.0
+        ///     FBX version 6.0
         /// </summary>
         v6_0 = 6000,
 
         /// <summary>
-        /// FBX version 6.1
+        ///     FBX version 6.1
         /// </summary>
         v6_1 = 6100,
 
         /// <summary>
-        /// FBX version 7.0
+        ///     FBX version 7.0
         /// </summary>
         v7_0 = 7000,
 
         /// <summary>
-        /// FBX 2011 version
+        ///     FBX 2011 version
         /// </summary>
         v7_1 = 7100,
 
         /// <summary>
-        /// FBX 2012 version
+        ///     FBX 2012 version
         /// </summary>
         v7_2 = 7200,
 
         /// <summary>
-        /// FBX 2013 version
+        ///     FBX 2013 version
         /// </summary>
         v7_3 = 7300,
 
         /// <summary>
-        /// FBX 2014 version
+        ///     FBX 2014 version
         /// </summary>
-        v7_4 = 7400,
+        v7_4 = 7400
     }
 
 
-
     /// <summary>
-    /// Indicates when a reader should throw errors
+    ///     Indicates when a reader should throw errors
     /// </summary>
     public enum FbxErrorLevel
     {
         /// <summary>
-        /// Ignores inconsistencies unless the parser can no longer continue
+        ///     Ignores inconsistencies unless the parser can no longer continue
         /// </summary>
         Permissive = 0,
 
         /// <summary>
-        /// Checks data integrity, such as checksums and end points
+        ///     Checks data integrity, such as checksums and end points
         /// </summary>
         Checked = 1,
 
         /// <summary>
-        /// Checks everything, including magic bytes
+        ///     Checks everything, including magic bytes
         /// </summary>
-        Strict = 2,
+        Strict = 2
     }
 
 
     /// <summary>
-    /// A wrapper for DeflateStream that calculates the Adler32 checksum of the payload
+    ///     A wrapper for DeflateStream that calculates the Adler32 checksum of the payload
     /// </summary>
     public class FbxDeflateWithChecksum : DeflateStream
     {
@@ -1806,8 +1872,21 @@ namespace CodeWalker
         private uint checksumA;
         private uint checksumB;
 
+        /// <inheritdoc />
+        public FbxDeflateWithChecksum(Stream stream, CompressionMode mode) : base(stream, mode)
+        {
+            ResetChecksum();
+        }
+
+        /// <inheritdoc />
+        public FbxDeflateWithChecksum(Stream stream, CompressionMode mode, bool leaveOpen) : base(stream, mode,
+            leaveOpen)
+        {
+            ResetChecksum();
+        }
+
         /// <summary>
-        /// Gets the Adler32 checksum at the current point in the stream
+        ///     Gets the Adler32 checksum at the current point in the stream
         /// </summary>
         public int Checksum
         {
@@ -1819,24 +1898,12 @@ namespace CodeWalker
             }
         }
 
-        /// <inheritdoc />
-        public FbxDeflateWithChecksum(Stream stream, CompressionMode mode) : base(stream, mode)
-        {
-            ResetChecksum();
-        }
-
-        /// <inheritdoc />
-        public FbxDeflateWithChecksum(Stream stream, CompressionMode mode, bool leaveOpen) : base(stream, mode, leaveOpen)
-        {
-            ResetChecksum();
-        }
-
         // Efficiently extends the checksum with the given buffer
-        void CalcChecksum(byte[] array, int offset, int count)
+        private void CalcChecksum(byte[] array, int offset, int count)
         {
             checksumA %= modAdler;
             checksumB %= modAdler;
-            for (int i = offset, c = 0; i < (offset + count); i++, c++)
+            for (int i = offset, c = 0; i < offset + count; i++, c++)
             {
                 checksumA += array[i];
                 checksumB += checksumA;
@@ -1865,7 +1932,7 @@ namespace CodeWalker
         }
 
         /// <summary>
-        /// Initializes the checksum values
+        ///     Initializes the checksum values
         /// </summary>
         public void ResetChecksum()
         {
@@ -1873,5 +1940,4 @@ namespace CodeWalker
             checksumB = 0;
         }
     }
-
 }

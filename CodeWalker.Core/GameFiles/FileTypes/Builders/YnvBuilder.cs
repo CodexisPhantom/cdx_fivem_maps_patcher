@@ -1,48 +1,46 @@
-﻿using CodeWalker.GameFiles;
+﻿using System;
+using System.Collections.Generic;
+using CodeWalker.GameFiles;
 using CodeWalker.World;
 using SharpDX;
-using System;
-using System.Collections.Generic;
 
 namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 {
     public class YnvBuilder
     {
+        private SpaceNavGrid NavGrid;
         /*
-         * 
+         *
          * YnvBuilder by dexyfex
-         * 
+         *
          * This class allows for conversion of navmesh data in a generic format into .ynv files.
          * The usage is to call AddPoly() with an array of vertex positions for each polygon.
          * Polygons should be wound in an anticlockwise direction.
          * The returned YnvPoly object needs to have its Edges array set by the importer.
-         * YnvPoly.Edges is an array of YnvEdge, with one edge for each vertex in the poly. 
+         * YnvPoly.Edges is an array of YnvEdge, with one edge for each vertex in the poly.
          * The first edge should join the first and second vertices, and the last edge should
          * join the last and first vertices.
-         * The YnvEdge Poly1 and Poly2 both need to be set to the same value, which is the 
+         * The YnvEdge Poly1 and Poly2 both need to be set to the same value, which is the
          * corresponding YnvPoly object that was returned by AddPoly.
          * Flags values on the polygons and edges also need to be set by the importer.
-         * 
+         *
          * Once the polygons and edges have all been added, the Build() method should be called,
          * which will return a list of YnvFile objects. Call the Save() method on each of those
          * to get the byte array for the .ynv file. The correct filename is given by the
          * YnvFile.Name property.
          * Note that the .ynv building process will split polygons that cross .ynv area borders,
          * and assign all the new polygons into the correct .ynv's.
-         * 
+         *
          */
-
 
 
         public List<YnvPoly> PolyList = new List<YnvPoly>();
         public string VehicleName = string.Empty;
-        private SpaceNavGrid NavGrid;
         private List<YnvFile> YnvFiles;
 
         public YnvPoly AddPoly(Vector3[] verts)
         {
-            if ((verts == null) || (verts.Length < 3))
-            { return null; }
+            if (verts == null || verts.Length < 3) return null;
 
             YnvPoly poly = new YnvPoly();
             poly.AreaID = 0x3FFF;
@@ -53,10 +51,6 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
             return poly;
         }
-
-
-
-
 
 
         public List<YnvFile> Build(bool forVehicle)
@@ -82,14 +76,10 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
                 //3: fix up generated ynv's
                 FinalizeYnvs(YnvFiles, false);
-
             }
 
             return YnvFiles;
         }
-
-
-
 
 
         private List<YnvPoly> SplitPolys(List<YnvPoly> polys, bool xaxis)
@@ -103,13 +93,11 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
             Dictionary<YnvPoly, YnvPolySplit> polysplits = new Dictionary<YnvPoly, YnvPolySplit>();
 
-            foreach (YnvPoly poly in polys)  //split along borders
+            foreach (YnvPoly poly in polys) //split along borders
             {
                 Vector3[] verts = poly.Vertices;
-                if (verts == null)
-                { continue; }//ignore empty polys..
-                if (verts.Length < 3)
-                { continue; }//not enough verts for a triangle!
+                if (verts == null) continue; //ignore empty polys..
+                if (verts.Length < 3) continue; //not enough verts for a triangle!
 
                 Vector2I gprev = NavGrid.GetCellPos(verts[0]);
                 int split1 = 0;
@@ -121,14 +109,23 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                     int g2 = xaxis ? gprev.X : gprev.Y;
                     if (g1 != g2) //this poly is crossing a border
                     {
-                        if (split1 == 0) { split1 = i; }
-                        else { split2 = i; break; }
+                        if (split1 == 0)
+                        {
+                            split1 = i;
+                        }
+                        else
+                        {
+                            split2 = i;
+                            break;
+                        }
                     }
+
                     gprev = g;
                 }
+
                 if (split1 > 0)
                 {
-                    int split2beg = (split2 > 0) ? split2 - 1 : verts.Length - 1;
+                    int split2beg = split2 > 0 ? split2 - 1 : verts.Length - 1;
                     int split2end = split2beg + 1;
                     Vector3 sv11 = verts[split1 - 1];
                     Vector3 sv12 = verts[split1];
@@ -199,10 +196,8 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 YnvEdge[] edges = poly.Edges;
                 Vector3[] verts = poly.Vertices;
                 int ec = edges?.Length ?? 0;
-                if (ec <= 0)
-                { continue; }//shouldn't happen - no edges?
-                if (ec != poly.Vertices?.Length)
-                { continue; }//shouldn't happen
+                if (ec <= 0) continue; //shouldn't happen - no edges?
+                if (ec != poly.Vertices?.Length) continue; //shouldn't happen
 
                 int split1beg = polysplit.Split1 - 1;
                 int split1end = polysplit.Split1;
@@ -214,7 +209,7 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
                 YnvEdge se1 = edges[split1beg]; //the two original edges that got split 
                 YnvEdge se2 = edges[split2beg];
-                YnvPolySplit sp1 = TryGetSplit(polysplits, se1.Poly1);//could use Poly2, but they should be the same..
+                YnvPolySplit sp1 = TryGetSplit(polysplits, se1.Poly1); //could use Poly2, but they should be the same..
                 YnvPolySplit sp2 = TryGetSplit(polysplits, se2.Poly1);
                 Vector3 sv1a = verts[split1beg];
                 Vector3 sv2a = verts[split2beg];
@@ -229,14 +224,14 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 YnvEdge splita = new YnvEdge(se1, poly2);
                 YnvEdge splitb = new YnvEdge(se1, poly1);
 
-                for (int i = 0; i < split1beg; i++) edges1.Add(edges[i]);//untouched edges
+                for (int i = 0; i < split1beg; i++) edges1.Add(edges[i]); //untouched edges
                 edges1.Add(edge1a);
                 edges1.Add(splita);
                 edges1.Add(edge2a);
-                for (int i = split2end; i < ec; i++) edges1.Add(edges[i]);//untouched edges
+                for (int i = split2end; i < ec; i++) edges1.Add(edges[i]); //untouched edges
 
                 edges2.Add(edge1b);
-                for (int i = split1end; i < split2beg; i++) edges2.Add(edges[i]);//untouched edges
+                for (int i = split1end; i < split2beg; i++) edges2.Add(edges[i]); //untouched edges
                 edges2.Add(edge2b);
                 edges2.Add(splitb);
 
@@ -245,26 +240,24 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 poly2.Edges = edges2.ToArray();
 
                 if (poly1.Edges.Length != poly1.Vertices.Length)
-                { }//debug
-                if (poly2.Edges.Length != poly2.Vertices.Length)
-                { }//debug
+                {
+                } //debug
 
+                if (poly2.Edges.Length != poly2.Vertices.Length)
+                {
+                } //debug
             }
 
             foreach (YnvPoly poly in newpolys) //fix any untouched edges that joined to split polys
             {
-                if (poly.Edges?.Length != poly.Vertices?.Length)
-                { continue; }//shouldn't happen (no edges?)
+                if (poly.Edges?.Length != poly.Vertices?.Length) continue; //shouldn't happen (no edges?)
                 for (int i = 0; i < poly.Edges.Length; i++)
                 {
                     YnvEdge edge = poly.Edges[i];
                     Vector3 vert = poly.Vertices[i];
-                    if (edge == null)
-                    { continue; }//shouldn't happen
-                    if (edge.Poly1 != edge.Poly2)
-                    { continue; }//shouldn't happen?
-                    if (edge.Poly1 == null)
-                    { continue; }//probably this edge joins to nothing
+                    if (edge == null) continue; //shouldn't happen
+                    if (edge.Poly1 != edge.Poly2) continue; //shouldn't happen?
+                    if (edge.Poly1 == null) continue; //probably this edge joins to nothing
 
 
                     YnvPolySplit polysplit;
@@ -272,11 +265,12 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                     {
                         YnvPoly newpoly = polysplit.GetNearest(vert);
                         if (newpoly == null)
-                        { }//debug
+                        {
+                        } //debug
+
                         edge.Poly1 = newpoly;
                         edge.Poly2 = newpoly;
                     }
-
                 }
             }
 
@@ -301,10 +295,15 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 float ia = (float)Math.Floor(fa);
                 f = (fa - ia) / (fa - fb);
             }
+
             if (f < 0.0f)
-            { }//debug
+            {
+            } //debug
+
             if (f > 1.0f)
-            { }//debug
+            {
+            } //debug
+
             return a + (b - a) * Math.Min(Math.Max(f, 0.0f), 1.0f);
         }
 
@@ -320,40 +319,9 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
         private bool XYEqual(Vector3 v1, Vector3 v2)
         {
-            return ((v1.X == v2.X) && (v1.Y == v2.Y));
+            return v1.X == v2.X && v1.Y == v2.Y;
         }
 
-        private class YnvPolySplit
-        {
-            public YnvPoly Orig;
-            public YnvPoly New1;
-            public YnvPoly New2;
-            public int Split1;
-            public int Split2;
-            public YnvPoly GetNearest(Vector3 v)
-            {
-                if (New1?.Vertices == null) return New2;
-                if (New2?.Vertices == null) return New1;
-                float len1 = float.MaxValue;
-                float len2 = float.MaxValue;
-                for (int i = 0; i < New1.Vertices.Length; i++)
-                {
-                    len1 = Math.Min(len1, (v - New1.Vertices[i]).LengthSquared());
-                }
-                if (len1 == 0.0f) return New1;
-                for (int i = 0; i < New2.Vertices.Length; i++)
-                {
-                    len2 = Math.Min(len2, (v - New2.Vertices[i]).LengthSquared());
-                }
-                if (len2 == 0.0f) return New2;
-                return (len1 <= len2) ? New1 : New2;
-            }
-            public YnvPoly GetOther(YnvPoly p)
-            {
-                if (p == New1) return New2;
-                return New1;
-            }
-        }
         private YnvPolySplit TryGetSplit(Dictionary<YnvPoly, YnvPolySplit> polysplits, YnvPoly poly)
         {
             if (poly == null) return null;
@@ -361,7 +329,6 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
             polysplits.TryGetValue(poly, out r);
             return r;
         }
-
 
 
         private void AddPolysIntoGrid(List<YnvPoly> polys)
@@ -376,7 +343,7 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 if (ynv == null)
                 {
                     ynv = new YnvFile();
-                    ynv.Name = "navmesh[" + cell.FileX.ToString() + "][" + cell.FileY.ToString() + "]";
+                    ynv.Name = "navmesh[" + cell.FileX + "][" + cell.FileY + "]";
                     ynv.Nav = new NavMesh();
                     ynv.Nav.SetDefaults(false);
                     ynv.Nav.AABBSize = new Vector3(NavGrid.CellSize, NavGrid.CellSize, 0.0f);
@@ -385,7 +352,7 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                     ynv.Nav.SectorTree.AABBMax = new Vector4(NavGrid.GetCellMax(cell), 0.0f);
                     ynv.AreaID = cell.X + cell.Y * 100;
                     ynv.Polys = new List<YnvPoly>();
-                    ynv.HasChanged = true;//mark it for the project window
+                    ynv.HasChanged = true; //mark it for the project window
                     ynv.RpfFileEntry = new RpfResourceFileEntry();
                     ynv.RpfFileEntry.Name = ynv.Name + ".ynv";
                     ynv.RpfFileEntry.Path = string.Empty;
@@ -397,7 +364,6 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 poly.Index = ynv.Polys.Count;
                 poly.Ynv = ynv;
                 ynv.Polys.Add(poly);
-
             }
         }
 
@@ -411,14 +377,13 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 Vector3 pos = poly.Position;
                 Vector3[] verts = poly.Vertices;
                 if (verts != null)
-                {
                     foreach (Vector3 vert in verts)
                     {
                         bbmin = Vector3.Min(bbmin, vert);
                         bbmax = Vector3.Max(bbmax, vert);
                     }
-                }
             }
+
             Vector3 bbsize = bbmax - bbmin;
 
             YnvFile ynv = new YnvFile();
@@ -431,7 +396,7 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
             ynv.Nav.SectorTree.AABBMax = new Vector4(bbmax, 0.0f);
             ynv.AreaID = 10000;
             ynv.Polys = new List<YnvPoly>();
-            ynv.HasChanged = true;//mark it for the project window
+            ynv.HasChanged = true; //mark it for the project window
             ynv.RpfFileEntry = new RpfResourceFileEntry();
             ynv.RpfFileEntry.Name = ynv.Name + ".ynv";
             ynv.RpfFileEntry.Path = string.Empty;
@@ -449,20 +414,18 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
 
         private void FinalizeYnvs(List<YnvFile> ynvs, bool vehicle)
         {
-
             foreach (YnvFile ynv in ynvs)
             {
                 //find zmin and zmax and update AABBSize and SectorTree root
                 float zmin = float.MaxValue;
                 float zmax = float.MinValue;
                 foreach (YnvPoly poly in ynv.Polys)
+                foreach (Vector3 vert in poly.Vertices)
                 {
-                    foreach (Vector3 vert in poly.Vertices)
-                    {
-                        zmin = Math.Min(zmin, vert.Z);
-                        zmax = Math.Max(zmax, vert.Z);
-                    }
+                    zmin = Math.Min(zmin, vert.Z);
+                    zmax = Math.Max(zmax, vert.Z);
                 }
+
                 NavMesh yn = ynv.Nav;
                 NavMeshSector ys = yn.SectorTree;
                 yn.AABBSize = new Vector3(yn.AABBSize.X, yn.AABBSize.Y, zmax - zmin);
@@ -473,24 +436,19 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                 ynv.UpdateContentFlags(vehicle);
 
 
-
                 //fix up flags on edges that cross ynv borders
                 foreach (YnvPoly poly in ynv.Polys)
                 {
                     bool border = false;
-                    if (poly.Edges == null)
-                    { continue; }
+                    if (poly.Edges == null) continue;
                     foreach (YnvEdge edge in poly.Edges)
-                    {
                         if (edge.Poly1 != null)
-                        {
                             if (edge.Poly1.AreaID != poly.AreaID)
                             {
-                                edge._RawData._Poly1.Unk2 = 0;//crash without this
-                                edge._RawData._Poly2.Unk2 = 0;//crash without this
-                                edge._RawData._Poly2.Unk3 = 4;////// edge._RawData._Poly2.Unk3 | 4;
+                                edge._RawData._Poly1.Unk2 = 0; //crash without this
+                                edge._RawData._Poly2.Unk2 = 0; //crash without this
+                                edge._RawData._Poly2.Unk3 = 4; ////// edge._RawData._Poly2.Unk3 | 4;
                                 border = true;
-
                                 ////DEBUG don't join edges
                                 //edge.Poly1 = null;
                                 //edge.Poly2 = null;
@@ -502,17 +460,41 @@ namespace CodeWalker.Core.GameFiles.FileTypes.Builders
                                 //edge._RawData._Poly2.Unk2 = 1;
                                 //edge._RawData._Poly1.Unk3 = 0;
                                 //edge._RawData._Poly2.Unk3 = 0;
-
                             }
-                        }
-                    }
+
                     poly.B19_IsCellEdge = border;
                 }
-
-
             }
-
         }
 
+        private class YnvPolySplit
+        {
+            public YnvPoly New1;
+            public YnvPoly New2;
+            public YnvPoly Orig;
+            public int Split1;
+            public int Split2;
+
+            public YnvPoly GetNearest(Vector3 v)
+            {
+                if (New1?.Vertices == null) return New2;
+                if (New2?.Vertices == null) return New1;
+                float len1 = float.MaxValue;
+                float len2 = float.MaxValue;
+                for (int i = 0; i < New1.Vertices.Length; i++)
+                    len1 = Math.Min(len1, (v - New1.Vertices[i]).LengthSquared());
+                if (len1 == 0.0f) return New1;
+                for (int i = 0; i < New2.Vertices.Length; i++)
+                    len2 = Math.Min(len2, (v - New2.Vertices[i]).LengthSquared());
+                if (len2 == 0.0f) return New2;
+                return len1 <= len2 ? New1 : New2;
+            }
+
+            public YnvPoly GetOther(YnvPoly p)
+            {
+                if (p == New1) return New2;
+                return New1;
+            }
+        }
     }
 }

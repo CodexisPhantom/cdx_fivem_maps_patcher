@@ -1,14 +1,14 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class AudioZones
     {
-        public volatile bool Inited;
         public GameFileCache GameFileCache;
+        public volatile bool Inited;
 
         public Dictionary<RelFile, AudioPlacement[]> PlacementsDict = new Dictionary<RelFile, AudioPlacement[]>();
 
@@ -43,28 +43,18 @@ namespace CodeWalker.World
             {
                 AudioPlacement placement = null;
                 if (reldata is Dat151AmbientZone)
-                {
                     placement = new AudioPlacement(relfile, reldata as Dat151AmbientZone);
-                }
                 else if (reldata is Dat151AmbientRule)
-                {
                     placement = new AudioPlacement(relfile, reldata as Dat151AmbientRule);
-                }
                 else if (reldata is Dat151StaticEmitter)
-                {
                     placement = new AudioPlacement(relfile, reldata as Dat151StaticEmitter);
-                }
-                if (placement != null)
-                {
-                    placements.Add(placement);
-                }
+                if (placement != null) placements.Add(placement);
             }
         }
 
 
         public void GetPlacements(List<RelFile> relfiles, List<AudioPlacement> placements)
         {
-
             foreach (RelFile relfile in relfiles)
             {
                 AudioPlacement[] fileplacements = null;
@@ -75,12 +65,9 @@ namespace CodeWalker.World
                     fileplacements = newplacements.ToArray();
                     PlacementsDict[relfile] = fileplacements;
                 }
-                if (fileplacements != null)
-                {
-                    placements.AddRange(fileplacements);
-                }
-            }
 
+                if (fileplacements != null) placements.AddRange(fileplacements);
+            }
         }
 
         public AudioPlacement FindPlacement(RelFile relfile, Dat151RelData reldata)
@@ -88,24 +75,50 @@ namespace CodeWalker.World
             if (relfile == null) return null;
             if (reldata == null) return null;
             if (PlacementsDict.TryGetValue(relfile, out AudioPlacement[] placements))
-            {
                 foreach (AudioPlacement placement in placements)
                 {
                     if (placement.AmbientZone == reldata) return placement;
                     if (placement.AmbientRule == reldata) return placement;
                     if (placement.StaticEmitter == reldata) return placement;
                 }
-            }
+
             return null;
         }
-
-
     }
-
 
 
     public class AudioPlacement
     {
+        public AudioPlacement(RelFile rel, Dat151AmbientZone zone)
+        {
+            RelFile = rel;
+            AmbientZone = zone;
+            ShortTypeName = "AmbientZone";
+            FullTypeName = "Ambient Zone";
+
+            UpdateFromAmbientZone();
+        }
+
+        public AudioPlacement(RelFile rel, Dat151AmbientRule rule)
+        {
+            RelFile = rel;
+            AmbientRule = rule;
+            ShortTypeName = "AmbientRule";
+            FullTypeName = "Ambient Rule";
+
+            UpdateFromAmbientRule();
+        }
+
+        public AudioPlacement(RelFile rel, Dat151StaticEmitter emitter)
+        {
+            RelFile = rel;
+            StaticEmitter = emitter;
+            ShortTypeName = "StaticEmitter";
+            FullTypeName = "Static Emitter";
+
+            UpdateFromStaticEmitter();
+        }
+
         public string Name { get; set; }
         public MetaHash NameHash { get; set; }
         public RelFile RelFile { get; set; }
@@ -131,36 +144,6 @@ namespace CodeWalker.World
         public Quaternion Orientation { get; set; }
         public Quaternion OrientationInv { get; set; }
         public float HitSphereRad { get; set; }
-
-
-        public AudioPlacement(RelFile rel, Dat151AmbientZone zone)
-        {
-            RelFile = rel;
-            AmbientZone = zone;
-            ShortTypeName = "AmbientZone";
-            FullTypeName = "Ambient Zone";
-
-            UpdateFromAmbientZone();
-        }
-        public AudioPlacement(RelFile rel, Dat151AmbientRule rule)
-        {
-            RelFile = rel;
-            AmbientRule = rule;
-            ShortTypeName = "AmbientRule";
-            FullTypeName = "Ambient Rule";
-
-            UpdateFromAmbientRule();
-        }
-        public AudioPlacement(RelFile rel, Dat151StaticEmitter emitter)
-        {
-            RelFile = rel;
-            StaticEmitter = emitter;
-            ShortTypeName = "StaticEmitter";
-            FullTypeName = "Static Emitter";
-
-            UpdateFromStaticEmitter();
-        }
-
 
 
         public void UpdateFromAmbientZone()
@@ -191,8 +174,10 @@ namespace CodeWalker.World
                 case Dat151ZoneShape.Line:
                     InnerPos = zone.PositioningZoneCentre;
                     InnerMin = new Vector3(-1.0f, -1.0f, 0.0f);
-                    InnerMax = new Vector3(1.0f, 1.0f, (zone.PositioningZoneSize - zone.PositioningZoneCentre).Length());
-                    InnerOri = Quaternion.Invert(Quaternion.LookAtLH(zone.PositioningZoneCentre, zone.PositioningZoneSize, Vector3.UnitZ));
+                    InnerMax = new Vector3(1.0f, 1.0f,
+                        (zone.PositioningZoneSize - zone.PositioningZoneCentre).Length());
+                    InnerOri = Quaternion.Invert(Quaternion.LookAtLH(zone.PositioningZoneCentre,
+                        zone.PositioningZoneSize, Vector3.UnitZ));
                     break;
             }
 
@@ -201,20 +186,18 @@ namespace CodeWalker.World
             OuterMin = -OuterMax;
             OuterOri = Quaternion.RotationAxis(Vector3.UnitZ, zone.ActivationZoneRotationAngle * deg2rad);
 
-            bool useouter = ((InnerMax.X == 0) || (InnerMax.Y == 0) || (InnerMax.Z == 0));
-            if (useouter && (zone.Shape != Dat151ZoneShape.Sphere))
-            { } //not sure what these are yet!
+            bool useouter = InnerMax.X == 0 || InnerMax.Y == 0 || InnerMax.Z == 0;
+            if (useouter && zone.Shape != Dat151ZoneShape.Sphere)
+            {
+            } //not sure what these are yet!
+
             Position = useouter ? OuterPos : InnerPos;
             HitboxMax = useouter ? OuterMax : InnerMax;
             HitboxMin = useouter ? OuterMin : InnerMin;
             Orientation = useouter ? OuterOri : InnerOri;
             OrientationInv = Quaternion.Invert(Orientation);
             HitSphereRad = InnerRadius;
-            if (zone.Shape == Dat151ZoneShape.Sphere)
-            {
-                Position = InnerPos;
-            }
-
+            if (zone.Shape == Dat151ZoneShape.Sphere) Position = InnerPos;
         }
 
         public void UpdateFromAmbientRule()
@@ -233,14 +216,10 @@ namespace CodeWalker.World
             InnerRadius = rule.MinDist;
             OuterRadius = rule.MaxDist;
 
-            bool useouter = (InnerRadius == 0);
-            if (useouter)
-            {
-                InnerRadius = 1;
-            }
+            bool useouter = InnerRadius == 0;
+            if (useouter) InnerRadius = 1;
             Position = InnerPos;
-            HitSphereRad = InnerRadius;// useouter ? OuterRadius : InnerRadius;
-
+            HitSphereRad = InnerRadius; // useouter ? OuterRadius : InnerRadius;
         }
 
         public void UpdateFromStaticEmitter()
@@ -259,20 +238,16 @@ namespace CodeWalker.World
             InnerRadius = emitter.MinDistance;
             OuterRadius = emitter.MaxDistance;
 
-            bool useouter = (InnerRadius == 0);
-            if (useouter)
-            {
-                InnerRadius = 1;
-            }
+            bool useouter = InnerRadius == 0;
+            if (useouter) InnerRadius = 1;
             Position = InnerPos;
-            HitSphereRad = InnerRadius;// useouter ? OuterRadius : InnerRadius;
-
+            HitSphereRad = InnerRadius; // useouter ? OuterRadius : InnerRadius;
         }
 
 
         public void SetPosition(Vector3 pos)
         {
-            bool useouter = ((InnerMax.X == 0) || (InnerMax.Y == 0) || (InnerMax.Z == 0));
+            bool useouter = InnerMax.X == 0 || InnerMax.Y == 0 || InnerMax.Z == 0;
             Vector3 delta = pos - InnerPos;
             InnerPos = pos;
             OuterPos += delta;
@@ -283,15 +258,11 @@ namespace CodeWalker.World
                 AmbientZone.PositioningZoneCentre = InnerPos;
                 AmbientZone.ActivationZoneCentre = OuterPos;
             }
-            if (AmbientRule != null)
-            {
-                AmbientRule.Position = InnerPos;
-            }
-            if (StaticEmitter != null)
-            {
-                StaticEmitter.Position = InnerPos;
-            }
+
+            if (AmbientRule != null) AmbientRule.Position = InnerPos;
+            if (StaticEmitter != null) StaticEmitter.Position = InnerPos;
         }
+
         public void SetOrientation(Quaternion ori)
         {
             Orientation = ori;
@@ -299,7 +270,7 @@ namespace CodeWalker.World
 
             Vector3 t = ori.Multiply(Vector3.UnitX);
             float angl = (float)Math.Atan2(t.Y, t.X);
-            while (angl < 0) angl += ((float)Math.PI * 2.0f);
+            while (angl < 0) angl += (float)Math.PI * 2.0f;
             float rad2deg = (float)(180.0 / Math.PI);
             float dangl = angl * rad2deg;
             uint uangl = (uint)dangl;
@@ -319,22 +290,16 @@ namespace CodeWalker.World
             {
                 //not sure yet how to allow independent rotation of inner & outer boxes...
                 //maybe only in project window?
-                bool useouter = ((InnerMax.X == 0) || (InnerMax.Y == 0) || (InnerMax.Z == 0));
+                bool useouter = InnerMax.X == 0 || InnerMax.Y == 0 || InnerMax.Z == 0;
                 if (useouter)
                 {
                     OuterOri = Orientation;
-                    if (AmbientZone != null)
-                    {
-                        AmbientZone.ActivationZoneRotationAngle = (ushort)uangl;
-                    }
+                    if (AmbientZone != null) AmbientZone.ActivationZoneRotationAngle = (ushort)uangl;
                 }
                 else
                 {
                     InnerOri = Orientation;
-                    if (AmbientZone != null)
-                    {
-                        AmbientZone.PositioningZoneRotationAngle = (ushort)uangl;
-                    }
+                    if (AmbientZone != null) AmbientZone.PositioningZoneRotationAngle = (ushort)uangl;
                 }
             }
         }
@@ -346,6 +311,4 @@ namespace CodeWalker.World
             return NameHash.ToString();
         }
     }
-
-
 }

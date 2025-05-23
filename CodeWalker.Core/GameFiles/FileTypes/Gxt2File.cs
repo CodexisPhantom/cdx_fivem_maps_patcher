@@ -7,11 +7,13 @@ using System.Text;
 
 namespace CodeWalker.GameFiles
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Gxt2File : PackedFile
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Gxt2File : PackedFile
     {
         public string Name { get; set; }
         public RpfFileEntry FileEntry { get; set; }
         public uint EntryCount { get; set; }
+
         public Gxt2Entry[] TextEntries { get; set; }
         //public Dictionary<uint, string> Dict { get; set; }
 
@@ -25,8 +27,7 @@ namespace CodeWalker.GameFiles
             using (BinaryReader br = new BinaryReader(new MemoryStream(data)))
             {
                 uint gxt2 = br.ReadUInt32(); //"GXT2" - 1196971058
-                if (gxt2 != 1196971058)
-                { return; }
+                if (gxt2 != 1196971058) return;
 
                 EntryCount = br.ReadUInt32();
                 TextEntries = new Gxt2Entry[EntryCount];
@@ -39,8 +40,7 @@ namespace CodeWalker.GameFiles
                 }
 
                 gxt2 = br.ReadUInt32(); //another "GXT2"
-                if (gxt2 != 1196971058)
-                { return; }
+                if (gxt2 != 1196971058) return;
 
                 uint endpos = br.ReadUInt32();
 
@@ -53,23 +53,24 @@ namespace CodeWalker.GameFiles
 
                     buf.Clear();
                     byte b = br.ReadByte();
-                    while ((b != 0) && (br.BaseStream.Position<endpos))
+                    while (b != 0 && br.BaseStream.Position < endpos)
                     {
                         buf.Add(b);
                         b = br.ReadByte();
                     }
+
                     e.Text = Encoding.UTF8.GetString(buf.ToArray());
 
                     //Dict[e.Hash] = e.Text;
                 }
-
             }
         }
+
         public byte[] Save()
         {
             if (TextEntries == null) TextEntries = new Gxt2Entry[0];
             EntryCount = (uint)TextEntries.Length;
-            uint offset = 16 + (EntryCount * 8);
+            uint offset = 16 + EntryCount * 8;
             List<byte[]> datas = new List<byte[]>();
 
             MemoryStream ms = new MemoryStream();
@@ -86,12 +87,10 @@ namespace CodeWalker.GameFiles
                 bw.Write(e.Hash);
                 bw.Write(e.Offset);
             }
+
             bw.Write(1196971058); //"GXT2"
             bw.Write(offset);
-            foreach (byte[] d in datas)
-            {
-                bw.Write(d);
-            }
+            foreach (byte[] d in datas) bw.Write(d);
 
             bw.Flush();
             ms.Position = 0;
@@ -106,7 +105,6 @@ namespace CodeWalker.GameFiles
         {
             StringBuilder sb = new StringBuilder();
             if (TextEntries != null)
-            {
                 foreach (Gxt2Entry entry in TextEntries)
                 {
                     sb.Append("0x");
@@ -115,9 +113,10 @@ namespace CodeWalker.GameFiles
                     sb.Append(entry.Text);
                     sb.AppendLine();
                 }
-            }
+
             return sb.ToString();
         }
+
         public static Gxt2File FromText(string text)
         {
             Gxt2File gxt = new Gxt2File();
@@ -127,28 +126,27 @@ namespace CodeWalker.GameFiles
             {
                 string tline = line.Trim();
                 if (tline.Length < 13) continue;
-                if (uint.TryParse(tline.Substring(2, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint hash))
+                if (uint.TryParse(tline.Substring(2, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture,
+                        out uint hash))
                 {
                     Gxt2Entry entry = new Gxt2Entry();
                     entry.Hash = hash;
-                    entry.Text = (tline.Length > 13) ? tline.Substring(13) : "";
+                    entry.Text = tline.Length > 13 ? tline.Substring(13) : "";
                     entries.Add(entry);
                 }
-                else
-                {
-                    //error parsing hash, probably should tell the user about this somehow
-                }
+                //error parsing hash, probably should tell the user about this somehow
             }
+
             entries.Sort((a, b) => a.Hash.CompareTo(b.Hash));
             gxt.TextEntries = entries.ToArray();
             gxt.EntryCount = (uint)entries.Count;
             return gxt;
         }
-    
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Gxt2Entry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Gxt2Entry
     {
         public uint Hash { get; set; }
         public uint Offset { get; set; }
@@ -161,16 +159,10 @@ namespace CodeWalker.GameFiles
     }
 
 
-
-
-
-
-
-
     public static class GlobalText
     {
         public static Dictionary<uint, string> Index = new Dictionary<uint, string>();
-        private static object syncRoot = new object();
+        private static readonly object syncRoot = new object();
 
         public static volatile bool FullIndexBuilt = false;
 
@@ -194,6 +186,7 @@ namespace CodeWalker.GameFiles
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -208,6 +201,7 @@ namespace CodeWalker.GameFiles
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -216,23 +210,20 @@ namespace CodeWalker.GameFiles
             string res;
             lock (syncRoot)
             {
-                if (!Index.TryGetValue(hash, out res))
-                {
-                    res = hash.ToString();
-                }
+                if (!Index.TryGetValue(hash, out res)) res = hash.ToString();
             }
+
             return res;
         }
+
         public static string TryGetString(uint hash)
         {
             string res;
             lock (syncRoot)
             {
-                if (!Index.TryGetValue(hash, out res))
-                {
-                    res = string.Empty;
-                }
+                if (!Index.TryGetValue(hash, out res)) res = string.Empty;
             }
+
             return res;
         }
 
@@ -241,18 +232,11 @@ namespace CodeWalker.GameFiles
             lock (syncRoot)
             {
                 foreach (KeyValuePair<uint, string> kvp in Index)
-                {
                     if (kvp.Value == text)
-                    {
                         return kvp.Key;
-                    }
-                }
             }
+
             return 0;
         }
-
     }
-
-
-
 }

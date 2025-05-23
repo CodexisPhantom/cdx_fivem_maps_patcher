@@ -1,16 +1,14 @@
-﻿using CodeWalker.GameFiles;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Xml;
+using CodeWalker.GameFiles;
 
 namespace CodeWalker.World
 {
     public class TimecycleMods
     {
-
         public Dictionary<uint, TimecycleMod> Dict = new Dictionary<uint, TimecycleMod>();
-
 
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus)
@@ -25,23 +23,16 @@ namespace CodeWalker.World
             LoadXml(rpfman.GetFileXml("common.rpf\\data\\timecycle\\timecycle_mods_4.xml"));
 
             LoadXml(rpfman.GetFileXml("update\\update.rpf\\common\\data\\timecycle\\timecycle_mods_1.xml"));
-            LoadXml(rpfman.GetFileXml("update\\update.rpf\\common\\data\\timecycle\\timecycle_mods_2.xml"));//doesn't exist, but try anyway
+            LoadXml(rpfman.GetFileXml(
+                "update\\update.rpf\\common\\data\\timecycle\\timecycle_mods_2.xml")); //doesn't exist, but try anyway
             LoadXml(rpfman.GetFileXml("update\\update.rpf\\common\\data\\timecycle\\timecycle_mods_3.xml"));
             LoadXml(rpfman.GetFileXml("update\\update.rpf\\common\\data\\timecycle\\timecycle_mods_4.xml"));
 
             if (gameFileCache.EnableDlc)
-            {
                 foreach (RpfFile dlcrpf in gameFileCache.DlcActiveRpfs)
-                {
-                    foreach (RpfEntry file in dlcrpf.AllEntries)
-                    {
-                        if (file.NameLower.EndsWith(".xml") && file.NameLower.StartsWith("timecycle_mods_"))
-                        {
-                            LoadXml(rpfman.GetFileXml(file.Path));
-                        }
-                    }
-                }
-            }
+                foreach (RpfEntry file in dlcrpf.AllEntries)
+                    if (file.NameLower.EndsWith(".xml") && file.NameLower.StartsWith("timecycle_mods_"))
+                        LoadXml(rpfman.GetFileXml(file.Path));
 
 
             gameFileCache.TimeCycleModsDict = Dict;
@@ -50,23 +41,19 @@ namespace CodeWalker.World
         private void LoadXml(XmlDocument doc)
         {
             XmlElement root = doc.DocumentElement;
-            if (root == null)
-            { return; }
+            if (root == null) return;
 
             float version = Xml.GetFloatAttribute(root, "version");
 
             XmlNodeList modnodes = root.SelectNodes("modifier");
             foreach (XmlNode modnode in modnodes)
             {
-                if (!(modnode is XmlElement)) continue; 
+                if (!(modnode is XmlElement)) continue;
                 TimecycleMod mod = new TimecycleMod();
                 mod.Init(modnode);
                 Dict[mod.nameHash] = mod;
             }
-
         }
-
-
     }
 
 
@@ -104,13 +91,13 @@ namespace CodeWalker.World
                 vals.Add(val);
                 Dict[val.name] = val;
             }
-            Values = vals.ToArray();
 
+            Values = vals.ToArray();
         }
 
         public override string ToString()
         {
-            return name + " (" + numMods.ToString() + " mods, userFlags: " + userFlags.ToString() + ")";
+            return name + " (" + numMods + " mods, userFlags: " + userFlags + ")";
         }
     }
 
@@ -132,8 +119,6 @@ namespace CodeWalker.World
                 value1 = FloatUtil.Parse(valstrs[0]);
                 value2 = FloatUtil.Parse(valstrs[1]);
             }
-            else
-            { }
         }
 
         public override string ToString()
@@ -141,5 +126,4 @@ namespace CodeWalker.World
             return name + ": " + FloatUtil.ToString(value1) + ", " + FloatUtil.ToString(value2);
         }
     }
-
 }

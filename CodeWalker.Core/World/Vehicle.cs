@@ -1,15 +1,17 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Threading;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Vehicle
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Vehicle
     {
+        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
         public string Name { get; set; } = string.Empty;
-        public MetaHash NameHash { get; set; } = 0;//base vehicle name hash
-        public MetaHash ModelHash { get; set; } = 0;//vehicle model name hash, can be _hi
+        public MetaHash NameHash { get; set; } = 0; //base vehicle name hash
+        public MetaHash ModelHash { get; set; } = 0; //vehicle model name hash, can be _hi
 
         public VehicleInitData InitData { get; set; }
         public YftFile Yft { get; set; }
@@ -17,10 +19,8 @@ namespace CodeWalker.World
         public YcdFile ConvRoofDict { get; set; }
         public ClipMapEntry ConvRoofClip { get; set; }
 
-        public string DisplayMake { get; set; } = string.Empty;//make display name
-        public string DisplayName { get; set; } = string.Empty;//model display name
-
-        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
+        public string DisplayMake { get; set; } = string.Empty; //make display name
+        public string DisplayName { get; set; } = string.Empty; //model display name
 
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
@@ -44,25 +44,27 @@ namespace CodeWalker.World
                 NameHash = modelhash;
                 InitData = vid;
                 Yft = gfc.GetYft(ModelHash);
-                while ((Yft != null) && (!Yft.Loaded))
+                while (Yft != null && !Yft.Loaded)
                 {
-                    Thread.Sleep(1);//kinda hacky
+                    Thread.Sleep(1); //kinda hacky
                     Yft = gfc.GetYft(ModelHash);
                 }
 
                 DisplayMake = GlobalText.TryGetString(JenkHash.GenHash(vid.vehicleMakeName.ToLowerInvariant()));
                 DisplayName = GlobalText.TryGetString(JenkHash.GenHash(vid.gameName.ToLowerInvariant()));
 
-                if (!string.IsNullOrEmpty(vid.animConvRoofDictName) && (vid.animConvRoofDictName.ToLowerInvariant() != "null"))
+                if (!string.IsNullOrEmpty(vid.animConvRoofDictName) &&
+                    vid.animConvRoofDictName.ToLowerInvariant() != "null")
                 {
                     uint ycdhash = JenkHash.GenHash(vid.animConvRoofDictName.ToLowerInvariant());
                     uint cliphash = JenkHash.GenHash(vid.animConvRoofName?.ToLowerInvariant());
                     ConvRoofDict = gfc.GetYcd(ycdhash);
-                    while ((ConvRoofDict != null) && (!ConvRoofDict.Loaded))
+                    while (ConvRoofDict != null && !ConvRoofDict.Loaded)
                     {
-                        Thread.Sleep(1);//kinda hacky
+                        Thread.Sleep(1); //kinda hacky
                         ConvRoofDict = gfc.GetYcd(ycdhash);
                     }
+
                     ClipMapEntry cme = null;
                     ConvRoofDict?.ClipMap?.TryGetValue(cliphash, out cme);
                     ConvRoofClip = cme;
@@ -85,13 +87,10 @@ namespace CodeWalker.World
         }
 
 
-
         public void UpdateEntity()
         {
             RenderEntity.SetPosition(Position);
             RenderEntity.SetOrientation(Rotation);
         }
-
-
     }
 }

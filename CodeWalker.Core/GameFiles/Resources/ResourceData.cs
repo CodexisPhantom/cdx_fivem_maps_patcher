@@ -31,59 +31,37 @@ using System.Runtime.InteropServices;
 
 namespace CodeWalker.GameFiles
 {
-
     /// <summary>
-    /// Represents a resource data reader.
+    ///     Represents a resource data reader.
     /// </summary>
     public class ResourceDataReader : DataReader
     {
-        public bool IsGen9 = RpfManager.IsGen9;
-
         private const long SYSTEM_BASE = 0x50000000;
         private const long GRAPHICS_BASE = 0x60000000;
+        private readonly Stream graphicsStream;
 
-        private Stream systemStream;
-        private Stream graphicsStream;
-
-        public RpfResourceFileEntry FileEntry { get; set; }
+        private readonly Stream systemStream;
+        public Dictionary<long, object> arrayPool = new Dictionary<long, object>();
 
         // this is a dictionary that contains all the resource blocks
         // which were read from this resource reader
         public Dictionary<long, IResourceBlock> blockPool = new Dictionary<long, IResourceBlock>();
-        public Dictionary<long, object> arrayPool = new Dictionary<long, object>();
+        public bool IsGen9 = RpfManager.IsGen9;
 
         /// <summary>
-        /// Gets the length of the underlying stream.
+        ///     Initializes a new resource data reader for the specified system- and graphics-stream.
         /// </summary>
-        public override long Length
-        {
-            get
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the position within the underlying stream.
-        /// </summary>
-        public override long Position
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Initializes a new resource data reader for the specified system- and graphics-stream.
-        /// </summary>
-        public ResourceDataReader(Stream systemStream, Stream graphicsStream, Endianess endianess = Endianess.LittleEndian)
-            : base((Stream)null, endianess)
+        public ResourceDataReader(Stream systemStream, Stream graphicsStream,
+            Endianess endianess = Endianess.LittleEndian)
+            : base(null, endianess)
         {
             this.systemStream = systemStream;
             this.graphicsStream = graphicsStream;
         }
 
-        public ResourceDataReader(RpfResourceFileEntry resentry, byte[] data, Endianess endianess = Endianess.LittleEndian)
-            : base((Stream)null, endianess)
+        public ResourceDataReader(RpfResourceFileEntry resentry, byte[] data,
+            Endianess endianess = Endianess.LittleEndian)
+            : base(null, endianess)
         {
             FileEntry = resentry;
             int systemSize = resentry.SystemSize;
@@ -102,24 +80,36 @@ namespace CodeWalker.GameFiles
             //    }
             //}
 
-            this.systemStream = new MemoryStream(data, 0, systemSize);
-            this.graphicsStream = new MemoryStream(data, systemSize, graphicsSize);
+            systemStream = new MemoryStream(data, 0, systemSize);
+            graphicsStream = new MemoryStream(data, systemSize, graphicsSize);
             Position = 0x50000000;
         }
 
-        public ResourceDataReader(int systemSize, int graphicsSize, byte[] data, Endianess endianess = Endianess.LittleEndian)
-            : base((Stream)null, endianess)
+        public ResourceDataReader(int systemSize, int graphicsSize, byte[] data,
+            Endianess endianess = Endianess.LittleEndian)
+            : base(null, endianess)
         {
-            this.systemStream = new MemoryStream(data, 0, systemSize);
-            this.graphicsStream = new MemoryStream(data, systemSize, graphicsSize);
+            systemStream = new MemoryStream(data, 0, systemSize);
+            graphicsStream = new MemoryStream(data, systemSize, graphicsSize);
             Position = 0x50000000;
         }
 
+        public RpfResourceFileEntry FileEntry { get; set; }
+
+        /// <summary>
+        ///     Gets the length of the underlying stream.
+        /// </summary>
+        public override long Length => -1;
+
+        /// <summary>
+        ///     Gets or sets the position within the underlying stream.
+        /// </summary>
+        public override long Position { get; set; }
 
 
         /// <summary>
-        /// Reads data from the underlying stream. This is the only method that directly accesses
-        /// the data in the underlying stream.
+        ///     Reads data from the underlying stream. This is the only method that directly accesses
+        ///     the data in the underlying stream.
         /// </summary>
         protected override byte[] ReadFromStream(int count, bool ignoreEndianess = false)
         {
@@ -133,15 +123,12 @@ namespace CodeWalker.GameFiles
                 systemStream.Read(buffer, 0, count);
 
                 // handle endianess
-                if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
-                {
-                    Array.Reverse(buffer);
-                }
+                if (!ignoreEndianess && Endianess == Endianess.BigEndian) Array.Reverse(buffer);
 
                 Position = systemStream.Position | 0x50000000;
                 return buffer;
-
             }
+
             if ((Position & GRAPHICS_BASE) == GRAPHICS_BASE)
             {
                 // read from graphic stream...
@@ -152,25 +139,22 @@ namespace CodeWalker.GameFiles
                 graphicsStream.Read(buffer, 0, count);
 
                 // handle endianess
-                if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
-                {
-                    Array.Reverse(buffer);
-                }
+                if (!ignoreEndianess && Endianess == Endianess.BigEndian) Array.Reverse(buffer);
 
                 Position = graphicsStream.Position | 0x60000000;
                 return buffer;
             }
+
             throw new Exception("illegal position!");
         }
 
         /// <summary>
-        /// Reads a block.
+        ///     Reads a block.
         /// </summary>
         public T ReadBlock<T>(params object[] parameters) where T : IResourceBlock, new()
         {
             bool usepool = !typeof(IResourceNoCacheBlock).IsAssignableFrom(typeof(T));
             if (usepool)
-            {
                 // make sure to return the same object if the same
                 // block is read again...
                 if (blockPool.ContainsKey(Position))
@@ -181,31 +165,20 @@ namespace CodeWalker.GameFiles
                         Position += block.BlockLength;
                         return tblk;
                     }
-                    else
-                    {
-                        usepool = false;
-                    }
+
+                    usepool = false;
                 }
-            }
 
             T result = new T();
 
 
             // replace with correct type...
             if (result is IResourceXXSystemBlock)
-            {
                 result = (T)((IResourceXXSystemBlock)result).GetType(this, parameters);
-            }
 
-            if (result == null)
-            {
-                return default(T);
-            }
+            if (result == null) return default;
 
-            if (usepool)
-            {
-                blockPool[Position] = result;
-            }
+            if (usepool) blockPool[Position] = result;
 
             result.Read(this, parameters);
 
@@ -213,7 +186,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Reads a block at a specified position.
+        ///     Reads a block at a specified position.
         /// </summary>
         public T ReadBlockAt<T>(ulong position, params object[] parameters) where T : IResourceBlock, new()
         {
@@ -227,10 +200,8 @@ namespace CodeWalker.GameFiles
 
                 return result;
             }
-            else
-            {
-                return default(T);
-            }
+
+            return default;
         }
 
         public T[] ReadBlocks<T>(ulong[] pointers) where T : IResourceBlock, new()
@@ -238,10 +209,7 @@ namespace CodeWalker.GameFiles
             if (pointers == null) return null;
             int count = pointers.Length;
             T[] items = new T[count];
-            for (int i = 0; i < count; i++)
-            {
-                items[i] = ReadBlockAt<T>(pointers[i]);
-            }
+            for (int i = 0; i < count; i++) items[i] = ReadBlockAt<T>(pointers[i]);
             return items;
         }
 
@@ -249,7 +217,7 @@ namespace CodeWalker.GameFiles
         public byte[] ReadBytesAt(ulong position, uint count, bool cache = true)
         {
             long pos = (long)position;
-            if ((pos <= 0) || (count == 0)) return null;
+            if (pos <= 0 || count == 0) return null;
             long posbackup = Position;
             Position = pos;
             byte[] result = ReadBytes((int)count);
@@ -257,9 +225,10 @@ namespace CodeWalker.GameFiles
             if (cache) arrayPool[(long)position] = result;
             return result;
         }
+
         public ushort[] ReadUshortsAt(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
 
             ushort[] result = new ushort[count];
             uint length = count * 2;
@@ -279,9 +248,10 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public short[] ReadShortsAt(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
             short[] result = new short[count];
             uint length = count * 2;
             byte[] data = ReadBytesAt(position, length, false);
@@ -291,9 +261,10 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public uint[] ReadUintsAt(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
 
             uint[] result = new uint[count];
             uint length = count * 4;
@@ -313,9 +284,10 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public ulong[] ReadUlongsAt(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
 
             ulong[] result = new ulong[count];
             uint length = count * 8;
@@ -335,9 +307,10 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public float[] ReadFloatsAt(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
 
             float[] result = new float[count];
             uint length = count * 4;
@@ -357,9 +330,10 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public T[] ReadStructsAt<T>(ulong position, uint count, bool cache = true)
         {
-            if ((position <= 0) || (count == 0)) return null;
+            if (position <= 0 || count == 0) return null;
 
             uint structsize = (uint)Marshal.SizeOf(typeof(T));
             uint length = count * structsize;
@@ -388,6 +362,7 @@ namespace CodeWalker.GameFiles
 
             return result;
         }
+
         public T[] ReadStructs<T>(uint count)
         {
             uint structsize = (uint)Marshal.SizeOf(typeof(T));
@@ -426,9 +401,9 @@ namespace CodeWalker.GameFiles
 
         public T ReadStructAt<T>(long position) where T : struct
         {
-            if ((position <= 0)) return default(T);
+            if (position <= 0) return default;
             long posbackup = Position;
-            Position = (long)position;
+            Position = position;
             T result = ReadStruct<T>();
             Position = posbackup;
             return result;
@@ -437,7 +412,7 @@ namespace CodeWalker.GameFiles
         public string ReadStringAt(ulong position)
         {
             long newpos = (long)position;
-            if ((newpos <= 0)) return null;
+            if (newpos <= 0) return null;
             long lastpos = Position;
             Position = newpos;
             string result = ReadString();
@@ -445,57 +420,45 @@ namespace CodeWalker.GameFiles
             arrayPool[newpos] = result;
             return result;
         }
-
     }
 
 
-
     /// <summary>
-    /// Represents a resource data writer.
+    ///     Represents a resource data writer.
     /// </summary>
     public class ResourceDataWriter : DataWriter
     {
-        public bool IsGen9 = false;//this needs to be specifically set by ResourceBuilder
-
         private const long SYSTEM_BASE = 0x50000000;
         private const long GRAPHICS_BASE = 0x60000000;
+        private readonly Stream graphicsStream;
 
-        private Stream systemStream;
-        private Stream graphicsStream;
-
-        /// <summary>
-        /// Gets the length of the underlying stream.
-        /// </summary>
-        public override long Length
-        {
-            get
-            {
-                return -1;
-            }
-        }
+        private readonly Stream systemStream;
+        public bool IsGen9 = false; //this needs to be specifically set by ResourceBuilder
 
         /// <summary>
-        /// Gets or sets the position within the underlying stream.
+        ///     Initializes a new resource data reader for the specified system- and graphics-stream.
         /// </summary>
-        public override long Position
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Initializes a new resource data reader for the specified system- and graphics-stream.
-        /// </summary>
-        public ResourceDataWriter(Stream systemStream, Stream graphicsStream, Endianess endianess = Endianess.LittleEndian)
-            : base((Stream)null, endianess)
+        public ResourceDataWriter(Stream systemStream, Stream graphicsStream,
+            Endianess endianess = Endianess.LittleEndian)
+            : base(null, endianess)
         {
             this.systemStream = systemStream;
             this.graphicsStream = graphicsStream;
         }
 
         /// <summary>
-        /// Writes data to the underlying stream. This is the only method that directly accesses
-        /// the data in the underlying stream.
+        ///     Gets the length of the underlying stream.
+        /// </summary>
+        public override long Length => -1;
+
+        /// <summary>
+        ///     Gets or sets the position within the underlying stream.
+        /// </summary>
+        public override long Position { get; set; }
+
+        /// <summary>
+        ///     Writes data to the underlying stream. This is the only method that directly accesses
+        ///     the data in the underlying stream.
         /// </summary>
         protected override void WriteToStream(byte[] value, bool ignoreEndianess = true)
         {
@@ -506,7 +469,7 @@ namespace CodeWalker.GameFiles
                 systemStream.Position = Position & ~SYSTEM_BASE;
 
                 // handle endianess
-                if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
+                if (!ignoreEndianess && Endianess == Endianess.BigEndian)
                 {
                     byte[] buf = (byte[])value.Clone();
                     Array.Reverse(buf);
@@ -519,8 +482,8 @@ namespace CodeWalker.GameFiles
 
                 Position = systemStream.Position | 0x50000000;
                 return;
-
             }
+
             if ((Position & GRAPHICS_BASE) == GRAPHICS_BASE)
             {
                 // write to graphic stream...
@@ -528,7 +491,7 @@ namespace CodeWalker.GameFiles
                 graphicsStream.Position = Position & ~GRAPHICS_BASE;
 
                 // handle endianess
-                if (!ignoreEndianess && (Endianess == Endianess.BigEndian))
+                if (!ignoreEndianess && Endianess == Endianess.BigEndian)
                 {
                     byte[] buf = (byte[])value.Clone();
                     Array.Reverse(buf);
@@ -547,14 +510,12 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Writes a block.
+        ///     Writes a block.
         /// </summary>
         public void WriteBlock(IResourceBlock value)
         {
             value.Write(this);
         }
-
-
 
 
         public void WriteStruct<T>(T val) where T : struct
@@ -567,82 +528,72 @@ namespace CodeWalker.GameFiles
             Marshal.FreeHGlobal(ptr);
             Write(arr);
         }
+
         public void WriteStructs<T>(T[] val) where T : struct
         {
             if (val == null) return;
-            foreach (T v in val)
-            {
-                WriteStruct(v);
-            }
+            foreach (T v in val) WriteStruct(v);
         }
 
 
-
         /// <summary>
-        /// Write enough bytes to the stream to get to the specified alignment.
+        ///     Write enough bytes to the stream to get to the specified alignment.
         /// </summary>
         /// <param name="alignment">value to align to</param>
         public void WritePadding(int alignment)
         {
-            long pad = ((alignment - (Position % alignment)) % alignment);
+            long pad = (alignment - Position % alignment) % alignment;
             if (pad > 0) Write(new byte[pad]);
         }
 
         public void WriteUlongs(ulong[] val)
         {
             if (val == null) return;
-            foreach (ulong v in val)
-            {
-                Write(v);
-            }
+            foreach (ulong v in val) Write(v);
         }
-
-
     }
 
 
-
-
-
     /// <summary>
-    /// Represents a data block in a resource file.
+    ///     Represents a data block in a resource file.
     /// </summary>
     public interface IResourceBlock
     {
         /// <summary>
-        /// Gets or sets the position of the data block.
+        ///     Gets or sets the position of the data block.
         /// </summary>
         long FilePosition { get; set; }
 
         /// <summary>
-        /// Gets the length of the data block.
+        ///     Gets the length of the data block.
         /// </summary>
         long BlockLength { get; }
+
         long BlockLength_Gen9 { get; }
 
         /// <summary>
-        /// Reads the data block.
+        ///     Reads the data block.
         /// </summary>
         void Read(ResourceDataReader reader, params object[] parameters);
 
         /// <summary>
-        /// Writes the data block.
+        ///     Writes the data block.
         /// </summary>
         void Write(ResourceDataWriter writer, params object[] parameters);
     }
 
     /// <summary>
-    /// Represents a data block of the system segement in a resource file.
+    ///     Represents a data block of the system segement in a resource file.
     /// </summary>
     public interface IResourceSystemBlock : IResourceBlock
     {
         /// <summary>
-        /// Returns a list of data blocks that are part of this block.
+        ///     Returns a list of data blocks that are part of this block.
         /// </summary>
         Tuple<long, IResourceBlock>[] GetParts();
 
         /// <summary>
-        /// Returns a list of data blocks that are referenced by this block.
+        ///     Returns a list of data blocks that are referenced by this block.
         /// </summary>
         IResourceBlock[] GetReferences();
     }
@@ -653,67 +604,61 @@ namespace CodeWalker.GameFiles
     }
 
     /// <summary>
-    /// Represents a data block of the graphics segmenet in a resource file.
+    ///     Represents a data block of the graphics segmenet in a resource file.
     /// </summary>
     public interface IResourceGraphicsBlock : IResourceBlock
-    { }
+    {
+    }
 
 
     /// <summary>
-    /// Represents a data block that won't get cached while loading.
+    ///     Represents a data block that won't get cached while loading.
     /// </summary>
     public interface IResourceNoCacheBlock : IResourceBlock
-    { }
-
+    {
+    }
 
 
     /// <summary>
-    /// Represents a data block of the system segement in a resource file.
+    ///     Represents a data block of the system segement in a resource file.
     /// </summary>
-    [TypeConverter(typeof(ExpandableObjectConverter))] public abstract class ResourceSystemBlock : IResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public abstract class ResourceSystemBlock : IResourceSystemBlock
     {
         private long position;
 
         /// <summary>
-        /// Gets or sets the position of the data block.
+        ///     Gets or sets the position of the data block.
         /// </summary>
         public virtual long FilePosition
         {
-            get
-            {
-                return position;
-            }
+            get => position;
             set
             {
                 position = value;
-                foreach (Tuple<long, IResourceBlock> part in GetParts())
-                {
-                    part.Item2.FilePosition = value + part.Item1;
-                }
+                foreach (Tuple<long, IResourceBlock> part in GetParts()) part.Item2.FilePosition = value + part.Item1;
             }
         }
 
         /// <summary>
-        /// Gets the length of the data block.
+        ///     Gets the length of the data block.
         /// </summary>
-        public abstract long BlockLength
-        {
-            get;
-        }
+        public abstract long BlockLength { get; }
+
         public virtual long BlockLength_Gen9 => BlockLength;
 
         /// <summary>
-        /// Reads the data block.
+        ///     Reads the data block.
         /// </summary>
         public abstract void Read(ResourceDataReader reader, params object[] parameters);
 
         /// <summary>
-        /// Writes the data block.
+        ///     Writes the data block.
         /// </summary>
         public abstract void Write(ResourceDataWriter writer, params object[] parameters);
 
         /// <summary>
-        /// Returns a list of data blocks that are part of this block.
+        ///     Returns a list of data blocks that are part of this block.
         /// </summary>
         public virtual Tuple<long, IResourceBlock>[] GetParts()
         {
@@ -721,7 +666,7 @@ namespace CodeWalker.GameFiles
         }
 
         /// <summary>
-        /// Returns a list of data blocks that are referenced by this block.
+        ///     Returns a list of data blocks that are referenced by this block.
         /// </summary>
         public virtual IResourceBlock[] GetReferences()
         {
@@ -735,43 +680,32 @@ namespace CodeWalker.GameFiles
     }
 
     /// <summary>
-    /// Represents a data block of the graphics segmenet in a resource file.
+    ///     Represents a data block of the graphics segmenet in a resource file.
     /// </summary>
     public abstract class ResourceGraphicsBlock : IResourceGraphicsBlock
     {
         /// <summary>
-        /// Gets or sets the position of the data block.
+        ///     Gets or sets the position of the data block.
         /// </summary>
-        public virtual long FilePosition
-        {
-            get;
-            set;
-        }
+        public virtual long FilePosition { get; set; }
 
         /// <summary>
-        /// Gets the length of the data block.
+        ///     Gets the length of the data block.
         /// </summary>
-        public abstract long BlockLength
-        {
-            get;
-        }
+        public abstract long BlockLength { get; }
+
         public virtual long BlockLength_Gen9 => BlockLength;
 
         /// <summary>
-        /// Reads the data block.
+        ///     Reads the data block.
         /// </summary>
         public abstract void Read(ResourceDataReader reader, params object[] parameters);
 
         /// <summary>
-        /// Writes the data block.
+        ///     Writes the data block.
         /// </summary>
         public abstract void Write(ResourceDataWriter writer, params object[] parameters);
     }
-
-
-
-
-
 
 
     //public interface ResourceDataStruct
@@ -779,5 +713,4 @@ namespace CodeWalker.GameFiles
     //    void Read(ResourceDataReader reader);
     //    void Write(ResourceDataWriter writer);
     //}
-
 }

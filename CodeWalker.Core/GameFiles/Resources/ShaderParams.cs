@@ -1,7 +1,5 @@
 ﻿namespace CodeWalker.GameFiles
 {
-
-
     //shader parameter names used in drawables.
     //these were all extracted from MetaNames enum because their casing did not match the actual hash!
     //these should probably really only be used for display purposes.
@@ -324,7 +322,7 @@
         dirtLevel = 47191856,
         dirtLevelMod = 3961814809,
         DirtSampler = 2124031998,
-        DirtBumpSampler = 3157820509,//thanks CP
+        DirtBumpSampler = 3157820509, //thanks CP
         DiskBrakeGlow = 1035405954,
         displParams = 1163050293,
         distanceMapSampler = 1616890976,
@@ -1428,7 +1426,6 @@
         zShiftScale = 273550094,
 
 
-
         //gen9 param names - TODO: use correct casings??
         diffusetexture_layer0 = 3464205966,
         diffusetexture_layer1 = 3632507550,
@@ -1699,9 +1696,6 @@
         heightmaptex = 3936714263,
         heightmaptexture = 2593390818,
         velocitymaptex = 35116682,
-        velocitymaptexture = 1591869549,
+        velocitymaptexture = 1591869549
     }
-
-
-
 }

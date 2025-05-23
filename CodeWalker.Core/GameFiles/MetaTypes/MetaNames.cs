@@ -3,7 +3,6 @@ using System.Text;
 
 namespace CodeWalker.GameFiles
 {
-
     public static class MetaNames
     {
         public static bool TryGetString(uint h, out string str)
@@ -14,14 +13,16 @@ namespace CodeWalker.GameFiles
                 if (str.StartsWith("@")) str = str.Substring(1); //mainly to handle the @null entry
                 return true;
             }
+
             str = null;
             return false;
         }
     }
 
-    
+
     public class MetaNamesUtil
     {
+        public static string ShaderParamNames = @""; //[redundant list removed]
 
 
         public static string GetNameEnumCode()
@@ -31,20 +32,15 @@ namespace CodeWalker.GameFiles
             string[] names = ShaderParamNames.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string name in names)
             {
-                uint hash = JenkHash.GenHash(name/*.ToLower()*/, JenkHashInputEncoding.UTF8);
+                uint hash = JenkHash.GenHash(name /*.ToLower()*/, JenkHashInputEncoding.UTF8);
                 sb.AppendFormat("{0} = {1},", name, hash);
                 sb.AppendLine();
             }
+
             string result = sb.ToString();
             return result;
         }
-
-        public static string ShaderParamNames = @"";//[redundant list removed]
-
     }
-
-
-
 
 
     public enum MetaName : uint
@@ -2099,6 +2095,7 @@ namespace CodeWalker.GameFiles
         vfxVehicleInfos = 1829968483,
         VFXWEAPONINFO_FILE = 1215743990,
         visibleMods = 33867712,
+
         //vlink87812 = 380604338,
         VMCP_DEFAULT = 1688385326,
         VMT_ARMOUR = 2031251422,
@@ -2233,39 +2230,6 @@ namespace CodeWalker.GameFiles
         zRotation = 1366235387,
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         //Shader params - casing issues now fixed here - see ShaderParamNames enum for cased versions!
 
 
@@ -2287,6 +2251,7 @@ namespace CodeWalker.GameFiles
         _vecvehcollb = 4034110113,
         _vecvehcollm = 4084115603,
         _vecvehcollr = 2902956998,
+
         //radius = 1337695475,
         //Softness = 187712958, //softness is already in the list, used by types other than shaders!
         acceleration_delta = 4042077187,
@@ -2588,7 +2553,7 @@ namespace CodeWalker.GameFiles
         directionalmotionbluriterparams = 2777949533,
         directionalmotionblurlength = 544111294,
         directionalmotionblurparams = 3408424243,
-        dirtbumpsampler = 3157820509,//thanks CP  //(was DirtBumpSampler but fixed casing -dexy)
+        dirtbumpsampler = 3157820509, //thanks CP  //(was DirtBumpSampler but fixed casing -dexy)
         dirtcolor = 1146381126,
         dirtdecalmask = 1050016400,
         dirtlevel = 47191856,
@@ -3728,19 +3693,6 @@ namespace CodeWalker.GameFiles
         zshiftscale = 273550094,
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
         CCompositeEntityType = 1185771007,
         scaleXY = 2627937847,
         scaleZ = 284916802,
@@ -3765,9 +3717,6 @@ namespace CodeWalker.GameFiles
         itypName = 2890158180,
         packFileName = 4216494073,
         itypDepArray = 2410949350,
-
-
-
 
 
         //dexyfex manual guessing
@@ -3953,7 +3902,6 @@ namespace CodeWalker.GameFiles
         vfxRegionInfos = 4124078855,
 
 
-
         CWanted__Tunables__WantedLevel = 4209402831,
         AFF_AVERAGE = 2722191879,
         AFF_RICH = 1119317219,
@@ -4024,8 +3972,6 @@ namespace CodeWalker.GameFiles
         cop_dispatch_interaction_settings = 778268174, //used in game.dat151.rel
 
 
-
-
         FloatXYZ = 3805007828,
 
         aPropMetaData = 3902803273,
@@ -4084,13 +4030,13 @@ namespace CodeWalker.GameFiles
         youngrichwoman = 367809573, //in peds.ymt Personality
         youngaverageweakman = 3971800366, //in peds.ymt Personality
         youngaverageweakwoman = 806694113, //in peds.ymt Personality
-        bs_ai = 2150391885,  //in peds.ymt DefaultBrawlingStyle
+        bs_ai = 2150391885, //in peds.ymt DefaultBrawlingStyle
         bs_franklin = 1037948029, //in peds.ymt DefaultBrawlingStyle
         bs_michael = 2057220685, //in peds.ymt DefaultBrawlingStyle
         bs_trevor = 1249954968, //in peds.ymt DefaultBrawlingStyle
-        weapon_unarmed = 2725352035,  //in peds.ymt DefaultUnarmedWeapon
-        silent_pvg = 423993118,  //in peds.ymt PedVoiceGroup
-        silent_cutscene_pvg = 1896822940,  //in peds.ymt PedVoiceGroup
+        weapon_unarmed = 2725352035, //in peds.ymt DefaultUnarmedWeapon
+        silent_pvg = 423993118, //in peds.ymt PedVoiceGroup
+        silent_cutscene_pvg = 1896822940, //in peds.ymt PedVoiceGroup
 
         @null = 987444055, // how best to handle this? C# doesn't like it
 
@@ -4098,13 +4044,6 @@ namespace CodeWalker.GameFiles
         exportcamera = 962998194, //cutscene related stuff
 
         loop = 1281572103, //found in AWCs GranularLoop
-
-
-
-
-
-
-
 
 
         //ped ymt's hashes from Siprus
@@ -4264,7 +4203,6 @@ namespace CodeWalker.GameFiles
         LIGHTSHAFT_DENSITYTYPE_SOFT_SHADOW = 2057886646,
         LIGHTSHAFT_DENSITYTYPE_LINEAR_GRADIENT = 2088805984,
         LIGHTSHAFT_DENSITYTYPE_SOFT = 2399586564,
-
 
 
         ////various entries from Siprus - thanks!
@@ -4450,18 +4388,13 @@ namespace CodeWalker.GameFiles
         tempo = 2051628467,
         beat = 3902465932,
         dj = 148611320,
+
         //01 = 2740850834,//this one added in RpfManager.BuildBaseJenkIndex
         rockout = 4078653290,
-        uihit = 3632555010,//is this right?
-        r_p = 295134840,//is this right?
-        g_s = 349722558,//is this right?
-        m_p = 2304294116,//is this right?
-
-
-
-
-
-
+        uihit = 3632555010, //is this right?
+        r_p = 295134840, //is this right?
+        g_s = 349722558, //is this right?
+        m_p = 2304294116, //is this right?
 
 
         //GranularSound dat54.rel FileName hashes from NotGigo
@@ -4471,16 +4404,6 @@ namespace CodeWalker.GameFiles
         exhaust_decel = 780159042,
         engine_idle = 1025030561,
         exhaust_idle = 396221610,
-
-
-
-
-
-
-
-
-
-
 
 
         //from dav90's PSO_RBF_XMLExport_V5.7
@@ -4501,8 +4424,6 @@ namespace CodeWalker.GameFiles
         flee_right = 1266046331,
         flee_forward = 1547194093,
         flee_back = 1622623046,
-
-
 
 
         //dav90 suggestions
@@ -4596,7 +4517,7 @@ namespace CodeWalker.GameFiles
         weaponSlot = 1912311826,
         disableProjectileDriveby = 531190847,
         disableDriveby = 3038752585,
-        NoSpawn = 2321493392,   //scenario point flags enum values
+        NoSpawn = 2321493392, //scenario point flags enum values
         TerritorialScenario = 763077056,
         InWater = 3157896680,
         OpenDoor = 2382141124,
@@ -4604,6 +4525,7 @@ namespace CodeWalker.GameFiles
         ShortRange = 3717016373,
         HighPriority = 3426447659,
         IgnoreLoitering = 626032513,
+
         //ZoomTransformInformations = 3304563391, //this one doesn't make sense
         kOnlySp = 4171042740, //scenario spawn point availability enum
         kOnlyMp = 549935372,
@@ -4652,8 +4574,6 @@ namespace CodeWalker.GameFiles
         CVehicleModPearlescentColors = 1380492417,
         baseCols = 2645876692,
         specCols = 666439252,
-
-
 
 
         ACTION_TABLE_BRANCHES = 873568416,
@@ -9644,22 +9564,6 @@ namespace CodeWalker.GameFiles
         Velocity2 = 2944635386,
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         //from rubidium / dav90 PSO XML / zonebind
         mpName = 2031203854,
         zoneName = 257000,
@@ -9671,7 +9575,6 @@ namespace CodeWalker.GameFiles
         pedDirtMax = 3150688023,
 
 
-
         //dilapidated list - from dav90 hash collider
         ActivateVehicleSiren = 3401359988,
         AerialVehiclePoint = 1653545417,
@@ -9679,13 +9582,6 @@ namespace CodeWalker.GameFiles
         AggressiveVehicleDriving = 2626064871,
         UseSearchlight = 1524211135,
         IgnoreWeatherRestrictions = 176469077,
-
-
-
-
-
-
-
 
 
         //from 0x1F9F1 - from companion app - thanks!!
@@ -9847,16 +9743,6 @@ namespace CodeWalker.GameFiles
         VFXGROUP_WOOD_SPLINTER = 4047674909,
 
 
-
-
-
-
-
-
-
-
-
-
         //from junctions.xml -dexy
         CJunctionTemplateArray = 313816480,
         CJunctionTemplate = 2985578477,
@@ -10015,7 +9901,6 @@ namespace CodeWalker.GameFiles
         cBugstarName = 3970741067,
 
 
-
         //openIV carcols.ymt
         VehiclePlates = 593302648,
         Textures = 1767854039,
@@ -10108,7 +9993,6 @@ namespace CodeWalker.GameFiles
         vehiclelight_misc_squarelight = 1293462541,
         vehiclelight_car_antique = 708414868,
         vehiclelight_sirenlight = 3203227048,
-
 
 
         //entity sets names
@@ -11208,14 +11092,14 @@ namespace CodeWalker.GameFiles
         entity_set_test_lights = 2832535535,
         entity_set_test_lights_cheap = 1088634977,
         entity_set_time_trial = 3456105870,
-        
+
         //entity sets criminal enterprises
         entity_set_office = 716833481,
         entity_set_light_option_1 = 328084431,
         entity_set_light_option_2 = 2971821821,
         entity_set_light_option_3 = 2354126171,
         entity_set_tint_options = 2873957312,
-        
+
         //entity sets los santos drug wars
         set_equipment_upgrade = 4260899542,
         set_product_01 = 246934197,
@@ -11458,20 +11342,13 @@ namespace CodeWalker.GameFiles
         veh_countrycoach_mp = 2395407794,
         veh_prologue = 3821814614,
         veh_prologue_mp = 595582180,
+
         // wildlifeHabitats/Item
         sand_loose = 2549909946,
         sand_compact = 2397730525,
         sand_wet = 1064898850,
         grass_long = 4160773303,
         grass_short = 1200682253,
-
-
-
-
-
-
-
-
 
 
         //vfxvehicleinfo CVfxVehicleInfo keys
@@ -11665,18 +11542,8 @@ namespace CodeWalker.GameFiles
         water_splash_veh_wade = 3800884192,
 
 
-
-
-
-
         //Carl Johnson: I discovered  in zonebind
         specialZoneAttribute = 218662697,
-
-
-
-
-
-
 
 
         // Siprus and Carl Johnson
@@ -14862,6 +14729,7 @@ namespace CodeWalker.GameFiles
         HDAO_ScenePreset = 4069244622,
         HDDistance = 4095925965,
         HDTextureDist = 3433689757,
+
         //HIDE_IT = 1095875445, //causes hash collision with something in scenario .ymt's which is obviously not this
         HIGH = 1475850173,
         HI_OCTANE = 3613106599,
@@ -20347,10 +20215,6 @@ namespace CodeWalker.GameFiles
         LAW_RESPONSE_DELAY_FAST = 1875723229,
 
 
-
-
-
-
         //MRF related hashes from Disquse
         statemachine = 429383484,
         success = 975994832,
@@ -20678,7 +20542,6 @@ namespace CodeWalker.GameFiles
         AllowPlayerIgnoreSpawnRestrictions = 889046320,
         CheckForObstructionEvenInClusters = 676804087,
         IgnoreShockingPlayerRunOverEvent = 3954306790,
-        ForceWantedLevelWhenKilled = 3646964027,
-
+        ForceWantedLevelWhenKilled = 3646964027
     }
 }

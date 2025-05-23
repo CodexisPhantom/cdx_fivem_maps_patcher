@@ -5,13 +5,15 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class VehicleLayoutsFile : GameFile, PackedFile
     {
-        public string Xml { get; set; }
-
         public VehicleLayoutsFile() : base(null, GameFileType.VehicleLayouts)
-        { }
+        {
+        }
+
         public VehicleLayoutsFile(RpfFileEntry entry) : base(entry, GameFileType.VehicleLayouts)
         {
         }
+
+        public string Xml { get; set; }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {

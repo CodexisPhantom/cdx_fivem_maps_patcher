@@ -1,8 +1,8 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Xml;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
@@ -25,6 +25,8 @@ namespace CodeWalker.World
         public float NextSampleBlend { get; set; }
         public Vector3 CurrentSunDirection { get; set; } = new Vector3(0, 0, 1);
         public Vector3 CurrentMoonDirection { get; set; } = new Vector3(0, 0, -1);
+
+        public bool IsNightTime => CurrentHour < 6.0f || CurrentHour > 20.0f;
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus)
         {
@@ -56,10 +58,7 @@ namespace CodeWalker.World
             }
 
             Regions.Clear();
-            for (int i = 0; i < regions.Count; i++)
-            {
-                Regions.Add(Xml.GetStringAttribute(regions[i], "name"));
-            }
+            for (int i = 0; i < regions.Count; i++) Regions.Add(Xml.GetStringAttribute(regions[i], "name"));
 
             Inited = true;
         }
@@ -68,18 +67,18 @@ namespace CodeWalker.World
         public void SetTime(float hour)
         {
             float day = Math.Max(hour / 24.0f, 0.0f);
-            float h = hour - ((float)Math.Floor(day) * 24.0f);
+            float h = hour - (float)Math.Floor(day) * 24.0f;
             CurrentHour = h;
 
             for (int i = 0; i < Samples.Count; i++)
             {
-                bool lasti = (i >= Samples.Count - 1);
+                bool lasti = i >= Samples.Count - 1;
                 TimecycleSample cur = Samples[i];
-                TimecycleSample nxt = Samples[lasti ? 0 : i+1];
+                TimecycleSample nxt = Samples[lasti ? 0 : i + 1];
                 float nxth = lasti ? nxt.hour + 24.0f : nxt.hour;
-                if (((h >= cur.hour) && (h < nxth)) || lasti)
+                if ((h >= cur.hour && h < nxth) || lasti)
                 {
-                    float blendrange = (nxth - cur.hour) - cur.duration;
+                    float blendrange = nxth - cur.hour - cur.duration;
                     float blendstart = cur.hour + cur.duration;
                     float blendrel = h - blendstart;
                     float blendval = blendrel / blendrange;
@@ -89,14 +88,6 @@ namespace CodeWalker.World
                     CurrentSampleIndex = i;
                     break;
                 }
-            }
-        }
-
-        public bool IsNightTime
-        {
-            get
-            {
-                return (CurrentHour < 6.0f) || (CurrentHour > 20.0f);
             }
         }
     }
@@ -116,6 +107,4 @@ namespace CodeWalker.World
             uw_tc_mod = Xml.GetStringAttribute(node, "uw_tc_mod");
         }
     }
-
-
 }

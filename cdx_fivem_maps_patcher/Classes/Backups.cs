@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace cdx_fivem_maps_patcher.Classes;
+﻿namespace cdx_fivem_maps_patcher.Classes;
 
 public class Backups
 {
@@ -47,16 +45,10 @@ public class Backups
     {
         List<string> backups = GetDistinctBackups();
         if (backups.Count == 0)
-        {
             Console.WriteLine(Messages.Get("no_backups_found"));
-        }
         else
-        {
             for (int i = 0; i < backups.Count; i++)
-            {
                 Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(_serverPath, "")}");
-            }
-        }
     }
 
     private void RemoveBackupMenu()
@@ -70,18 +62,16 @@ public class Backups
 
         Console.WriteLine(Messages.Get("select_backup_to_remove"));
         for (int i = 0; i < backups.Count; i++)
-        {
             Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(_serverPath, "")}");
-        }
 
         Console.Write(Messages.Get("backup_number_prompt"));
         if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= backups.Count)
-        {
             try
             {
                 List<string> allbackups = GetAllBackups();
                 string backupToDelete = Path.GetFileName(backups[choice - 1]);
-                List<string> backupsToDelete = allbackups.Where(backup => Path.GetFileName(backup) == backupToDelete).ToList();
+                List<string> backupsToDelete =
+                    allbackups.Where(backup => Path.GetFileName(backup) == backupToDelete).ToList();
 
                 Console.WriteLine(Messages.Get("backups_to_delete"));
                 backupsToDelete.ForEach(Console.WriteLine);
@@ -93,12 +83,10 @@ public class Backups
                     foreach (string backup in backupsToDelete)
                     {
                         string originalFile = backup.EndsWith(".backup") ? backup[..^7] : backup;
-                        if (File.Exists(originalFile))
-                        {
-                            File.Delete(originalFile);
-                        }
+                        if (File.Exists(originalFile)) File.Delete(originalFile);
                         File.Move(backup, originalFile);
                     }
+
                     Console.WriteLine(Messages.Get("backup_deleted"));
                 }
                 else
@@ -110,11 +98,8 @@ public class Backups
             {
                 Console.WriteLine(Messages.Get("delete_error", ex.Message));
             }
-        }
         else
-        {
             Console.WriteLine(Messages.Get("delete_cancelled"));
-        }
     }
 
     private List<string> GetDistinctBackups()

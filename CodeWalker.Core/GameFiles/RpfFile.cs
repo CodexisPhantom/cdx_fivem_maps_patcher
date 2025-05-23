@@ -8,9 +8,27 @@ using System.Text;
 
 namespace CodeWalker.GameFiles
 {
-
     public class RpfFile
     {
+        public RpfFile(string fpath, string relpath) //for a ROOT filesystem RPF
+        {
+            FileInfo fi = new FileInfo(fpath);
+            Name = fi.Name;
+            NameLower = Name.ToLowerInvariant();
+            Path = relpath.ToLowerInvariant();
+            FilePath = fpath;
+            FileSize = fi.Length;
+        }
+
+        public RpfFile(string name, string path, long filesize) //for a child RPF
+        {
+            Name = name;
+            NameLower = Name.ToLowerInvariant();
+            Path = path.ToLowerInvariant();
+            FilePath = path;
+            FileSize = filesize;
+        }
+
         public string Name { get; set; } //name of this RPF file/package
         public string NameLower { get; set; }
         public string Path { get; set; } //path within the RPF structure
@@ -43,7 +61,6 @@ namespace CodeWalker.GameFiles
         public BinaryReader CurrentFileReader { get; set; } //for temporary use while reading header
 
 
-
         public uint TotalFileCount { get; set; }
         public uint TotalFolderCount { get; set; }
         public uint TotalResourceCount { get; set; }
@@ -55,25 +72,6 @@ namespace CodeWalker.GameFiles
         public uint GrandTotalBinaryFileCount { get; set; }
         public long ExtractedByteCount { get; set; }
 
-
-        public RpfFile(string fpath, string relpath) //for a ROOT filesystem RPF
-        {
-            FileInfo fi = new FileInfo(fpath);
-            Name = fi.Name;
-            NameLower = Name.ToLowerInvariant();
-            Path = relpath.ToLowerInvariant();
-            FilePath = fpath;
-            FileSize = fi.Length;
-        }
-        public RpfFile(string name, string path, long filesize) //for a child RPF
-        {
-            Name = name;
-            NameLower = Name.ToLowerInvariant();
-            Path = path.ToLowerInvariant();
-            FilePath = path;
-            FileSize = filesize;
-        }
-
         // Returns string to new path
         public string CopyToModsFolder(out string status)
         {
@@ -81,16 +79,14 @@ namespace CodeWalker.GameFiles
             string rel_parent_path = parentFile.Path;
             string full_parent_path = parentFile.FilePath;
 
-            if(rel_parent_path.StartsWith(@"mods\"))
+            if (rel_parent_path.StartsWith(@"mods\"))
             {
                 status = "already in mods folder";
                 return null;
             }
 
-            if(!full_parent_path.EndsWith(rel_parent_path))
-            {
+            if (!full_parent_path.EndsWith(rel_parent_path))
                 throw new DirectoryNotFoundException("Expected full parent path to end with relative path");
-            }
 
             string mods_base_path = full_parent_path.Replace(rel_parent_path, @"mods\");
             string dest_path = mods_base_path + rel_parent_path;
@@ -100,11 +96,13 @@ namespace CodeWalker.GameFiles
                 File.Copy(full_parent_path, dest_path);
                 status = $"copied \"{parentFile.Name}\" from \"{full_parent_path}\" to \"{dest_path}\"";
                 return dest_path;
-            } catch (IOException e)
+            }
+            catch (IOException e)
             {
-                status = $"unable to copy \"{parentFile.Name}\" from \"{full_parent_path}\" to \"{dest_path}\": {e.Message}";
+                status =
+                    $"unable to copy \"{parentFile.Name}\" from \"{full_parent_path}\" to \"{dest_path}\": {e.Message}";
                 return null;
-            } 
+            }
         }
 
         public bool IsInModsFolder()
@@ -115,19 +113,14 @@ namespace CodeWalker.GameFiles
         public RpfFile GetTopParent()
         {
             RpfFile pfile = this;
-            while (pfile.Parent != null)
-            {
-                pfile = pfile.Parent;
-            }
+            while (pfile.Parent != null) pfile = pfile.Parent;
             return pfile;
         }
-        
+
         public string GetPhysicalFilePath()
         {
             return GetTopParent().FilePath;
         }
-
-
 
 
         private void ReadHeader(BinaryReader br)
@@ -141,10 +134,7 @@ namespace CodeWalker.GameFiles
             NamesLength = br.ReadUInt32();
             Encryption = (RpfEncryption)br.ReadUInt32(); //0x04E45504F (1313165391): none;  0x0ffffff9 (268435449): AES
 
-            if (Version != 0x52504637)
-            {
-                throw new Exception("Invalid Resource - not GTAV!");
-            }
+            if (Version != 0x52504637) throw new Exception("Invalid Resource - not GTAV!");
 
             byte[] entriesdata = br.ReadBytes((int)EntryCount * 16); //4x uints each
             byte[] namesdata = br.ReadBytes((int)NamesLength);
@@ -215,28 +205,26 @@ namespace CodeWalker.GameFiles
                 namesrdr.Position = e.NameOffset;
                 e.Name = namesrdr.ReadString();
                 if (e.Name.Length > 256)
-                {
                     // long names can freeze the RPFExplorer
                     e.Name = e.Name.Substring(0, 256);
-                }
                 e.NameLower = e.Name.ToLowerInvariant();
 
-                if ((e is RpfFileEntry) && string.IsNullOrEmpty(e.Name))
+                if (e is RpfFileEntry && string.IsNullOrEmpty(e.Name))
                 {
                 }
-                if ((e is RpfResourceFileEntry))// && string.IsNullOrEmpty(e.Name))
+
+                if (e is RpfResourceFileEntry) // && string.IsNullOrEmpty(e.Name))
                 {
                     RpfResourceFileEntry rfe = e as RpfResourceFileEntry;
-                    rfe.IsEncrypted = rfe.NameLower.EndsWith(".ysc");//any other way to know..?
+                    rfe.IsEncrypted = rfe.NameLower.EndsWith(".ysc"); //any other way to know..?
                 }
 
                 AllEntries.Add(e);
             }
 
 
-
             Root = (RpfDirectoryEntry)AllEntries[0];
-            Root.Path = Path.ToLowerInvariant();// + "\\" + Root.Name;
+            Root.Path = Path.ToLowerInvariant(); // + "\\" + Root.Name;
             Stack<RpfDirectoryEntry> stack = new Stack<RpfDirectoryEntry>();
             stack.Push(Root);
             while (stack.Count > 0)
@@ -269,11 +257,7 @@ namespace CodeWalker.GameFiles
             br.BaseStream.Position = StartPos;
 
             CurrentFileReader = null;
-
         }
-
-
-
 
 
         public void ScanStructure(Action<string> updateStatus, Action<string> errorLog)
@@ -292,6 +276,7 @@ namespace CodeWalker.GameFiles
                 }
             }
         }
+
         private void ScanStructure(BinaryReader br, Action<string> updateStatus, Action<string> errorLog)
         {
             ReadHeader(br);
@@ -307,7 +292,6 @@ namespace CodeWalker.GameFiles
             updateStatus?.Invoke("Scanning " + Path + "...");
 
             foreach (RpfEntry entry in AllEntries)
-            {
                 try
                 {
                     if (entry is RpfBinaryFileEntry)
@@ -317,7 +301,7 @@ namespace CodeWalker.GameFiles
                         string lname = binentry.NameLower;
                         if (lname.EndsWith(".rpf") && IsValidPath(binentry.Path))
                         {
-                            br.BaseStream.Position = StartPos + ((long)binentry.FileOffset * 512);
+                            br.BaseStream.Position = StartPos + (long)binentry.FileOffset * 512;
 
                             long l = binentry.GetFileSize();
 
@@ -354,10 +338,8 @@ namespace CodeWalker.GameFiles
                 }
                 catch (Exception ex)
                 {
-                    errorLog?.Invoke(entry.Path + ": " + ex.ToString());
+                    errorLog?.Invoke(entry.Path + ": " + ex);
                 }
-            }
-
         }
 
 
@@ -380,6 +362,7 @@ namespace CodeWalker.GameFiles
             br.Dispose();
             fs.Dispose();
         }
+
         private void ExtractScripts(BinaryReader br, string outputfolder, Action<string> updateStatus)
         {
             updateStatus?.Invoke("Searching " + Name + "...");
@@ -388,7 +371,6 @@ namespace CodeWalker.GameFiles
 
             //List<DataBlock> blocks = new List<DataBlock>();
             foreach (RpfEntry entry in AllEntries)
-            {
                 if (entry is RpfBinaryFileEntry)
                 {
                     RpfBinaryFileEntry binentry = entry as RpfBinaryFileEntry;
@@ -398,7 +380,7 @@ namespace CodeWalker.GameFiles
                     string lname = binentry.NameLower;
                     if (lname.EndsWith(".rpf"))
                     {
-                        br.BaseStream.Position = StartPos + ((long)binentry.FileOffset * 512);
+                        br.BaseStream.Position = StartPos + (long)binentry.FileOffset * 512;
 
                         RpfFile subfile = new RpfFile(binentry.Name, binentry.Path, l);
                         subfile.Parent = this;
@@ -406,11 +388,9 @@ namespace CodeWalker.GameFiles
 
                         subfile.ExtractScripts(br, outputfolder, updateStatus);
                     }
-
                 }
                 else if (entry is RpfResourceFileEntry)
                 {
-
                     RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
 
                     string lname = resentry.NameLower;
@@ -422,7 +402,7 @@ namespace CodeWalker.GameFiles
                         //found a YSC file. extract it!
                         string ofpath = outputfolder + "\\" + resentry.Name;
 
-                        br.BaseStream.Position = StartPos + ((long)resentry.FileOffset * 512);
+                        br.BaseStream.Position = StartPos + (long)resentry.FileOffset * 512;
 
                         if (resentry.FileSize > 0)
                         {
@@ -457,7 +437,9 @@ namespace CodeWalker.GameFiles
                                 MemoryStream outstr = new MemoryStream();
                                 ds.CopyTo(outstr);
                                 byte[] deflated = outstr.GetBuffer();
-                                byte[] outbuf = new byte[outstr.Length]; //need to copy to the right size buffer for File.WriteAllBytes().
+                                byte[]
+                                    outbuf = new byte[outstr
+                                        .Length]; //need to copy to the right size buffer for File.WriteAllBytes().
                                 Array.Copy(deflated, outbuf, outbuf.Length);
 
                                 bool pathok = true;
@@ -470,32 +452,18 @@ namespace CodeWalker.GameFiles
                                         pathok = false;
                                     }
                                 }
-                                if (pathok)
-                                {
-                                    File.WriteAllBytes(ofpath, outbuf);
-                                }
+
+                                if (pathok) File.WriteAllBytes(ofpath, outbuf);
                             }
                             catch (Exception ex)
                             {
                                 LastError = ex.ToString();
                                 LastException = ex;
                             }
-
-
                         }
                     }
-
                 }
-            }
-
-
-
-
-
         }
-
-
-
 
 
         public byte[] ExtractFile(RpfFileEntry entry)
@@ -504,18 +472,11 @@ namespace CodeWalker.GameFiles
             {
                 using (BinaryReader br = new BinaryReader(File.OpenRead(GetPhysicalFilePath())))
                 {
-                    if (entry is RpfBinaryFileEntry)
-                    {
-                        return ExtractFileBinary(entry as RpfBinaryFileEntry, br);
-                    }
-                    else if (entry is RpfResourceFileEntry)
-                    {
-                        return ExtractFileResource(entry as RpfResourceFileEntry, br);
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    if (entry is RpfBinaryFileEntry) return ExtractFileBinary(entry as RpfBinaryFileEntry, br);
+
+                    if (entry is RpfResourceFileEntry) return ExtractFileResource(entry as RpfResourceFileEntry, br);
+
+                    return null;
                 }
             }
             catch (Exception ex)
@@ -525,15 +486,16 @@ namespace CodeWalker.GameFiles
                 return null;
             }
         }
+
         public byte[] ExtractFileBinary(RpfBinaryFileEntry entry, BinaryReader br)
         {
-            br.BaseStream.Position = StartPos + ((long)entry.FileOffset * 512);
+            br.BaseStream.Position = StartPos + (long)entry.FileOffset * 512;
 
             long l = entry.GetFileSize();
 
             if (l > 0)
             {
-                uint offset = 0;// 0x10;
+                uint offset = 0; // 0x10;
                 uint totlen = (uint)l - offset;
 
                 byte[] tbytes = new byte[totlen];
@@ -546,13 +508,9 @@ namespace CodeWalker.GameFiles
                 if (entry.IsEncrypted)
                 {
                     if (IsAESEncrypted)
-                    {
                         decr = GTACrypto.DecryptAES(tbytes);
-                    }
                     else //if (IsNGEncrypted) //assume the archive is set to NG encryption if not AES... (comment: fix for openIV modded files)
-                    {
                         decr = GTACrypto.DecryptNG(tbytes, entry.Name, entry.FileUncompressedSize);
-                    }
                     //else
                     //{ }
                 }
@@ -560,21 +518,17 @@ namespace CodeWalker.GameFiles
                 byte[] defl = decr;
 
                 if (entry.FileSize > 0) //apparently this means it's compressed
-                {
                     defl = DecompressBytes(decr);
-                }
-                else
-                {
-                }
 
                 return defl;
             }
 
             return null;
         }
+
         public byte[] ExtractFileResource(RpfResourceFileEntry entry, BinaryReader br)
         {
-            br.BaseStream.Position = StartPos + ((long)entry.FileOffset * 512);
+            br.BaseStream.Position = StartPos + (long)entry.FileOffset * 512;
 
 
             if (entry.FileSize > 0)
@@ -599,13 +553,9 @@ namespace CodeWalker.GameFiles
                 if (entry.IsEncrypted)
                 {
                     if (IsAESEncrypted)
-                    {
                         decr = GTACrypto.DecryptAES(tbytes);
-                    }
                     else //if (IsNGEncrypted) //assume the archive is set to NG encryption if not AES... (comment: fix for openIV modded files)
-                    {
                         decr = GTACrypto.DecryptNG(tbytes, entry.Name, entry.FileSize);
-                    }
                     //else
                     //{ }
                 }
@@ -636,47 +586,45 @@ namespace CodeWalker.GameFiles
             T file = null;
             byte[] data = null;
             RpfFileEntry entry = e as RpfFileEntry;
-            if (entry != null)
-            {
-                data = entry.File.ExtractFile(entry);
-            }
+            if (entry != null) data = entry.File.ExtractFile(entry);
             if (data != null)
             {
                 file = new T();
                 file.Load(data, entry);
             }
+
             return file;
         }
+
         public static T GetFile<T>(RpfEntry e, byte[] data) where T : class, PackedFile, new()
         {
             T file = null;
             RpfFileEntry entry = e as RpfFileEntry;
-            if ((data != null))
+            if (data != null)
             {
-                if (entry == null)
-                {
-                    entry = CreateResourceFileEntry(ref data, 0);
-                }
+                if (entry == null) entry = CreateResourceFileEntry(ref data, 0);
                 file = new T();
                 file.Load(data, entry);
             }
+
             return file;
         }
-
 
 
         public static T GetResourceFile<T>(byte[] data) where T : class, PackedFile, new()
         {
             T file = null;
             RpfFileEntry entry = CreateResourceFileEntry(ref data, 0);
-            if ((data != null) && (entry != null))
+            if (data != null && entry != null)
             {
                 data = ResourceBuilder.Decompress(data);
                 file = new T();
                 file.Load(data, entry);
             }
+
             return file;
         }
+
         public static void LoadResourceFile<T>(T file, byte[] data, uint ver) where T : class, PackedFile
         {
             //direct load from a raw, compressed resource file (openIV-compatible format)
@@ -706,8 +654,8 @@ namespace CodeWalker.GameFiles
             data = ResourceBuilder.Decompress(data);
 
             file.Load(data, resentry);
-
         }
+
         public static RpfResourceFileEntry CreateResourceFileEntry(ref byte[] data, uint ver)
         {
             RpfResourceFileEntry resentry = new RpfResourceFileEntry();
@@ -716,7 +664,7 @@ namespace CodeWalker.GameFiles
             uint rsc7 = BitConverter.ToUInt32(data, 0);
             if (rsc7 == 0x37435352) //RSC7 header present!
             {
-                int version = BitConverter.ToInt32(data, 4);//use this instead of what was given...
+                int version = BitConverter.ToInt32(data, 4); //use this instead of what was given...
                 resentry.SystemFlags = BitConverter.ToUInt32(data, 8);
                 resentry.GraphicsFlags = BitConverter.ToUInt32(data, 12);
                 if (data.Length > 16)
@@ -746,7 +694,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         public string TestExtractAllFiles()
         {
             StringBuilder sb = new StringBuilder();
@@ -756,12 +703,12 @@ namespace CodeWalker.GameFiles
                 using (BinaryReader br = new BinaryReader(File.OpenRead(GetPhysicalFilePath())))
                 {
                     foreach (RpfEntry entry in AllEntries)
-                    {
                         try
                         {
                             LastError = string.Empty;
                             LastException = null;
-                            if (!entry.NameLower.EndsWith(".rpf")) //don't try to extract rpf's, they will be done separately..
+                            if (!entry.NameLower
+                                    .EndsWith(".rpf")) //don't try to extract rpf's, they will be done separately..
                             {
                                 if (entry is RpfBinaryFileEntry)
                                 {
@@ -826,7 +773,6 @@ namespace CodeWalker.GameFiles
                             sb.AppendFormat("{0} : {1}", entry.Path, ex.Message);
                             sb.AppendLine();
                         }
-                    }
                 }
             }
             catch (Exception ex)
@@ -837,10 +783,9 @@ namespace CodeWalker.GameFiles
                 sb.AppendLine();
                 return null;
             }
+
             return sb.ToString();
         }
-
-
 
 
         public List<RpfFileEntry> GetFiles(string folder, bool recurse)
@@ -853,28 +798,18 @@ namespace CodeWalker.GameFiles
                 if (dir == null) break;
                 dir = FindSubDirectory(dir, parts[i]);
             }
-            if (dir != null)
-            {
-                GetFiles(dir, result, recurse);
-            }
+
+            if (dir != null) GetFiles(dir, result, recurse);
             return result;
         }
+
         public void GetFiles(RpfDirectoryEntry dir, List<RpfFileEntry> result, bool recurse)
         {
-            if (dir.Files != null)
-            {
-                result.AddRange(dir.Files);
-            }
+            if (dir.Files != null) result.AddRange(dir.Files);
             if (recurse)
-            {
                 if (dir.Directories != null)
-                {
                     for (int i = 0; i < dir.Directories.Count; i++)
-                    {
                         GetFiles(dir.Directories[i], result, recurse);
-                    }
-                }
-            }
         }
 
         private RpfDirectoryEntry FindSubDirectory(RpfDirectoryEntry dir, string name)
@@ -884,15 +819,11 @@ namespace CodeWalker.GameFiles
             for (int i = 0; i < dir.Directories.Count; i++)
             {
                 RpfDirectoryEntry cdir = dir.Directories[i];
-                if (cdir.Name.ToLowerInvariant() == name)
-                {
-                    return cdir;
-                }
+                if (cdir.Name.ToLowerInvariant() == name) return cdir;
             }
+
             return null;
         }
-
-
 
 
         public byte[] DecompressBytes(byte[] bytes)
@@ -909,22 +840,20 @@ namespace CodeWalker.GameFiles
                         Buffer.BlockCopy(deflated, 0, outbuf, 0, outbuf.Length);
 
                         if (outbuf.Length <= bytes.Length)
-                        {
                             LastError = "Warning: Decompressed data was smaller than compressed data...";
-                            //return null; //could still be OK for tiny things!
-                        }
-
+                        //return null; //could still be OK for tiny things!
                         return outbuf;
                     }
                 }
             }
             catch (Exception ex)
             {
-                LastError = "Could not decompress.";// ex.ToString();
+                LastError = "Could not decompress."; // ex.ToString();
                 LastException = ex;
                 return null;
             }
         }
+
         public static byte[] CompressBytes(byte[] data) //TODO: refactor this with ResourceBuilder.Compress/Decompress
         {
             using (MemoryStream ms = new MemoryStream())
@@ -940,18 +869,6 @@ namespace CodeWalker.GameFiles
                 }
             }
         }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         private void WriteHeader(BinaryWriter bw)
@@ -1005,10 +922,7 @@ namespace CodeWalker.GameFiles
         private static void WritePadding(Stream s, long upto)
         {
             int diff = (int)(upto - s.Position);
-            if (diff > 0)
-            {
-                s.Write(new byte[diff], 0, diff);
-            }
+            if (diff > 0) s.Write(new byte[diff], 0, diff);
         }
 
 
@@ -1024,11 +938,8 @@ namespace CodeWalker.GameFiles
                 Root.NameLower = string.Empty;
                 Root.Path = Path.ToLowerInvariant();
             }
-            if (Children == null)
-            {
-                Children = new List<RpfFile>();
-            }
 
+            if (Children == null) Children = new List<RpfFile>();
 
 
             //re-build the AllEntries list from the root node.
@@ -1048,22 +959,19 @@ namespace CodeWalker.GameFiles
                 temp.Clear();
                 temp.AddRange(item.Directories);
                 temp.AddRange(item.Files);
-                temp.Sort((a, b) => String.CompareOrdinal(a.Name, b.Name));
+                temp.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
 
                 foreach (RpfEntry entry in temp)
                 {
                     AllEntries.Add(entry);
                     RpfDirectoryEntry dir = entry as RpfDirectoryEntry;
-                    if (dir != null)
-                    {
-                        stack.Push(dir);
-                    }
+                    if (dir != null) stack.Push(dir);
                 }
             }
 
             EntryCount = (uint)AllEntries.Count;
-
         }
+
         private byte[] GetHeaderNamesData()
         {
             MemoryStream namesstream = new MemoryStream();
@@ -1084,31 +992,32 @@ namespace CodeWalker.GameFiles
                     nameswriter.Write(name);
                 }
             }
+
             byte[] buf = new byte[namesstream.Length];
             namesstream.Position = 0;
             namesstream.Read(buf, 0, buf.Length);
             return PadBuffer(buf, 16);
         }
+
         private byte[] GetHeaderEntriesData()
         {
             MemoryStream entriesstream = new MemoryStream();
             DataWriter entrieswriter = new DataWriter(entriesstream);
-            foreach (RpfEntry entry in AllEntries)
-            {
-                entry.Write(entrieswriter);
-            }
+            foreach (RpfEntry entry in AllEntries) entry.Write(entrieswriter);
             byte[] buf = new byte[entriesstream.Length];
             entriesstream.Position = 0;
             entriesstream.Read(buf, 0, buf.Length);
             return buf;
         }
-        private uint GetHeaderBlockCount()//make sure EntryCount and NamesLength are updated before calling this...
+
+        private uint GetHeaderBlockCount() //make sure EntryCount and NamesLength are updated before calling this...
         {
-            uint headerusedbytes = 16 + (EntryCount * 16) + NamesLength;
+            uint headerusedbytes = 16 + EntryCount * 16 + NamesLength;
             uint headerblockcount = GetBlockCount(headerusedbytes);
             return headerblockcount;
         }
-        private static byte[] PadBuffer(byte[] buf, uint n)//add extra bytes as necessary to nearest n
+
+        private static byte[] PadBuffer(byte[] buf, uint n) //add extra bytes as necessary to nearest n
         {
             uint buflen = (uint)buf.Length;
             uint newlen = PadLength(buflen, n);
@@ -1118,13 +1027,16 @@ namespace CodeWalker.GameFiles
                 Buffer.BlockCopy(buf, 0, buf2, 0, buf.Length);
                 return buf2;
             }
+
             return buf;
         }
-        private static uint PadLength(uint l, uint n)//round up to nearest n bytes
+
+        private static uint PadLength(uint l, uint n) //round up to nearest n bytes
         {
             uint rem = l % n;
-            return l + ((rem > 0) ? (n - rem) : 0);
+            return l + (rem > 0 ? n - rem : 0);
         }
+
         private static uint GetBlockCount(long bytecount)
         {
             uint b0 = (uint)(bytecount & 0x1FF); //511;
@@ -1132,22 +1044,21 @@ namespace CodeWalker.GameFiles
             if (b0 == 0) return b1;
             return b1 + 1;
         }
+
         private RpfFileEntry FindFirstFileAfter(uint block)
         {
             RpfFileEntry nextentry = null;
             foreach (RpfEntry entry in AllEntries)
             {
                 RpfFileEntry fe = entry as RpfFileEntry;
-                if ((fe != null) && (fe.FileOffset > block))
-                {
-                    if ((nextentry == null) || (fe.FileOffset < nextentry.FileOffset))
-                    {
+                if (fe != null && fe.FileOffset > block)
+                    if (nextentry == null || fe.FileOffset < nextentry.FileOffset)
                         nextentry = fe;
-                    }
-                }
             }
+
             return nextentry;
         }
+
         private uint FindHole(uint reqblocks, uint ignorestart, uint ignoreend)
         {
             //find the block index of a hole that can fit the required number of blocks.
@@ -1160,18 +1071,16 @@ namespace CodeWalker.GameFiles
             foreach (RpfEntry entry in AllEntries)
             {
                 RpfFileEntry rfe = entry as RpfFileEntry;
-                if (rfe != null)
-                {
-                    allfiles.Add(rfe);
-                }
+                if (rfe != null) allfiles.Add(rfe);
             }
+
             allfiles.Sort((e1, e2) => e1.FileOffset.CompareTo(e2.FileOffset));
 
             //find the smallest available hole from the list.
             uint found = 0;
             uint foundsize = 0xFFFFFFFF;
 
-            uint e1end = GetHeaderBlockCount();//start searching for space after the end of the header
+            uint e1end = GetHeaderBlockCount(); //start searching for space after the end of the header
             uint e1next = e1end;
 
             for (int i = 0; i < allfiles.Count(); i++)
@@ -1181,14 +1090,11 @@ namespace CodeWalker.GameFiles
                 uint e2beg = e2.FileOffset;
                 e1end = e1next;
                 e1next = e2.FileOffset + e2cnt;
-                if ((e2beg > ignorestart) && (e1end < ignoreend))
-                {
-                    continue; //this space is in the ignore area.
-                }
+                if (e2beg > ignorestart && e1end < ignoreend) continue; //this space is in the ignore area.
                 if (e1end < e2beg)
                 {
                     uint space = e2beg - e1end;
-                    if ((space >= reqblocks) && (space < foundsize))
+                    if (space >= reqblocks && space < foundsize)
                     {
                         found = e1end;
                         foundsize = space;
@@ -1198,6 +1104,7 @@ namespace CodeWalker.GameFiles
 
             return found;
         }
+
         private uint FindEndBlock()
         {
             //find the next available block after all other files (or after header if there's no files)
@@ -1209,32 +1116,23 @@ namespace CodeWalker.GameFiles
                 {
                     uint ecnt = GetBlockCount(e.GetFileSize());
                     uint eend = e.FileOffset + ecnt;
-                    if (eend > endblock)
-                    {
-                        endblock = eend;
-                    }
+                    if (eend > endblock) endblock = eend;
                 }
             }
 
             if (endblock == 0)
-            {
                 //must be no files present, end block comes directly after the header.
                 endblock = GetHeaderBlockCount();
-            }
 
             return endblock;
         }
+
         private void GrowArchive(BinaryWriter bw, uint newblockcount)
         {
             uint newsize = newblockcount * 512;
             if (newsize < FileSize)
-            {
-                return;//already bigger than it needs to be, can happen if last file got moved into a hole...
-            }
-            if (FileSize == newsize)
-            {
-                return;//nothing to do... correct size already
-            }
+                return; //already bigger than it needs to be, can happen if last file got moved into a hole...
+            if (FileSize == newsize) return; //nothing to do... correct size already
 
             FileSize = newsize;
 
@@ -1243,9 +1141,7 @@ namespace CodeWalker.GameFiles
             if (Parent != null)
             {
                 if (ParentFileEntry == null)
-                {
                     throw new Exception("Can't grow archive " + Path + ": ParentFileEntry was null!");
-                }
 
 
                 //parent's header will be updated with these new values.
@@ -1255,6 +1151,7 @@ namespace CodeWalker.GameFiles
                 Parent.EnsureSpace(bw, ParentFileEntry, newsize);
             }
         }
+
         private void RelocateFile(BinaryWriter bw, RpfFileEntry f, uint newblock)
         {
             //directly move this file. does NOT update the header!
@@ -1264,19 +1161,17 @@ namespace CodeWalker.GameFiles
             uint fbeg = f.FileOffset;
             uint fend = fbeg + flen;
             uint nend = newblock + flen;
-            if ((nend > fbeg) && (newblock < fend))//can't move to somewhere within itself!
-            {
+            if (nend > fbeg && newblock < fend) //can't move to somewhere within itself!
                 throw new Exception("Unable to relocate file " + f.Path + ": new position was inside the original!");
-            }
 
             Stream stream = bw.BaseStream;
             long origpos = stream.Position;
-            long source = StartPos + ((long)fbeg * 512);
-            long dest = StartPos + ((long)newblock * 512);
+            long source = StartPos + (long)fbeg * 512;
+            long dest = StartPos + (long)newblock * 512;
             long newstart = dest;
             long length = (long)flen * 512;
             long destend = dest + length;
-            const int BUFFER_SIZE = 16384;//what buffer size is best for HDD copy?
+            const int BUFFER_SIZE = 16384; //what buffer size is best for HDD copy?
             byte[] buffer = new byte[BUFFER_SIZE];
             while (length > 0)
             {
@@ -1289,20 +1184,17 @@ namespace CodeWalker.GameFiles
                 length -= i;
             }
 
-            WritePadding(stream, destend);//makes sure the stream can grow if necessary
+            WritePadding(stream, destend); //makes sure the stream can grow if necessary
 
-            stream.Position = origpos;//reset this just to be nice
+            stream.Position = origpos; //reset this just to be nice
 
             f.FileOffset = newblock;
 
             //if this is a child RPF archive, need to update its StartPos...
             RpfFile child = FindChildArchive(f);
-            if (child != null)
-            {
-                child.UpdateStartPos(newstart);
-            }
-
+            if (child != null) child.UpdateStartPos(newstart);
         }
+
         private void EnsureSpace(BinaryWriter bw, RpfFileEntry e, long bytecount)
         {
             //(called with null entry for ensuring header space)
@@ -1319,10 +1211,7 @@ namespace CodeWalker.GameFiles
                 //if the RPF needs to grow, space needs to be ensured in the parent rpf (if there is one)...
                 //keep moving further entries until enough space is gained.
 
-                if (nextentry.FileOffset >= endblock)
-                {
-                    break; //already enough space for this entry, don't go further.
-                }
+                if (nextentry.FileOffset >= endblock) break; //already enough space for this entry, don't go further.
 
                 uint entryblocks = GetBlockCount(nextentry.GetFileSize());
                 uint newblock = FindHole(entryblocks, startblock, endblock);
@@ -1345,17 +1234,14 @@ namespace CodeWalker.GameFiles
                 //last entry in the RPF, so just need to grow the RPF enough to fit.
                 //this could be the header (for an empty RPF)...
                 uint newblock = FindEndBlock();
-                GrowArchive(bw, newblock + ((e != null) ? blockcount : 0));
+                GrowArchive(bw, newblock + (e != null ? blockcount : 0));
             }
 
             //changing a file's size (not the header size!) - need to update the header..!
             //also, files could have been moved. so always update the header if we aren't already
-            if (e != null)
-            {
-                WriteHeader(bw);
-            }
-
+            if (e != null) WriteHeader(bw);
         }
+
         private void InsertFileSpace(BinaryWriter bw, RpfFileEntry entry)
         {
             //to insert a new entry. find space in the archive for it and assign the FileOffset.
@@ -1367,6 +1253,7 @@ namespace CodeWalker.GameFiles
                 entry.FileOffset = FindEndBlock();
                 GrowArchive(bw, entry.FileOffset + blockcount);
             }
+
             EnsureAllEntries();
             WriteHeader(bw);
         }
@@ -1376,8 +1263,8 @@ namespace CodeWalker.GameFiles
             Stream stream = bw.BaseStream;
             Encryption = encryption;
             Version = 0x52504637; //'RPF7'
-            IsAESEncrypted = (encryption == RpfEncryption.AES);
-            IsNGEncrypted = (encryption == RpfEncryption.NG);
+            IsAESEncrypted = encryption == RpfEncryption.AES;
+            IsNGEncrypted = encryption == RpfEncryption.NG;
             StartPos = stream.Position;
             EnsureAllEntries();
             WriteHeader(bw);
@@ -1392,12 +1279,13 @@ namespace CodeWalker.GameFiles
                 Root.Path = Path.ToLowerInvariant();
                 dir = Root;
             }
+
             foreach (RpfFileEntry file in dir.Files)
             {
                 file.Path = dir.Path + "\\" + file.NameLower;
 
                 RpfBinaryFileEntry binf = file as RpfBinaryFileEntry;
-                if ((binf != null) && file.NameLower.EndsWith(".rpf"))
+                if (binf != null && file.NameLower.EndsWith(".rpf"))
                 {
                     RpfFile childrpf = FindChildArchive(binf);
                     if (childrpf != null)
@@ -1406,11 +1294,10 @@ namespace CodeWalker.GameFiles
                         childrpf.FilePath = binf.Path;
                         childrpf.UpdatePaths();
                     }
-                    else
-                    { }//couldn't find child RPF! problem..!
+                    //couldn't find child RPF! problem..!
                 }
-
             }
+
             foreach (RpfDirectoryEntry subdir in dir.Directories)
             {
                 subdir.Path = dir.Path + "\\" + subdir.NameLower;
@@ -1422,16 +1309,13 @@ namespace CodeWalker.GameFiles
         {
             RpfFile c = null;
             if (Children != null)
-            {
-                foreach (RpfFile child in Children)//kinda messy, but no other option really...
-                {
+                foreach (RpfFile child in Children) //kinda messy, but no other option really...
                     if (child.ParentFileEntry == f)
                     {
                         c = child;
                         break;
                     }
-                }
-            }
+
             return c;
         }
 
@@ -1448,10 +1332,7 @@ namespace CodeWalker.GameFiles
                 foreach (RpfEntry entry in AllEntries)
                 {
                     RpfFileEntry fentry = entry as RpfFileEntry;
-                    if (fentry != null)
-                    {
-                        blockcount += GetBlockCount(fentry.GetFileSize());
-                    }
+                    if (fentry != null) blockcount += GetBlockCount(fentry.GetFileSize());
                 }
 
                 return (long)blockcount * 512;
@@ -1466,15 +1347,11 @@ namespace CodeWalker.GameFiles
                     RpfFileEntry fentry = entry as RpfFileEntry;
                     if (fentry != null)
                     {
-                        RpfFile childRpf = this.FindChildArchive(fentry);
+                        RpfFile childRpf = FindChildArchive(fentry);
                         if (childRpf == null)
-                        {
                             blockcount += GetBlockCount(fentry.GetFileSize());
-                        }
                         else
-                        {
-                            childRpfsSize += childRpf.GetDefragmentedFileSize(true);
-                        }
+                            childRpfsSize += childRpf.GetDefragmentedFileSize();
                     }
                 }
 
@@ -1488,18 +1365,14 @@ namespace CodeWalker.GameFiles
             StartPos = newpos;
 
             if (Children != null)
-            {
                 //make sure children also get their StartPos updated!
                 foreach (RpfFile child in Children)
                 {
-                    if (child.ParentFileEntry == null) continue;//shouldn't really happen...
+                    if (child.ParentFileEntry == null) continue; //shouldn't really happen...
                     long cpos = StartPos + (long)child.ParentFileEntry.FileOffset * 512;
                     child.UpdateStartPos(cpos);
                 }
-            }
         }
-
-
 
 
         public static RpfFile CreateNew(string gtafolder, string relpath, RpfEncryption encryption = RpfEncryption.OPEN)
@@ -1511,10 +1384,7 @@ namespace CodeWalker.GameFiles
             fpath = fpath.EndsWith("\\") ? fpath : fpath + "\\";
             fpath = relpath.Contains(":") ? relpath : fpath + relpath;
 
-            if (File.Exists(fpath))
-            {
-                throw new Exception("File " + fpath + " already exists!");
-            }
+            if (File.Exists(fpath)) throw new Exception("File " + fpath + " already exists!");
 
             File.Create(fpath).Dispose(); //just write a placeholder, will fill it out later
 
@@ -1531,7 +1401,8 @@ namespace CodeWalker.GameFiles
             return file;
         }
 
-        public static RpfFile CreateNew(RpfDirectoryEntry dir, string name, RpfEncryption encryption = RpfEncryption.OPEN)
+        public static RpfFile CreateNew(RpfDirectoryEntry dir, string name,
+            RpfEncryption encryption = RpfEncryption.OPEN)
         {
             //create a new empty RPF inside the given parent RPF directory.
 
@@ -1540,19 +1411,16 @@ namespace CodeWalker.GameFiles
             string fpath = parent.GetPhysicalFilePath();
             string rpath = dir.Path + "\\" + namel;
 
-            if (!File.Exists(fpath))
-            {
-                throw new Exception("Root RPF file " + fpath + " does not exist!");
-            }
+            if (!File.Exists(fpath)) throw new Exception("Root RPF file " + fpath + " does not exist!");
 
 
-            RpfFile file = new RpfFile(name, rpath, 512);//empty RPF is 512 bytes...
+            RpfFile file = new RpfFile(name, rpath, 512); //empty RPF is 512 bytes...
             file.Parent = parent;
             file.ParentFileEntry = new RpfBinaryFileEntry();
 
             RpfBinaryFileEntry entry = file.ParentFileEntry;
             entry.Parent = dir;
-            entry.FileOffset = 0;//InsertFileSpace will update this
+            entry.FileOffset = 0; //InsertFileSpace will update this
             entry.FileSize = 0;
             entry.FileUncompressedSize = (uint)file.FileSize;
             entry.EncryptionType = 0;
@@ -1574,7 +1442,7 @@ namespace CodeWalker.GameFiles
                 {
                     parent.InsertFileSpace(bw, entry);
 
-                    fstream.Position = parent.StartPos + ((long)entry.FileOffset * 512);
+                    fstream.Position = parent.StartPos + (long)entry.FileOffset * 512;
 
                     file.WriteNewArchive(bw, encryption);
                 }
@@ -1593,10 +1461,7 @@ namespace CodeWalker.GameFiles
             string fpath = parent.GetPhysicalFilePath();
             string rpath = dir.Path + "\\" + namel;
 
-            if (!File.Exists(fpath))
-            {
-                throw new Exception("Root RPF file " + fpath + " does not exist!");
-            }
+            if (!File.Exists(fpath)) throw new Exception("Root RPF file " + fpath + " does not exist!");
 
             RpfDirectoryEntry entry = new RpfDirectoryEntry();
             entry.Parent = dir;
@@ -1608,12 +1473,8 @@ namespace CodeWalker.GameFiles
             entry.ShortNameHash = JenkHash.GenHash(entry.GetShortNameLower());
 
             foreach (RpfDirectoryEntry exdir in dir.Directories)
-            {
                 if (exdir.NameLower == entry.NameLower)
-                {
                     throw new Exception("RPF Directory \"" + entry.Name + "\" already exists!");
-                }
-            }
 
             dir.Directories.Add(entry);
 
@@ -1633,9 +1494,7 @@ namespace CodeWalker.GameFiles
         {
             string namel = name.ToLowerInvariant();
             if (overwrite)
-            {
                 foreach (RpfFileEntry exfile in dir.Files)
-                {
                     if (exfile.NameLower == namel)
                     {
                         //file already exists. delete the existing one first!
@@ -1644,17 +1503,12 @@ namespace CodeWalker.GameFiles
                         DeleteEntry(exfile);
                         break;
                     }
-                }
-            }
             //else fail if already exists..? items with the same name allowed?
 
             RpfFile parent = dir.File;
             string fpath = parent.GetPhysicalFilePath();
             string rpath = dir.Path + "\\" + namel;
-            if (!File.Exists(fpath))
-            {
-                throw new Exception("Root RPF file " + fpath + " does not exist!");
-            }
+            if (!File.Exists(fpath)) throw new Exception("Root RPF file " + fpath + " does not exist!");
 
 
             RpfFileEntry entry = null;
@@ -1664,10 +1518,7 @@ namespace CodeWalker.GameFiles
             bool isrpf = false;
             bool isawc = false;
             uint hdr = 0;
-            if (len >= 16)
-            {
-                hdr = BitConverter.ToUInt32(data, 0);
-            }
+            if (len >= 16) hdr = BitConverter.ToUInt32(data, 0);
 
             if (hdr == 0x37435352) //'RSC7'
             {
@@ -1690,30 +1541,26 @@ namespace CodeWalker.GameFiles
                 entry = rentry;
             }
 
-            if (namel.EndsWith(".rpf") && (hdr == 0x52504637)) //'RPF7'
-            {
+            if (namel.EndsWith(".rpf") && hdr == 0x52504637) //'RPF7'
                 isrpf = true;
-            }
-            if (namel.EndsWith(".awc"))
-            {
-                isawc = true;
-            }
+            if (namel.EndsWith(".awc")) isawc = true;
 
             if (entry == null)
             {
                 //no RSC7 header present, import as a binary file.
-                byte[] compressed = (isrpf||isawc) ? data : CompressBytes(data);
+                byte[] compressed = isrpf || isawc ? data : CompressBytes(data);
                 RpfBinaryFileEntry bentry = new RpfBinaryFileEntry();
-                bentry.EncryptionType = 0;//TODO: binary encryption
+                bentry.EncryptionType = 0; //TODO: binary encryption
                 bentry.IsEncrypted = false;
                 bentry.FileUncompressedSize = (uint)data.Length;
-                bentry.FileSize = (isrpf||isawc) ? 0 : (uint)compressed.Length;
+                bentry.FileSize = isrpf || isawc ? 0 : (uint)compressed.Length;
                 if (bentry.FileSize > 0xFFFFFF)
                 {
                     bentry.FileSize = 0;
-                    compressed = data; 
+                    compressed = data;
                     //can't compress?? since apparently FileSize>0 means compressed...
                 }
+
                 data = compressed;
                 entry = bentry;
             }
@@ -1727,16 +1574,9 @@ namespace CodeWalker.GameFiles
             entry.ShortNameHash = JenkHash.GenHash(entry.GetShortNameLower());
 
 
-
-
             foreach (RpfFileEntry exfile in dir.Files)
-            {
                 if (exfile.NameLower == entry.NameLower)
-                {
                     throw new Exception("File \"" + entry.Name + "\" already exists!");
-                }
-            }
-
 
 
             dir.Files.Add(entry);
@@ -1747,8 +1587,8 @@ namespace CodeWalker.GameFiles
                 using (BinaryWriter bw = new BinaryWriter(fstream))
                 {
                     parent.InsertFileSpace(bw, entry);
-                    long bbeg = parent.StartPos + ((long)entry.FileOffset * 512);
-                    long bend = bbeg + ((long)GetBlockCount(entry.GetFileSize()) * 512);
+                    long bbeg = parent.StartPos + (long)entry.FileOffset * 512;
+                    long bend = bbeg + (long)GetBlockCount(entry.GetFileSize()) * 512;
                     fstream.Position = bbeg;
                     fstream.Write(data, 0, data.Length);
                     WritePadding(fstream, bend); //write 0's until the end of the block.
@@ -1762,7 +1602,7 @@ namespace CodeWalker.GameFiles
                 RpfFile file = new RpfFile(name, rpath, data.LongLength);
                 file.Parent = parent;
                 file.ParentFileEntry = entry as RpfBinaryFileEntry;
-                file.StartPos = parent.StartPos + ((long)entry.FileOffset * 512);
+                file.StartPos = parent.StartPos + (long)entry.FileOffset * 512;
                 parent.Children.Add(file);
 
                 using (FileStream fstream = File.OpenRead(fpath))
@@ -1790,7 +1630,6 @@ namespace CodeWalker.GameFiles
             file.FilePath = GetParentPath(file.FilePath) + newname;
 
             file.UpdatePaths();
-
         }
 
         public static void RenameEntry(RpfEntry entry, string newname)
@@ -1805,7 +1644,7 @@ namespace CodeWalker.GameFiles
             entry.Path = dirpath + newname;
 
             string sname = entry.GetShortNameLower();
-            JenkIndex.Ensure(sname);//could be anything... but it needs to be there
+            JenkIndex.Ensure(sname); //could be anything... but it needs to be there
             entry.NameHash = JenkHash.GenHash(newname);
             entry.ShortNameHash = JenkHash.GenHash(sname);
 
@@ -1822,11 +1661,8 @@ namespace CodeWalker.GameFiles
             }
 
             if (entry is RpfDirectoryEntry)
-            {
                 //a folder was renamed, make sure all its children's paths get updated
                 parent.UpdatePaths(entry as RpfDirectoryEntry);
-            }
-
         }
 
 
@@ -1838,46 +1674,29 @@ namespace CodeWalker.GameFiles
 
             RpfFile parent = entry.File;
             string fpath = parent.GetPhysicalFilePath();
-            if (!File.Exists(fpath))
-            {
-                throw new Exception("Root RPF file " + fpath + " does not exist!");
-            }
+            if (!File.Exists(fpath)) throw new Exception("Root RPF file " + fpath + " does not exist!");
 
             RpfDirectoryEntry entryasdir = entry as RpfDirectoryEntry;
-            RpfFileEntry entryasfile = entry as RpfFileEntry;//it has to be one or the other...
+            RpfFileEntry entryasfile = entry as RpfFileEntry; //it has to be one or the other...
 
             if (entryasdir != null)
             {
                 RpfDirectoryEntry[] deldirs = entryasdir.Directories.ToArray();
                 RpfFileEntry[] delfiles = entryasdir.Files.ToArray();
-                foreach(RpfDirectoryEntry deldir in deldirs)
-                {
-                    DeleteEntry(deldir);
-                }
-                foreach (RpfFileEntry delfile in delfiles)
-                {
-                    DeleteEntry(delfile);
-                }
+                foreach (RpfDirectoryEntry deldir in deldirs) DeleteEntry(deldir);
+                foreach (RpfFileEntry delfile in delfiles) DeleteEntry(delfile);
             }
 
             if (entry.Parent == null)
-            {
                 throw new Exception("Parent directory is null! This shouldn't happen - please refresh the folder!");
-            }
 
-            if (entryasdir != null)
-            {
-                entry.Parent.Directories.Remove(entryasdir);
-            }
+            if (entryasdir != null) entry.Parent.Directories.Remove(entryasdir);
             if (entryasfile != null)
             {
                 entry.Parent.Files.Remove(entryasfile);
 
                 RpfFile child = parent.FindChildArchive(entryasfile);
-                if (child != null)
-                {
-                    parent.Children.Remove(child); //RPF file being deleted...
-                }
+                if (child != null) parent.Children.Remove(child); //RPF file being deleted...
             }
 
             using (FileStream fstream = File.Open(fpath, FileMode.Open, FileAccess.ReadWrite))
@@ -1888,7 +1707,6 @@ namespace CodeWalker.GameFiles
                     parent.WriteHeader(bw);
                 }
             }
-
         }
 
 
@@ -1905,24 +1723,17 @@ namespace CodeWalker.GameFiles
                 parent = parent.Parent;
             }
 
-            if (recursive && (file.Children != null))
+            if (recursive && file.Children != null)
             {
                 Stack<RpfFile> stack = new Stack<RpfFile>(file.Children);
                 while (stack.Count > 0)
                 {
                     RpfFile child = stack.Pop();
                     if (child == null) continue;
-                    if (child.Encryption != RpfEncryption.OPEN)
-                    {
-                        return false;
-                    }
+                    if (child.Encryption != RpfEncryption.OPEN) return false;
                     if (child.Children != null)
-                    {
                         foreach (RpfFile cchild in child.Children)
-                        {
                             stack.Push(cchild);
-                        }
-                    }
                 }
             }
 
@@ -1937,52 +1748,39 @@ namespace CodeWalker.GameFiles
             //TODO: support other encryption types!
 
             List<RpfFile> files = new List<RpfFile>();
-            if (recursive && (file.Children != null))
+            if (recursive && file.Children != null)
             {
                 Stack<RpfFile> stack = new Stack<RpfFile>(file.Children);
                 while (stack.Count > 0)
                 {
                     RpfFile child = stack.Pop();
                     if (child == null) continue;
-                    if (child.Encryption != RpfEncryption.OPEN)
-                    {
-                        files.Add(child);
-                    }
+                    if (child.Encryption != RpfEncryption.OPEN) files.Add(child);
                     if (child.Children != null)
-                    {
                         foreach (RpfFile cchild in child.Children)
-                        {
                             stack.Push(cchild);
-                        }
-                    }
                 }
-                files.Reverse();//the list is in parent>child order, needs to be in child>parent order here
+
+                files.Reverse(); //the list is in parent>child order, needs to be in child>parent order here
             }
-            bool needsupd = (files.Count > 0);
+
+            bool needsupd = files.Count > 0;
             RpfFile f = file;
             while (f != null)
             {
                 if (f.Encryption != RpfEncryption.OPEN)
                 {
-                    if ((confirm != null) && !confirm(f))
-                    {
-                        return false;
-                    }
+                    if (confirm != null && !confirm(f)) return false;
                     needsupd = true;
                 }
-                if (needsupd)
-                {
-                    files.Add(f);
-                }
+
+                if (needsupd) files.Add(f);
                 f = f.Parent;
             }
 
             //change encryption types, starting from the root rpf.
             files.Reverse();
-            foreach (RpfFile cfile in files)
-            {
-                SetEncryptionType(cfile, RpfEncryption.OPEN);
-            }
+            foreach (RpfFile cfile in files) SetEncryptionType(cfile, RpfEncryption.OPEN);
 
             return true;
         }
@@ -2006,19 +1804,12 @@ namespace CodeWalker.GameFiles
             if (file?.AllEntries == null) return;
 
             if (recursive)
-            {
-                foreach (RpfEntry entry in file?.AllEntries) 
-                {
+                foreach (RpfEntry entry in file?.AllEntries)
                     if (entry is RpfFileEntry)
                     {
                         RpfFile childRpf = file.FindChildArchive(entry as RpfFileEntry);
-                        if (childRpf != null)
-                        {
-                            Defragment(childRpf, null, true);
-                        }
+                        if (childRpf != null) Defragment(childRpf);
                     }
-                }
-            }
 
             string fpath = file.GetPhysicalFilePath();
             using (FileStream fstream = File.Open(fpath, FileMode.Open, FileAccess.ReadWrite))
@@ -2027,7 +1818,7 @@ namespace CodeWalker.GameFiles
                 {
                     uint destblock = file.GetHeaderBlockCount();
 
-                    const int BUFFER_SIZE = 16384;//what buffer size is best for HDD copy?
+                    const int BUFFER_SIZE = 16384; //what buffer size is best for HDD copy?
                     byte[] buffer = new byte[BUFFER_SIZE];
 
                     List<RpfFileEntry> allfiles = new List<RpfFileEntry>();
@@ -2036,6 +1827,7 @@ namespace CodeWalker.GameFiles
                         RpfFileEntry entry = file.AllEntries[i] as RpfFileEntry;
                         if (entry != null) allfiles.Add(entry);
                     }
+
                     //make sure we process everything in the current order that they are in the archive
                     allfiles.Sort((a, b) => { return a.FileOffset.CompareTo(b.FileOffset); });
 
@@ -2064,16 +1856,15 @@ namespace CodeWalker.GameFiles
                                 dest += n;
                                 remlength -= n;
                             }
+
                             entry.FileOffset = destblock;
 
                             RpfFile entryrpf = file.FindChildArchive(entry);
-                            if (entryrpf != null)
-                            {
-                                entryrpf.UpdateStartPos(file.StartPos + (long)entry.FileOffset * 512);
-                            }
+                            if (entryrpf != null) entryrpf.UpdateStartPos(file.StartPos + (long)entry.FileOffset * 512);
                         }
                         else if (sourceblock != destblock)
-                        { }//shouldn't get here...
+                        {
+                        } //shouldn't get here...
 
                         destblock += blockcount;
                     }
@@ -2087,34 +1878,23 @@ namespace CodeWalker.GameFiles
                         //make sure to also update the parent archive file entry, if there is one
                         file.ParentFileEntry.FileUncompressedSize = (uint)file.FileSize;
                         file.ParentFileEntry.FileSize = 0;
-                        if (file.Parent != null)
-                        {
-                            file.Parent.WriteHeader(bw);
-                        }
+                        if (file.Parent != null) file.Parent.WriteHeader(bw);
                     }
+
                     if (file.Parent == null)
-                    {
                         //this is a root archive, so update the file's length to the new size.
                         fstream.SetLength(file.FileSize);
-                    }
                 }
             }
         }
 
 
-
         private static string GetParentPath(string path)
         {
-            string dirpath = path.Replace('/', '\\');//just to make sure..
+            string dirpath = path.Replace('/', '\\'); //just to make sure..
             int lidx = dirpath.LastIndexOf('\\');
-            if (lidx > 0)
-            {
-                dirpath = dirpath.Substring(0, lidx + 1);
-            }
-            if (!dirpath.EndsWith("\\"))
-            {
-                dirpath = dirpath + "\\";
-            }
+            if (lidx > 0) dirpath = dirpath.Substring(0, lidx + 1);
+            if (!dirpath.EndsWith("\\")) dirpath = dirpath + "\\";
             return dirpath;
         }
 
@@ -2131,7 +1911,8 @@ namespace CodeWalker.GameFiles
                 if (c == '/') dirc++;
                 if (c == '\\') dirc++;
             }
-            if (dirc > 20) return false;//20 levels deep.. are you mad?!?
+
+            if (dirc > 20) return false; //20 levels deep.. are you mad?!?
             return true;
         }
 
@@ -2147,13 +1928,16 @@ namespace CodeWalker.GameFiles
     {
         NONE = 0, //some modded RPF's may use this
         OPEN = 0x4E45504F, //1313165391 "OPEN", ie. "no encryption"
-        AES =  0x0FFFFFF9, //268435449
-        NG =   0x0FEFFFFF, //267386879
+        AES = 0x0FFFFFF9, //268435449
+        NG = 0x0FEFFFFF //267386879
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public abstract class RpfEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public abstract class RpfEntry
     {
+        public uint H1; //first 2 header values from RPF table...
+        public uint H2;
         public RpfFile File { get; set; }
         public RpfDirectoryEntry Parent { get; set; }
 
@@ -2164,9 +1948,6 @@ namespace CodeWalker.GameFiles
         public string Name { get; set; }
         public string NameLower { get; set; }
         public string Path { get; set; }
-
-        public uint H1; //first 2 header values from RPF table...
-        public uint H2;
 
         public abstract void Read(DataReader reader);
         public abstract void Write(DataWriter writer);
@@ -2179,46 +1960,36 @@ namespace CodeWalker.GameFiles
         public string GetShortName()
         {
             int ind = Name.LastIndexOf('.');
-            if (ind > 0)
-            {
-                return Name.Substring(0, ind);
-            }
+            if (ind > 0) return Name.Substring(0, ind);
             return Name;
         }
+
         public string GetShortNameLower()
         {
-            if (NameLower == null)
-            {
-                NameLower = Name.ToLowerInvariant();
-            }
+            if (NameLower == null) NameLower = Name.ToLowerInvariant();
             int ind = NameLower.LastIndexOf('.');
-            if (ind > 0)
-            {
-                return NameLower.Substring(0, ind);
-            }
+            if (ind > 0) return NameLower.Substring(0, ind);
             return NameLower;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class RpfDirectoryEntry : RpfEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class RpfDirectoryEntry : RpfEntry
     {
-        public uint EntriesIndex { get; set; }
-        public uint EntriesCount { get; set; }
-
         public List<RpfDirectoryEntry> Directories = new List<RpfDirectoryEntry>();
         public List<RpfFileEntry> Files = new List<RpfFileEntry>();
+        public uint EntriesIndex { get; set; }
+        public uint EntriesCount { get; set; }
 
         public override void Read(DataReader reader)
         {
             NameOffset = reader.ReadUInt32();
             uint ident = reader.ReadUInt32();
-            if (ident != 0x7FFFFF00u)
-            {
-                throw new Exception("Error in RPF7 directory entry.");
-            }
+            if (ident != 0x7FFFFF00u) throw new Exception("Error in RPF7 directory entry.");
             EntriesIndex = reader.ReadUInt32();
             EntriesCount = reader.ReadUInt32();
         }
+
         public override void Write(DataWriter writer)
         {
             writer.Write(NameOffset);
@@ -2226,13 +1997,15 @@ namespace CodeWalker.GameFiles
             writer.Write(EntriesIndex);
             writer.Write(EntriesCount);
         }
+
         public override string ToString()
         {
             return "Directory: " + Path;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public abstract class RpfFileEntry : RpfEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public abstract class RpfFileEntry : RpfEntry
     {
         public uint FileOffset { get; set; }
         public uint FileSize { get; set; }
@@ -2242,7 +2015,8 @@ namespace CodeWalker.GameFiles
         public abstract void SetFileSize(uint s);
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class RpfBinaryFileEntry : RpfFileEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class RpfBinaryFileEntry : RpfFileEntry
     {
         public uint FileUncompressedSize { get; set; }
         public uint EncryptionType { get; set; }
@@ -2265,20 +2039,22 @@ namespace CodeWalker.GameFiles
                 default:
                     throw new Exception("Error in RPF7 file entry.");
             }
-
         }
+
         public override void Write(DataWriter writer)
         {
             writer.Write((ushort)NameOffset);
 
-            byte[] buf1 = new byte[] {
+            byte[] buf1 =
+            {
                 (byte)((FileSize >> 0) & 0xFF),
                 (byte)((FileSize >> 8) & 0xFF),
                 (byte)((FileSize >> 16) & 0xFF)
             };
             writer.Write(buf1);
 
-            byte[] buf2 = new byte[] {
+            byte[] buf2 =
+            {
                 (byte)((FileOffset >> 0) & 0xFF),
                 (byte)((FileOffset >> 8) & 0xFF),
                 (byte)((FileOffset >> 16) & 0xFF)
@@ -2292,6 +2068,7 @@ namespace CodeWalker.GameFiles
             else
                 writer.Write((uint)0);
         }
+
         public override string ToString()
         {
             return "Binary file: " + Path;
@@ -2299,8 +2076,9 @@ namespace CodeWalker.GameFiles
 
         public override long GetFileSize()
         {
-            return (FileSize == 0) ? FileUncompressedSize : FileSize;
+            return FileSize == 0 ? FileUncompressedSize : FileSize;
         }
+
         public override void SetFileSize(uint s)
         {
             //FileUncompressedSize = s;
@@ -2308,31 +2086,41 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class RpfResourceFileEntry : RpfFileEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class RpfResourceFileEntry : RpfFileEntry
     {
         public RpfResourcePageFlags SystemFlags { get; set; }
         public RpfResourcePageFlags GraphicsFlags { get; set; }
 
 
+        public int Version => GetVersionFromFlags(SystemFlags, GraphicsFlags);
+
+
+        public int SystemSize => (int)SystemFlags.Size;
+
+        public int GraphicsSize => (int)GraphicsFlags.Size;
+
+
         public static int GetSizeFromFlags(uint flags)
         {
             //dexfx simplified version
-            uint s0 = ((flags >> 27) & 0x1)  << 0;   // 1 bit  - 27        (*1)
-            uint s1 = ((flags >> 26) & 0x1)  << 1;   // 1 bit  - 26        (*2)
-            uint s2 = ((flags >> 25) & 0x1)  << 2;   // 1 bit  - 25        (*4)
-            uint s3 = ((flags >> 24) & 0x1)  << 3;   // 1 bit  - 24        (*8)
-            uint s4 = ((flags >> 17) & 0x7F) << 4;   // 7 bits - 17 - 23   (*16)   (max 127 * 16)
-            uint s5 = ((flags >> 11) & 0x3F) << 5;   // 6 bits - 11 - 16   (*32)   (max 63  * 32)
-            uint s6 = ((flags >> 7)  & 0xF)  << 6;   // 4 bits - 7  - 10   (*64)   (max 15  * 64)
-            uint s7 = ((flags >> 5)  & 0x3)  << 7;   // 2 bits - 5  - 6    (*128)  (max 3   * 128)
-            uint s8 = ((flags >> 4)  & 0x1)  << 8;   // 1 bit  - 4         (*256)
-            uint ss = ((flags >> 0)  & 0xF);         // 4 bits - 0  - 3
+            uint s0 = ((flags >> 27) & 0x1) << 0; // 1 bit  - 27        (*1)
+            uint s1 = ((flags >> 26) & 0x1) << 1; // 1 bit  - 26        (*2)
+            uint s2 = ((flags >> 25) & 0x1) << 2; // 1 bit  - 25        (*4)
+            uint s3 = ((flags >> 24) & 0x1) << 3; // 1 bit  - 24        (*8)
+            uint s4 = ((flags >> 17) & 0x7F) << 4; // 7 bits - 17 - 23   (*16)   (max 127 * 16)
+            uint s5 = ((flags >> 11) & 0x3F) << 5; // 6 bits - 11 - 16   (*32)   (max 63  * 32)
+            uint s6 = ((flags >> 7) & 0xF) << 6; // 4 bits - 7  - 10   (*64)   (max 15  * 64)
+            uint s7 = ((flags >> 5) & 0x3) << 7; // 2 bits - 5  - 6    (*128)  (max 3   * 128)
+            uint s8 = ((flags >> 4) & 0x1) << 8; // 1 bit  - 4         (*256)
+            uint ss = (flags >> 0) & 0xF; // 4 bits - 0  - 3
             int baseSize = 0x200 << (int)ss;
             long size = baseSize * (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8);
             return (int)size;
 
 
             #region dexyfex testing
+
             //var type = flags >> 28;
             //var test = GetFlagsFromSize((int)size, type);
             //s0 = ((test >> 27) & 0x1) << 0;   // 1 bit  - 27        (*1)
@@ -2377,14 +2165,11 @@ namespace CodeWalker.GameFiles
             //size:4063232, ss:4,             s4:15,              s7:2          (ytd)
             //size:8650752, ss:5,             s4:13,        s6:5                (ytd)
 
-
-
-
             #endregion
 
 
+            #region original neo version (system)
 
-            #region  original neo version (system)
             //const int RESOURCE_IDENT = 0x37435352;
             //const int BASE_SIZE = 0x2000;
             //var SystemPagesDiv16 = (int)(SystemFlags >> 27) & 0x1;
@@ -2408,10 +2193,12 @@ namespace CodeWalker.GameFiles
             //    (systemBaseSize * SystemPagesMul4) * 4 +
             //    (systemBaseSize * SystemPagesMul8) * 8 +
             //    (systemBaseSize * SystemPagesMul16) * 16;
+
             #endregion
 
 
-            #region  original neo version (graphics)
+            #region original neo version (graphics)
+
             //const int RESOURCE_IDENT = 0x37435352;
             //const int BASE_SIZE = 0x2000;
             //var GraphicsPagesDiv16 = (int)(GraphicsFlags >> 27) & 0x1;
@@ -2435,9 +2222,10 @@ namespace CodeWalker.GameFiles
             //    graphicsBaseSize * GraphicsPagesMul4 * 4 +
             //    graphicsBaseSize * GraphicsPagesMul8 * 8 +
             //    graphicsBaseSize * GraphicsPagesMul16 * 16;
-            #endregion
 
+            #endregion
         }
+
         public static uint GetFlagsFromSize(int size, uint version)
         {
             //WIP - may make crashes :(
@@ -2447,10 +2235,7 @@ namespace CodeWalker.GameFiles
             int origsize = size;
             int remainder = size & 0x1FF;
             int blocksize = 0x200;
-            if (remainder != 0)
-            {
-                size = (size - remainder) + blocksize; //round up to the minimum blocksize
-            }
+            if (remainder != 0) size = size - remainder + blocksize; //round up to the minimum blocksize
 
             uint blockcount = (uint)size >> 9; //how many blocks of the minimum size (0x200)
             uint ss = 0;
@@ -2459,31 +2244,32 @@ namespace CodeWalker.GameFiles
                 ss++;
                 blockcount = blockcount >> 1;
             }
+
             if (ss > 0)
             {
                 size = origsize;
                 blocksize = blocksize << (int)ss; //adjust the block size to reduce the block count.
                 remainder = size & blocksize;
-                if(remainder!=0)
-                {
-                    size = (size - remainder) + blocksize; //readjust size with round-up
-                }
+                if (remainder != 0) size = size - remainder + blocksize; //readjust size with round-up
             }
 
-            uint s0 = (blockcount >> 0) & 0x1;  //*1         X
-            uint s1 = (blockcount >> 1) & 0x1;  //*2          X
-            uint s2 = (blockcount >> 2) & 0x1;  //*4           X
-            uint s3 = (blockcount >> 3) & 0x1;  //*8            X
+            uint s0 = (blockcount >> 0) & 0x1; //*1         X
+            uint s1 = (blockcount >> 1) & 0x1; //*2          X
+            uint s2 = (blockcount >> 2) & 0x1; //*4           X
+            uint s3 = (blockcount >> 3) & 0x1; //*8            X
             uint s4 = (blockcount >> 4) & 0x7F; //*16  7 bits    XXXXXXX
             uint s5 = (blockcount >> 5) & 0x3F; //*32  6 bits           XXXXXX
-            uint s6 = (blockcount >> 6) & 0xF;  //*64  4 bits                 XXXX
-            uint s7 = (blockcount >> 7) & 0x3;  //*128 2 bits                     XX
-            uint s8 = (blockcount >> 8) & 0x1;  //*256                              X
+            uint s6 = (blockcount >> 6) & 0xF; //*64  4 bits                 XXXX
+            uint s7 = (blockcount >> 7) & 0x3; //*128 2 bits                     XX
+            uint s8 = (blockcount >> 8) & 0x1; //*256                              X
 
             if (ss > 4)
-            { }
+            {
+            }
+
             if (s4 > 0x7F)
-            { } //too big...
+            {
+            } //too big...
             //needs more work to include higher bits..
 
 
@@ -2494,8 +2280,7 @@ namespace CodeWalker.GameFiles
             f |= (s2 & 0x1) << 25;
             f |= (s3 & 0x1) << 24;
             f |= (s4 & 0x7F) << 17;
-            f |= (ss & 0xF);
-            
+            f |= ss & 0xF;
 
 
             return f;
@@ -2513,12 +2298,10 @@ namespace CodeWalker.GameFiles
             //var ss = ((flags >> 0) & 0xF);         // 4 bits - 0  - 3
             //var baseSize = 0x200 << (int)ss;
             //var size = baseSize * (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8);
-
-
         }
+
         public static uint GetFlagsFromBlocks(uint blockCount, uint blockSize, uint version)
         {
-
             //dexfx test version - seems to work mostly...
 
             uint s0 = 0;
@@ -2534,17 +2317,16 @@ namespace CodeWalker.GameFiles
 
             uint bst = blockSize;
             if (blockCount > 0)
-            {
                 while (bst > 0x200) //ss is number of bits to shift 0x200 to get blocksize...
                 {
                     ss++;
                     bst = bst >> 1;
                 }
-            }
-            s0 = (blockCount >> 0) & 0x1;  //*1         X
-            s1 = (blockCount >> 1) & 0x1;  //*2          X
-            s2 = (blockCount >> 2) & 0x1;  //*4           X
-            s3 = (blockCount >> 3) & 0x1;  //*8            X
+
+            s0 = (blockCount >> 0) & 0x1; //*1         X
+            s1 = (blockCount >> 1) & 0x1; //*2          X
+            s2 = (blockCount >> 2) & 0x1; //*4           X
+            s3 = (blockCount >> 3) & 0x1; //*8            X
             s4 = (blockCount >> 4) & 0x7F; //*16  7 bits    XXXXXXX
             //s5 = (blockCount >> 5) & 0x3F; //*32  6 bits           XXXXXX
             //s6 = (blockCount >> 6) & 0xF;  //*64  4 bits                 XXXX
@@ -2576,11 +2358,13 @@ namespace CodeWalker.GameFiles
             //}
 
 
-
             if (ss > 0xF)
-            { } //too big...
+            {
+            } //too big...
+
             if (s4 > 0x7F)
-            { } //too big...
+            {
+            } //too big...
             //needs more work to include higher bits..
 
 
@@ -2595,12 +2379,12 @@ namespace CodeWalker.GameFiles
             f |= (s6 & 0xF) << 7;
             f |= (s7 & 0x3) << 5;
             f |= (s8 & 0x1) << 4;
-            f |= (ss & 0xF);
-
+            f |= ss & 0xF;
 
 
             return f;
         }
+
         public static int GetVersionFromFlags(uint sysFlags, uint gfxFlags)
         {
             uint sv = (sysFlags >> 28) & 0xF;
@@ -2608,40 +2392,15 @@ namespace CodeWalker.GameFiles
             return (int)((sv << 4) + gv);
         }
 
-
-        public int Version
-        {
-            get
-            {
-                return GetVersionFromFlags(SystemFlags, GraphicsFlags);
-            }
-        }
-
-
-        public int SystemSize
-        {
-            get
-            {
-                return (int)SystemFlags.Size;
-            }
-        }
-        public int GraphicsSize
-        {
-            get
-            {
-                return (int)GraphicsFlags.Size;
-            }
-        }
-
         public override void Read(DataReader reader)
         {
             NameOffset = reader.ReadUInt16();
 
             byte[] buf1 = reader.ReadBytes(3);
-            FileSize = (uint)buf1[0] + (uint)(buf1[1] << 8) + (uint)(buf1[2] << 16);
+            FileSize = buf1[0] + (uint)(buf1[1] << 8) + (uint)(buf1[2] << 16);
 
             byte[] buf2 = reader.ReadBytes(3);
-            FileOffset = ((uint)buf2[0] + (uint)(buf2[1] << 8) + (uint)(buf2[2] << 16)) & 0x7FFFFF;
+            FileOffset = (buf2[0] + (uint)(buf2[1] << 8) + (uint)(buf2[2] << 16)) & 0x7FFFFF;
 
             SystemFlags = reader.ReadUInt32();
             GraphicsFlags = reader.ReadUInt32();
@@ -2652,28 +2411,30 @@ namespace CodeWalker.GameFiles
             {
                 BinaryReader cfr = File.CurrentFileReader;
                 long opos = cfr.BaseStream.Position;
-                cfr.BaseStream.Position = File.StartPos + ((long)FileOffset * 512); //need to use the base offset!!
+                cfr.BaseStream.Position = File.StartPos + (long)FileOffset * 512; //need to use the base offset!!
                 byte[] buf = cfr.ReadBytes(16);
                 FileSize = ((uint)buf[7] << 0) | ((uint)buf[14] << 8) | ((uint)buf[5] << 16) | ((uint)buf[2] << 24);
                 cfr.BaseStream.Position = opos;
             }
-
         }
+
         public override void Write(DataWriter writer)
         {
             writer.Write((ushort)NameOffset);
 
             uint fs = FileSize;
-            if (fs > 0xFFFFFF) fs = 0xFFFFFF;//will also need to make sure the RSC header is updated...
+            if (fs > 0xFFFFFF) fs = 0xFFFFFF; //will also need to make sure the RSC header is updated...
 
-            byte[] buf1 = new byte[] {
+            byte[] buf1 =
+            {
                 (byte)((fs >> 0) & 0xFF),
                 (byte)((fs >> 8) & 0xFF),
                 (byte)((fs >> 16) & 0xFF)
             };
             writer.Write(buf1);
 
-            byte[] buf2 = new byte[] {
+            byte[] buf2 =
+            {
                 (byte)((FileOffset >> 0) & 0xFF),
                 (byte)((FileOffset >> 8) & 0xFF),
                 (byte)(((FileOffset >> 16) & 0xFF) | 0x80)
@@ -2683,6 +2444,7 @@ namespace CodeWalker.GameFiles
             writer.Write(SystemFlags);
             writer.Write(GraphicsFlags);
         }
+
         public override string ToString()
         {
             return "Resource file: " + Path;
@@ -2690,18 +2452,20 @@ namespace CodeWalker.GameFiles
 
         public override long GetFileSize()
         {
-            return (FileSize == 0) ? (long)(SystemSize + GraphicsSize) : FileSize;
+            return FileSize == 0 ? (long)(SystemSize + GraphicsSize) : FileSize;
         }
+
         public override void SetFileSize(uint s)
         {
             FileSize = s;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct RpfResourcePageFlags
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct RpfResourcePageFlags
     {
         public uint Value { get; set; }
-        
+
         public RpfResourcePage[] Pages
         {
             get
@@ -2719,24 +2483,26 @@ namespace CodeWalker.GameFiles
                     uint s = sizes[i];
                     for (int p = 0; p < c; p++)
                     {
-                        pages[n] = new RpfResourcePage() { Size = s, Offset = o };
+                        pages[n] = new RpfResourcePage { Size = s, Offset = o };
                         o += s;
                         n++;
                     }
                 }
+
                 return pages;
             }
         }
 
-        public uint TypeVal { get { return (Value >> 28) & 0xF; } }
-        public uint BaseShift { get { return (Value & 0xF); } }
-        public uint BaseSize { get { return (0x200u << (int)BaseShift); } }
+        public uint TypeVal => (Value >> 28) & 0xF;
+        public uint BaseShift => Value & 0xF;
+        public uint BaseSize => 0x200u << (int)BaseShift;
+
         public uint[] BaseSizes
         {
             get
             {
                 uint baseSize = BaseSize;
-                return new uint[]
+                return new[]
                 {
                     baseSize << 8,
                     baseSize << 7,
@@ -2746,35 +2512,37 @@ namespace CodeWalker.GameFiles
                     baseSize << 3,
                     baseSize << 2,
                     baseSize << 1,
-                    baseSize << 0,
+                    baseSize << 0
                 };
             }
         }
+
         public uint[] PageCounts
         {
             get
             {
-                return new uint[]
+                return new[]
                 {
-                    ((Value >> 4)  & 0x1),
-                    ((Value >> 5)  & 0x3),
-                    ((Value >> 7)  & 0xF),
-                    ((Value >> 11) & 0x3F),
-                    ((Value >> 17) & 0x7F),
-                    ((Value >> 24) & 0x1),
-                    ((Value >> 25) & 0x1),
-                    ((Value >> 26) & 0x1),
-                    ((Value >> 27) & 0x1),
+                    (Value >> 4) & 0x1,
+                    (Value >> 5) & 0x3,
+                    (Value >> 7) & 0xF,
+                    (Value >> 11) & 0x3F,
+                    (Value >> 17) & 0x7F,
+                    (Value >> 24) & 0x1,
+                    (Value >> 25) & 0x1,
+                    (Value >> 26) & 0x1,
+                    (Value >> 27) & 0x1
                 };
             }
         }
+
         public uint[] PageSizes
         {
             get
             {
                 uint[] counts = PageCounts;
                 uint[] baseSizes = BaseSizes;
-                return new uint[]
+                return new[]
                 {
                     baseSizes[0] * counts[0],
                     baseSizes[1] * counts[1],
@@ -2784,10 +2552,11 @@ namespace CodeWalker.GameFiles
                     baseSizes[5] * counts[5],
                     baseSizes[6] * counts[6],
                     baseSizes[7] * counts[7],
-                    baseSizes[8] * counts[8],
+                    baseSizes[8] * counts[8]
                 };
             }
         }
+
         public uint Count
         {
             get
@@ -2796,26 +2565,26 @@ namespace CodeWalker.GameFiles
                 return c[0] + c[1] + c[2] + c[3] + c[4] + c[5] + c[6] + c[7] + c[8];
             }
         }
-        public uint Size 
-        { 
-            get 
+
+        public uint Size
+        {
+            get
             {
                 uint flags = Value;
-                uint s0 = ((flags >> 27) & 0x1)  << 0;
-                uint s1 = ((flags >> 26) & 0x1)  << 1;
-                uint s2 = ((flags >> 25) & 0x1)  << 2;
-                uint s3 = ((flags >> 24) & 0x1)  << 3;
+                uint s0 = ((flags >> 27) & 0x1) << 0;
+                uint s1 = ((flags >> 26) & 0x1) << 1;
+                uint s2 = ((flags >> 25) & 0x1) << 2;
+                uint s3 = ((flags >> 24) & 0x1) << 3;
                 uint s4 = ((flags >> 17) & 0x7F) << 4;
                 uint s5 = ((flags >> 11) & 0x3F) << 5;
-                uint s6 = ((flags >> 7)  & 0xF)  << 6;
-                uint s7 = ((flags >> 5)  & 0x3)  << 7;
-                uint s8 = ((flags >> 4)  & 0x1)  << 8;
-                uint ss = ((flags >> 0)  & 0xF);
+                uint s6 = ((flags >> 7) & 0xF) << 6;
+                uint s7 = ((flags >> 5) & 0x3) << 7;
+                uint s8 = ((flags >> 4) & 0x1) << 8;
+                uint ss = (flags >> 0) & 0xF;
                 uint baseSize = 0x200u << (int)ss;
                 return baseSize * (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8);
             }
         }
-
 
 
         public RpfResourcePageFlags(uint v)
@@ -2826,23 +2595,24 @@ namespace CodeWalker.GameFiles
         public RpfResourcePageFlags(uint[] pageCounts, uint baseShift)
         {
             uint v = baseShift & 0xF;
-            v += (pageCounts[0] & 0x1)  << 4;
-            v += (pageCounts[1] & 0x3)  << 5;
-            v += (pageCounts[2] & 0xF)  << 7;
+            v += (pageCounts[0] & 0x1) << 4;
+            v += (pageCounts[1] & 0x3) << 5;
+            v += (pageCounts[2] & 0xF) << 7;
             v += (pageCounts[3] & 0x3F) << 11;
             v += (pageCounts[4] & 0x7F) << 17;
-            v += (pageCounts[5] & 0x1)  << 24;
-            v += (pageCounts[6] & 0x1)  << 25;
-            v += (pageCounts[7] & 0x1)  << 26;
-            v += (pageCounts[8] & 0x1)  << 27;
+            v += (pageCounts[5] & 0x1) << 24;
+            v += (pageCounts[6] & 0x1) << 25;
+            v += (pageCounts[7] & 0x1) << 26;
+            v += (pageCounts[8] & 0x1) << 27;
             Value = v;
         }
 
 
         public static implicit operator uint(RpfResourcePageFlags f)
         {
-            return f.Value;  //implicit conversion
+            return f.Value; //implicit conversion
         }
+
         public static implicit operator RpfResourcePageFlags(uint v)
         {
             return new RpfResourcePageFlags(v);
@@ -2850,18 +2620,19 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return "Size: " + Size.ToString() + ", Pages: " + Count.ToString();
+            return "Size: " + Size + ", Pages: " + Count;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct RpfResourcePage
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct RpfResourcePage
     {
         public uint Size { get; set; }
         public uint Offset { get; set; }
 
         public override string ToString()
         {
-            return Size.ToString() + ": " + Offset.ToString();
+            return Size + ": " + Offset;
         }
     }
 
@@ -2869,14 +2640,4 @@ namespace CodeWalker.GameFiles
     {
         void Load(byte[] data, RpfFileEntry entry);
     }
-
-
-
-
-
-
-
-
-
-
 }

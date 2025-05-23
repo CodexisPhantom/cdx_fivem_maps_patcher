@@ -1,23 +1,21 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Xml;
-
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class Clouds
     {
-        public volatile bool Inited;
-
-        public Weather Weather;
-        public Timecycle Timecycle;
-        public Dictionary<string, CloudAnimSetting> AnimSettings { get; set; }
         public CloudAnimOverrides AnimOverrides = new CloudAnimOverrides();
 
         public CloudHatManager HatManager;
+        public volatile bool Inited;
         public CloudSettingsMap SettingsMap;
+        public Timecycle Timecycle;
+
+        public Weather Weather;
 
 
         public Clouds()
@@ -42,10 +40,14 @@ namespace CodeWalker.World
             //AddAnimSetting(new CloudAnimSetting("cloudLayerAnimScale3.X", "Anim Scale 3 X", 0.0f, 8.0f, 1.0f));
             //AddAnimSetting(new CloudAnimSetting("cloudLayerAnimScale3.Y", "Anim Scale 3 Y", 0.0f, 8.0f, 1.0f));
         }
+
+        public Dictionary<string, CloudAnimSetting> AnimSettings { get; set; }
+
         private void AddAnimSetting(CloudAnimSetting setting)
         {
             AnimSettings[setting.Name] = setting;
         }
+
         private void UpdateAnimOverrides()
         {
             AnimOverrides.UVOffset1.X = AnimSettings["UVOffset1.X"].CurrentValue;
@@ -78,10 +80,7 @@ namespace CodeWalker.World
 
             //TODO: RpfMan should be able to get the right version? or maybe let gameFileCache do it!
             string kffilename = "common.rpf\\data\\cloudkeyframes.xml";
-            if (gameFileCache.EnableDlc)
-            {
-                kffilename = "update\\update.rpf\\common\\data\\cloudkeyframes.xml";
-            }
+            if (gameFileCache.EnableDlc) kffilename = "update\\update.rpf\\common\\data\\cloudkeyframes.xml";
 
             XmlDocument cloudsxml = rpfman.GetFileXml(filename);
             XmlDocument cloudskfxml = rpfman.GetFileXml(kffilename);
@@ -100,8 +99,6 @@ namespace CodeWalker.World
         {
             UpdateAnimOverrides();
         }
-
-
     }
 
 
@@ -126,11 +123,12 @@ namespace CodeWalker.World
                     fraglist.Add(frag);
                 }
             }
+
             CloudHatFrags = fraglist.ToArray();
 
-            DesiredTransitionTimeSec = Xml.GetChildFloatAttribute(xml, "mDesiredTransitionTimeSec", "value");
+            DesiredTransitionTimeSec = Xml.GetChildFloatAttribute(xml, "mDesiredTransitionTimeSec");
             CamPositionScaler = Xml.GetChildVector3Attributes(xml, "mCamPositionScaler");
-            AltitudeScrollScaler = Xml.GetChildFloatAttribute(xml, "mAltitudeScrollScaler", "value");
+            AltitudeScrollScaler = Xml.GetChildFloatAttribute(xml, "mAltitudeScrollScaler");
         }
 
         public CloudHatFrag FindFrag(string name)
@@ -138,14 +136,11 @@ namespace CodeWalker.World
             for (int i = 0; i < CloudHatFrags.Length; i++)
             {
                 CloudHatFrag f = CloudHatFrags[i];
-                if (f.Name == name)
-                {
-                    return f;
-                }
+                if (f.Name == name) return f;
             }
+
             return null;
         }
-
     }
 
     public class CloudHatFrag
@@ -184,11 +179,12 @@ namespace CodeWalker.World
                     layerlist.Add(layer);
                 }
             }
+
             Layers = layerlist.ToArray();
 
-            TransitionAlphaRange = Xml.GetChildFloatAttribute(xml, "mTransitionAlphaRange", "value");
-            TransitionMidPoint = Xml.GetChildFloatAttribute(xml, "mTransitionMidPoint", "value");
-            Enabled = Xml.GetChildBoolAttribute(xml, "mEnabled", "value");
+            TransitionAlphaRange = Xml.GetChildFloatAttribute(xml, "mTransitionAlphaRange");
+            TransitionMidPoint = Xml.GetChildFloatAttribute(xml, "mTransitionMidPoint");
+            Enabled = Xml.GetChildBoolAttribute(xml, "mEnabled");
             AngularVelocity = Xml.GetChildVector3Attributes(xml, "mAngularVelocity");
             AnimBlendWeights = Xml.GetChildVector3Attributes(xml, "mAnimBlendWeights");
 
@@ -205,16 +201,14 @@ namespace CodeWalker.World
                     FloatUtil.TryParse(uvvelc[0].Trim(), out vel.X);
                     FloatUtil.TryParse(uvvelc[1].Trim(), out vel.Y);
                 }
+
                 UVVelocity[i] = vel;
             }
 
             string animmodestr = Xml.GetChildInnerText(xml, "mAnimMode").Trim();
             string[] animmodes = animmodestr.Split('\n');
             AnimMode = new byte[animmodes.Length];
-            for (int i = 0; i < animmodes.Length; i++)
-            {
-                byte.TryParse(animmodes[i].Trim(), out AnimMode[i]);
-            }
+            for (int i = 0; i < animmodes.Length; i++) byte.TryParse(animmodes[i].Trim(), out AnimMode[i]);
 
 
             //string showlayerstr = Xml.GetChildInnerText(xml, "mShowLayer").Trim();
@@ -223,15 +217,11 @@ namespace CodeWalker.World
             for (int i = 0; i < showlayersxml.Count; i++)
             {
                 XmlNode slnode = showlayersxml[i];
-                if (slnode is XmlElement)
-                {
-                    ShowLayer[i] = Xml.GetBoolAttribute(slnode, "value");
-                }
+                if (slnode is XmlElement) ShowLayer[i] = Xml.GetBoolAttribute(slnode, "value");
             }
 
 
-            EnableAnimations = Xml.GetChildBoolAttribute(xml, "mEnableAnimations", "value");
-
+            EnableAnimations = Xml.GetChildBoolAttribute(xml, "mEnableAnimations");
         }
 
         public override string ToString()
@@ -256,15 +246,15 @@ namespace CodeWalker.World
         public void Init(XmlElement xml)
         {
             Filename = Xml.GetChildInnerText(xml, "mFilename");
-            CostFactor = Xml.GetChildFloatAttribute(xml, "mCostFactor", "value");
-            RotationScale = Xml.GetChildFloatAttribute(xml, "mRotationScale", "value");
-            CamPositionScalerAdjust = Xml.GetChildFloatAttribute(xml, "mCamPositionScalerAdjust", "value");
-            TransitionInTimePercent = Xml.GetChildFloatAttribute(xml, "mTransitionInTimePercent", "value");
-            TransitionOutTimePercent = Xml.GetChildFloatAttribute(xml, "mTransitionOutTimePercent", "value");
-            TransitionInDelayPercent = Xml.GetChildFloatAttribute(xml, "mTransitionInDelayPercent", "value");
-            TransitionOutDelayPercent = Xml.GetChildFloatAttribute(xml, "mTransitionOutDelayPercent", "value");
-            HeightTigger = Xml.GetChildFloatAttribute(xml, "mHeightTigger", "value");
-            HeightFadeRange = Xml.GetChildFloatAttribute(xml, "mHeightFadeRange", "value");
+            CostFactor = Xml.GetChildFloatAttribute(xml, "mCostFactor");
+            RotationScale = Xml.GetChildFloatAttribute(xml, "mRotationScale");
+            CamPositionScalerAdjust = Xml.GetChildFloatAttribute(xml, "mCamPositionScalerAdjust");
+            TransitionInTimePercent = Xml.GetChildFloatAttribute(xml, "mTransitionInTimePercent");
+            TransitionOutTimePercent = Xml.GetChildFloatAttribute(xml, "mTransitionOutTimePercent");
+            TransitionInDelayPercent = Xml.GetChildFloatAttribute(xml, "mTransitionInDelayPercent");
+            TransitionOutDelayPercent = Xml.GetChildFloatAttribute(xml, "mTransitionOutDelayPercent");
+            HeightTigger = Xml.GetChildFloatAttribute(xml, "mHeightTigger");
+            HeightFadeRange = Xml.GetChildFloatAttribute(xml, "mHeightFadeRange");
         }
 
         public override string ToString()
@@ -281,14 +271,10 @@ namespace CodeWalker.World
 
         public void Init(XmlElement xml)
         {
-
             string kftstr = Xml.GetChildInnerText(xml, "KeyframeTimes").Trim();
             string[] kftarr = kftstr.Split('\n');
             KeyframeTimes = new float[kftarr.Length];
-            for (int i = 0; i < kftarr.Length; i++)
-            {
-                FloatUtil.TryParse(kftarr[i].Trim(), out KeyframeTimes[i]);
-            }
+            for (int i = 0; i < kftarr.Length; i++) FloatUtil.TryParse(kftarr[i].Trim(), out KeyframeTimes[i]);
 
 
             SettingsMap = new Dictionary<string, CloudSettingsMapItem>();
@@ -303,7 +289,6 @@ namespace CodeWalker.World
                     SettingsMap[item.Name] = item;
                 }
             }
-
         }
     }
 
@@ -319,9 +304,15 @@ namespace CodeWalker.World
         public CloudSettingsMapKeyData CloudEastColor { get; set; } = new CloudSettingsMapKeyData();
         public CloudSettingsMapKeyData CloudWestColor { get; set; } = new CloudSettingsMapKeyData();
         public CloudSettingsMapKeyData CloudScaleFillColors { get; set; } = new CloudSettingsMapKeyData();
-        public CloudSettingsMapKeyData CloudDensityShift_Scale_ScatteringConst_Scale { get; set; } = new CloudSettingsMapKeyData();
-        public CloudSettingsMapKeyData CloudPiercingLightPower_Strength_NormalStrength_Thickness { get; set; } = new CloudSettingsMapKeyData();
-        public CloudSettingsMapKeyData CloudScaleDiffuseFillAmbient_WrapAmount { get; set; } = new CloudSettingsMapKeyData();
+
+        public CloudSettingsMapKeyData CloudDensityShift_Scale_ScatteringConst_Scale { get; set; } =
+            new CloudSettingsMapKeyData();
+
+        public CloudSettingsMapKeyData CloudPiercingLightPower_Strength_NormalStrength_Thickness { get; set; } =
+            new CloudSettingsMapKeyData();
+
+        public CloudSettingsMapKeyData CloudScaleDiffuseFillAmbient_WrapAmount { get; set; } =
+            new CloudSettingsMapKeyData();
 
         public void Init(XmlNode xml)
         {
@@ -336,9 +327,12 @@ namespace CodeWalker.World
             CloudEastColor.Init(snode.SelectSingleNode("CloudEastColor"));
             CloudWestColor.Init(snode.SelectSingleNode("CloudWestColor"));
             CloudScaleFillColors.Init(snode.SelectSingleNode("CloudScaleFillColors"));
-            CloudDensityShift_Scale_ScatteringConst_Scale.Init(snode.SelectSingleNode("CloudDensityShift_Scale_ScatteringConst_Scale"));
-            CloudPiercingLightPower_Strength_NormalStrength_Thickness.Init(snode.SelectSingleNode("CloudPiercingLightPower_Strength_NormalStrength_Thickness"));
-            CloudScaleDiffuseFillAmbient_WrapAmount.Init(snode.SelectSingleNode("CloudScaleDiffuseFillAmbient_WrapAmount"));
+            CloudDensityShift_Scale_ScatteringConst_Scale.Init(
+                snode.SelectSingleNode("CloudDensityShift_Scale_ScatteringConst_Scale"));
+            CloudPiercingLightPower_Strength_NormalStrength_Thickness.Init(
+                snode.SelectSingleNode("CloudPiercingLightPower_Strength_NormalStrength_Thickness"));
+            CloudScaleDiffuseFillAmbient_WrapAmount.Init(
+                snode.SelectSingleNode("CloudScaleDiffuseFillAmbient_WrapAmount"));
         }
 
 
@@ -364,16 +358,9 @@ namespace CodeWalker.World
             Probability = new int[parr.Length];
             Bits = new int[barr.Length];
 
-            for (int i = 0; i < parr.Length; i++)
-            {
-                int.TryParse(parr[i].Trim(), out Probability[i]);
-            }
-            for (int i = 0; i < barr.Length; i++)
-            {
-                Bits[i] = Convert.ToInt32(barr[i].Trim(), 16);
-            }
+            for (int i = 0; i < parr.Length; i++) int.TryParse(parr[i].Trim(), out Probability[i]);
+            for (int i = 0; i < barr.Length; i++) Bits[i] = Convert.ToInt32(barr[i].Trim(), 16);
         }
-
     }
 
     public class CloudSettingsMapKeyData
@@ -385,7 +372,7 @@ namespace CodeWalker.World
         {
             XmlNode kdxml = xml.SelectSingleNode("keyData");
 
-            numKeyEntries = Xml.GetChildIntAttribute(kdxml, "numKeyEntries", "value");
+            numKeyEntries = Xml.GetChildIntAttribute(kdxml, "numKeyEntries");
 
             string kestr = Xml.GetChildInnerText(kdxml, "keyEntryData").Trim();
             string[] kearr = kestr.Split('\n');
@@ -404,26 +391,15 @@ namespace CodeWalker.World
                     FloatUtil.TryParse(kvarr[3].Trim(), out val.Z);
                     FloatUtil.TryParse(kvarr[4].Trim(), out val.W);
                 }
-                else
-                { }
+
                 keyEntryData[key] = val;
             }
-
         }
-
     }
 
 
     public class CloudAnimSetting
     {
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
-        public float MinValue { get; set; }
-        public float MaxValue { get; set; }
-        public float DefaultValue { get; set; }
-        public float CurrentValue { get; set; }
-
-
         public CloudAnimSetting(string name, string displayname, float minval, float maxval, float defaultval)
         {
             Name = name;
@@ -434,6 +410,13 @@ namespace CodeWalker.World
             CurrentValue = defaultval;
         }
 
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public float MinValue { get; set; }
+        public float MaxValue { get; set; }
+        public float DefaultValue { get; set; }
+        public float CurrentValue { get; set; }
+
         public override string ToString()
         {
             return DisplayName;
@@ -442,15 +425,14 @@ namespace CodeWalker.World
 
     public class CloudAnimOverrides
     {
-        public Vector2 UVOffset1 = Vector2.Zero;
-        public Vector2 UVOffset2 = Vector2.Zero;
-        public Vector2 UVOffset3 = Vector2.Zero;
-        public Vector2 RescaleUV1 = Vector2.One;
-        public Vector2 RescaleUV2 = Vector2.One;
-        public Vector2 RescaleUV3 = Vector2.One;
         public Vector2 cloudLayerAnimScale1 = Vector2.One;
         public Vector2 cloudLayerAnimScale2 = Vector2.One;
         public Vector2 cloudLayerAnimScale3 = Vector2.One;
+        public Vector2 RescaleUV1 = Vector2.One;
+        public Vector2 RescaleUV2 = Vector2.One;
+        public Vector2 RescaleUV3 = Vector2.One;
+        public Vector2 UVOffset1 = Vector2.Zero;
+        public Vector2 UVOffset2 = Vector2.Zero;
+        public Vector2 UVOffset3 = Vector2.Zero;
     }
-
 }

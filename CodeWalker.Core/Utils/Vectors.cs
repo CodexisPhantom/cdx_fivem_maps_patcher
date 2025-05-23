@@ -1,5 +1,5 @@
-﻿using SharpDX;
-using System;
+﻿using System;
+using SharpDX;
 
 namespace CodeWalker
 {
@@ -21,24 +21,18 @@ namespace CodeWalker
             float nx = Math.Abs(n.X);
             float ny = Math.Abs(n.Y);
             float nz = Math.Abs(n.Z);
-            if ((nx < ny) && (nx < nz))
-            {
-                return Vector3.Cross(n, Vector3.Right);
-            }
-            else if (ny < nz)
-            {
-                return Vector3.Cross(n, Vector3.Up);
-            }
-            else
-            {
-                return Vector3.Cross(n, Vector3.ForwardLH);
-            }
+            if (nx < ny && nx < nz) return Vector3.Cross(n, Vector3.Right);
+
+            if (ny < nz) return Vector3.Cross(n, Vector3.Up);
+
+            return Vector3.Cross(n, Vector3.ForwardLH);
         }
 
         public static Vector3 Floor(this Vector3 v)
         {
             return new Vector3((float)Math.Floor(v.X), (float)Math.Floor(v.Y), (float)Math.Floor(v.Z));
         }
+
         public static Vector3 Ceiling(this Vector3 v)
         {
             return new Vector3((float)Math.Ceiling(v.X), (float)Math.Ceiling(v.Y), (float)Math.Ceiling(v.Z));
@@ -52,20 +46,26 @@ namespace CodeWalker
         public static int CompareTo(this Vector3 a, Vector3 b)
         {
             int c;
-            c = a.X.CompareTo(b.X); if (c != 0) return c;
-            c = a.Y.CompareTo(b.Y); if (c != 0) return c;
-            c = a.Z.CompareTo(b.Z); if (c != 0) return c;
+            c = a.X.CompareTo(b.X);
+            if (c != 0) return c;
+            c = a.Y.CompareTo(b.Y);
+            if (c != 0) return c;
+            c = a.Z.CompareTo(b.Z);
+            if (c != 0) return c;
             return 0;
         }
 
 
         public static Vector4 Floor(this Vector4 v)
         {
-            return new Vector4((float)Math.Floor(v.X), (float)Math.Floor(v.Y), (float)Math.Floor(v.Z), (float)Math.Floor(v.W));
+            return new Vector4((float)Math.Floor(v.X), (float)Math.Floor(v.Y), (float)Math.Floor(v.Z),
+                (float)Math.Floor(v.W));
         }
+
         public static Vector4 Ceiling(this Vector4 v)
         {
-            return new Vector4((float)Math.Ceiling(v.X), (float)Math.Ceiling(v.Y), (float)Math.Ceiling(v.Z), (float)Math.Ceiling(v.W));
+            return new Vector4((float)Math.Ceiling(v.X), (float)Math.Ceiling(v.Y), (float)Math.Ceiling(v.Z),
+                (float)Math.Ceiling(v.W));
         }
 
         public static Vector4 Abs(this Vector4 v)
@@ -90,6 +90,7 @@ namespace CodeWalker
             X = x;
             Y = y;
         }
+
         public Vector2I(Vector2 v)
         {
             X = (int)Math.Floor(v.X);
@@ -98,7 +99,7 @@ namespace CodeWalker
 
         public override string ToString()
         {
-            return X.ToString() + ", " + Y.ToString();
+            return X + ", " + Y;
         }
 
 
@@ -111,17 +112,15 @@ namespace CodeWalker
         {
             return new Vector2I(a.X - b.X, a.Y - b.Y);
         }
-
     }
-
 
 
     public static class BoundingBoxMath
     {
-
         public static BoundingBox Transform(this BoundingBox b, Vector3 position, Quaternion orientation, Vector3 scale)
         {
-            Matrix mat = Matrix.Transformation(Vector3.Zero, Quaternion.Identity, scale, Vector3.Zero, orientation, position);
+            Matrix mat = Matrix.Transformation(Vector3.Zero, Quaternion.Identity, scale, Vector3.Zero, orientation,
+                position);
             return b.Transform(mat);
         }
 
@@ -138,9 +137,7 @@ namespace CodeWalker
             Vector3 nextent = Vector3.TransformNormal(bbextent, matabs).Abs();
             return new BoundingBox(ncenter - nextent, ncenter + nextent);
         }
-
     }
-
 
 
     public struct BoundingCapsule
@@ -152,29 +149,28 @@ namespace CodeWalker
 
     public static class BoundingCapsuleMath
     {
-
         public static bool Intersects(this Ray r, ref BoundingCapsule capsule, out float dist)
         {
             // intersect capsule : http://www.iquilezles.org/www/articles/intersectors/intersectors.htm
-            Vector3  ba = capsule.PointB - capsule.PointA;
-            Vector3  oa = r.Position - capsule.PointA;
-            float baba = Vector3.Dot(ba,ba);
-            float bard = Vector3.Dot(ba,r.Direction);
-            float baoa = Vector3.Dot(ba,oa);
-            float rdoa = Vector3.Dot(r.Direction,oa);
-            float oaoa = Vector3.Dot(oa,oa);
+            Vector3 ba = capsule.PointB - capsule.PointA;
+            Vector3 oa = r.Position - capsule.PointA;
+            float baba = Vector3.Dot(ba, ba);
+            float bard = Vector3.Dot(ba, r.Direction);
+            float baoa = Vector3.Dot(ba, oa);
+            float rdoa = Vector3.Dot(r.Direction, oa);
+            float oaoa = Vector3.Dot(oa, oa);
 
             float r2 = capsule.Radius * capsule.Radius;
-            float a = baba      - bard*bard;
-            float b = baba*rdoa - baoa*bard;
-            float c = baba*oaoa - baoa*baoa - r2*baba;
-            float h = b*b - a*c;
+            float a = baba - bard * bard;
+            float b = baba * rdoa - baoa * bard;
+            float c = baba * oaoa - baoa * baoa - r2 * baba;
+            float h = b * b - a * c;
 
-            if( h>=0.0f )
+            if (h >= 0.0f)
             {
-                float t = (-b-(float)Math.Sqrt(h))/a;
+                float t = (-b - (float)Math.Sqrt(h)) / a;
 
-                float y = baoa + t*bard;
+                float y = baoa + t * bard;
 
                 // body
                 if (y > 0.0f && y < baba)
@@ -184,19 +180,21 @@ namespace CodeWalker
                 }
 
                 // caps
-                Vector3 oc = (y<=0.0f) ? oa : r.Position - capsule.PointB;
-                b = Vector3.Dot(r.Direction,oc);
-                c = Vector3.Dot(oc,oc) - r2;
-                h = b*b - c;
-                if( h>0.0f )
+                Vector3 oc = y <= 0.0f ? oa : r.Position - capsule.PointB;
+                b = Vector3.Dot(r.Direction, oc);
+                c = Vector3.Dot(oc, oc) - r2;
+                h = b * b - c;
+                if (h > 0.0f)
                 {
                     dist = -b - (float)Math.Sqrt(h);
                     return true;
                 }
             }
+
             dist = -1.0f;
             return false;
         }
+
         public static Vector3 Normal(this BoundingCapsule c, ref Vector3 position)
         {
             Vector3 ba = c.PointB - c.PointA;
@@ -215,15 +213,11 @@ namespace CodeWalker
                 norm = LineMath.PointSegmentNormal(ref sph.Center, ref capsule.PointA, ref capsule.PointB);
                 return true;
             }
-            else
-            {
-                norm = Vector3.Up;
-                return false;
-            }
+
+            norm = Vector3.Up;
+            return false;
         }
-
     }
-
 
 
     public struct BoundingCylinder
@@ -232,9 +226,9 @@ namespace CodeWalker
         public Vector3 PointB;
         public float Radius;
     }
+
     public static class BoundingCylinderMath
     {
-
         public static bool Intersects(this Ray r, ref BoundingCylinder cylinder, out float dist, out Vector3 norm)
         {
             // intersect cylinder : https://www.shadertoy.com/view/4lcSRn
@@ -256,6 +250,7 @@ namespace CodeWalker
                 norm = Vector3.Up;
                 return false;
             }
+
             h = (float)Math.Sqrt(h);
             float t = (-k1 - h) / k2;
 
@@ -269,7 +264,7 @@ namespace CodeWalker
             }
 
             // caps
-            t = (((y < 0.0f) ? 0.0f : baba) - baoc) / bard;
+            t = ((y < 0.0f ? 0.0f : baba) - baoc) / bard;
             if (Math.Abs(k1 + k2 * t) < h)
             {
                 dist = t;
@@ -281,33 +276,27 @@ namespace CodeWalker
             norm = Vector3.Up;
             return false;
         }
-
     }
-
 
 
     public static class LineMath
     {
-
-
         public static float PointSegmentDistance(ref Vector3 v, ref Vector3 a, ref Vector3 b)
         {
             //https://stackoverflow.com/questions/4858264/find-the-distance-from-a-3d-point-to-a-line-segment
             Vector3 ab = b - a;
             Vector3 av = v - a;
 
-            if (Vector3.Dot(av, ab) <= 0.0f)// Point is lagging behind start of the segment, so perpendicular distance is not viable.
-            {
-                return av.Length();         // Use distance to start of segment instead.
-            }
+            if (Vector3.Dot(av, ab) <=
+                0.0f) // Point is lagging behind start of the segment, so perpendicular distance is not viable.
+                return av.Length(); // Use distance to start of segment instead.
 
             Vector3 bv = v - b;
-            if (Vector3.Dot(bv, ab) >= 0.0f)// Point is advanced past the end of the segment, so perpendicular distance is not viable.
-            {
-                return bv.Length();         // Use distance to end of the segment instead.
-            }
+            if (Vector3.Dot(bv, ab) >=
+                0.0f) // Point is advanced past the end of the segment, so perpendicular distance is not viable.
+                return bv.Length(); // Use distance to end of the segment instead.
 
-            return Vector3.Cross(ab, av).Length() / ab.Length();// Perpendicular distance of point to segment.
+            return Vector3.Cross(ab, av).Length() / ab.Length(); // Perpendicular distance of point to segment.
         }
 
         public static Vector3 PointSegmentNormal(ref Vector3 v, ref Vector3 a, ref Vector3 b)
@@ -315,16 +304,10 @@ namespace CodeWalker
             Vector3 ab = b - a;
             Vector3 av = v - a;
 
-            if (Vector3.Dot(av, ab) <= 0.0f)
-            {
-                return Vector3.Normalize(av);
-            }
+            if (Vector3.Dot(av, ab) <= 0.0f) return Vector3.Normalize(av);
 
             Vector3 bv = v - b;
-            if (Vector3.Dot(bv, ab) >= 0.0f)
-            {
-                return Vector3.Normalize(bv);
-            }
+            if (Vector3.Dot(bv, ab) >= 0.0f) return Vector3.Normalize(bv);
 
             return Vector3.Normalize(Vector3.Cross(Vector3.Cross(ab, av), ab));
         }
@@ -344,17 +327,16 @@ namespace CodeWalker
             winding = 0;
             Vector2 d1 = p1 - s;
             Vector2 d2 = p2 - s;
-            if ((d1.Y > 0) != (d2.Y > 0))//this segment crosses the y-axis (relative to s) 
+            if (d1.Y > 0 != d2.Y > 0) //this segment crosses the y-axis (relative to s) 
             {
-                float yr = (0 - d1.Y) / (d2.Y - d1.Y);//how far along the line is the intersection?
-                float xr = d1.X + (d2.X - d1.X) * yr;//where on the x axis is the intersection?
-                if (xr > 0)
-                {
-                    winding = (d2.Y > d1.Y) ? 1 : -1;
-                }
+                float yr = (0 - d1.Y) / (d2.Y - d1.Y); //how far along the line is the intersection?
+                float xr = d1.X + (d2.X - d1.X) * yr; //where on the x axis is the intersection?
+                if (xr > 0) winding = d2.Y > d1.Y ? 1 : -1;
             }
+
             return d;
         }
+
         public static float PointSegmentDistance(in Vector2 v, in Vector2 a, in Vector2 b)
         {
             Vector2 ab = b - a;
@@ -365,13 +347,11 @@ namespace CodeWalker
             Vector2 p = a + t * ab;
             return (p - v).Length();
         }
-
     }
 
 
     public static class TriangleMath
     {
-
         public static float AreaPart(ref Vector3 v1, ref Vector3 v2, ref Vector3 v3, out float angle)
         {
             Vector3 va = v2 - v1;
@@ -395,32 +375,16 @@ namespace CodeWalker
             float d1 = Math.Min(t1, Math.Abs(t1 - fp));
             float d2 = Math.Min(t2, Math.Abs(t2 - fp));
             float d3 = Math.Min(t3, Math.Abs(t3 - fp));
-            if ((d1 >= d2) && (a1 != 0))
+            if (d1 >= d2 && a1 != 0)
             {
-                if ((d1 >= d3) || (a3 == 0))
-                {
-                    return a1;
-                }
-                else
-                {
-                    return a3;
-                }
+                if (d1 >= d3 || a3 == 0) return a1;
+
+                return a3;
             }
-            else
-            {
-                if ((d2 >= d3) || (a3 == 0))
-                {
-                    return a2;
-                }
-                else
-                {
-                    return a3;
-                }
-            }
+
+            if (d2 >= d3 || a3 == 0) return a2;
+
+            return a3;
         }
-
     }
-
-
-
 }

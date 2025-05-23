@@ -10,21 +10,20 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YedFile : GameFile, PackedFile
     {
+        public YedFile() : base(null, GameFileType.Yed)
+        {
+        }
+
+        public YedFile(RpfFileEntry entry) : base(entry, GameFileType.Yed)
+        {
+        }
+
         public ExpressionDictionary ExpressionDictionary { get; set; }
 
         public string LoadException { get; set; }
 
 
         public Dictionary<MetaHash, Expression> ExprMap { get; set; }
-
-
-
-        public YedFile() : base(null, GameFileType.Yed)
-        {
-        }
-        public YedFile(RpfFileEntry entry) : base(entry, GameFileType.Yed)
-        {
-        }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -34,10 +33,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = null;
             try
@@ -67,32 +63,25 @@ namespace CodeWalker.GameFiles
         public void InitDictionaries()
         {
             ExprMap = ExpressionDictionary?.ExprMap ?? new Dictionary<MetaHash, Expression>();
-
         }
     }
 
 
     public class YedXml : MetaXmlBase
     {
-
         public static string GetXml(YedFile yed, string outputFolder = "")
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if (yed?.ExpressionDictionary != null)
-            {
-                ExpressionDictionary.WriteXmlNode(yed.ExpressionDictionary, sb, 0);
-            }
+            if (yed?.ExpressionDictionary != null) ExpressionDictionary.WriteXmlNode(yed.ExpressionDictionary, sb, 0);
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYed
     {
-
         public static YedFile GetYed(string xml, string inputFolder = "")
         {
             XmlDocument doc = new XmlDocument();
@@ -116,8 +105,5 @@ namespace CodeWalker.GameFiles
 
             return r;
         }
-
     }
-
-
 }

@@ -23,10 +23,6 @@
 //shamelessly stolen and mangled
 
 
-
-
-
-
 /*
 
 Regarding saving PSO files:
@@ -109,9 +105,6 @@ This is a table i made a while ago for the pso types btw
  */
 
 
-
-
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -119,8 +112,6 @@ using System.IO;
 
 namespace CodeWalker.GameFiles
 {
-
-
     public enum PsoSection : uint
     {
         PSIN = 0x5053494E,
@@ -130,7 +121,7 @@ namespace CodeWalker.GameFiles
         STRF = 0x53545246,
         STRS = 0x53545253,
         STRE = 0x53545245,
-        CHKS = 0x43484B53,
+        CHKS = 0x43484B53
     }
 
     public enum PsoDataType : byte
@@ -155,8 +146,9 @@ namespace CodeWalker.GameFiles
         Float3a = 0x14,
         Float4a = 0x15,
         HFloat = 0x1e,
-        Long = 0x20,
+        Long = 0x20
     }
+
     public static class PsoDataTypes
     {
         public static string GetCSharpTypeName(PsoDataType t)
@@ -191,7 +183,8 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoFile
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoFile
     {
         public PsoDataSection DataSection { get; set; }
         public PsoDataMapSection DataMapSection { get; set; }
@@ -206,13 +199,17 @@ namespace CodeWalker.GameFiles
         public void Load(byte[] data)
         {
             using (MemoryStream ms = new MemoryStream(data))
+            {
                 Load(ms);
+            }
         }
 
         public void Load(string fileName)
         {
             using (FileStream stream = new FileStream(fileName, FileMode.Open))
+            {
                 Load(stream);
+            }
         }
 
         public virtual void Load(Stream stream)
@@ -234,39 +231,37 @@ namespace CodeWalker.GameFiles
 
                 switch (ident)
                 {
-                    case PsoSection.PSIN:  //0x5053494E  "PSIN"  - ID / data section
+                    case PsoSection.PSIN: //0x5053494E  "PSIN"  - ID / data section
                         DataSection = new PsoDataSection();
                         DataSection.Read(sectionReader);
                         break;
-                    case PsoSection.PMAP:  //0x504D4150  "PMAP"  //data mapping
+                    case PsoSection.PMAP: //0x504D4150  "PMAP"  //data mapping
                         DataMapSection = new PsoDataMapSection();
                         DataMapSection.Read(sectionReader);
                         break;
-                    case PsoSection.PSCH:  //0x50534348  "PSCH"  //schema
+                    case PsoSection.PSCH: //0x50534348  "PSCH"  //schema
                         SchemaSection = new PsoSchemaSection();
                         SchemaSection.Read(sectionReader);
                         break;
-                    case PsoSection.STRF:  //0x53545246  "STRF"  //paths/STRINGS  (folder strings?)
+                    case PsoSection.STRF: //0x53545246  "STRF"  //paths/STRINGS  (folder strings?)
                         STRFSection = new PsoSTRFSection();
                         STRFSection.Read(sectionReader);
                         break;
-                    case PsoSection.STRS:  //0x53545253  "STRS"  //names/strings  (DES_)
+                    case PsoSection.STRS: //0x53545253  "STRS"  //names/strings  (DES_)
                         STRSSection = new PsoSTRSSection();
                         STRSSection.Read(sectionReader);
                         break;
-                    case PsoSection.STRE:  //0x53545245  "STRE"  //probably encrypted strings.....
+                    case PsoSection.STRE: //0x53545245  "STRE"  //probably encrypted strings.....
                         STRESection = new PsoSTRESection();
                         STRESection.Read(sectionReader);
                         break;
-                    case PsoSection.PSIG:  //0x50534947  "PSIG"  //signature?
+                    case PsoSection.PSIG: //0x50534947  "PSIG"  //signature?
                         PSIGSection = new PsoPSIGSection();
                         PSIGSection.Read(sectionReader);
                         break;
-                    case PsoSection.CHKS:  //0x43484B53  "CHKS"  //checksum?
+                    case PsoSection.CHKS: //0x43484B53  "CHKS"  //checksum?
                         CHKSSection = new PsoCHKSSection();
                         CHKSSection.Read(sectionReader);
-                        break;
-                    default:
                         break;
                 }
             }
@@ -288,7 +283,9 @@ namespace CodeWalker.GameFiles
         public void Save(string fileName)
         {
             using (FileStream stream = new FileStream(fileName, FileMode.Create))
+            {
                 Save(stream);
+            }
         }
 
         public virtual void Save(Stream stream)
@@ -305,9 +302,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
-
-
         public PsoDataMappingEntry GetBlock(int id)
         {
             if (DataMapSection == null) return null;
@@ -315,15 +309,9 @@ namespace CodeWalker.GameFiles
             PsoDataMappingEntry block = null;
             int ind = id - 1;
             PsoDataMappingEntry[] blocks = DataMapSection.Entries;
-            if ((ind >= 0) && (ind < blocks.Length))
-            {
-                block = blocks[ind];
-            }
+            if (ind >= 0 && ind < blocks.Length) block = blocks[ind];
             return block;
         }
-
-
-
 
 
         public static bool IsPSO(Stream stream)
@@ -334,8 +322,7 @@ namespace CodeWalker.GameFiles
             DataReader reader = new DataReader(stream, Endianess.BigEndian);
             uint identInt = reader.ReadUInt32();
             stream.Position = 0;
-            return ((identInt ) == 1347635534); //"PSIN"
-
+            return identInt == 1347635534; //"PSIN"
         }
 
         public static bool IsRBF(Stream stream)
@@ -343,12 +330,13 @@ namespace CodeWalker.GameFiles
             DataReader reader = new DataReader(stream, Endianess.BigEndian);
             uint identInt = reader.ReadUInt32();
             stream.Position = 0;
-            return ((identInt & 0xFFFFFF00) == 0x52424600);
+            return (identInt & 0xFFFFFF00) == 0x52424600;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoDataSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoDataSection
     {
         public uint Ident { get; set; } = 0x5053494E;
         public int Length { get; private set; }
@@ -369,18 +357,19 @@ namespace CodeWalker.GameFiles
             writer.Write(Data);
             writer.Position -= Length;
             writer.Write(Ident);
-            writer.Write((uint)(Length));
+            writer.Write((uint)Length);
             writer.Position += Length - 8;
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoDataMapSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoDataMapSection
     {
         public int Ident { get; set; } = 0x504D4150;
         public int Length { get; private set; }
@@ -425,19 +414,17 @@ namespace CodeWalker.GameFiles
             writer.Write(RootId);
             writer.Write(EntriesCount);
             writer.Write(Unknown_Eh);
-            foreach (PsoDataMappingEntry entry in Entries)
-            {
-                entry.Write(writer);
-            }
+            foreach (PsoDataMappingEntry entry in Entries) entry.Write(writer);
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + EntriesCount.ToString();
+            return Ident + ": " + EntriesCount;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoDataMappingEntry
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoDataMappingEntry
     {
         public MetaName NameHash { get; set; }
         public int Offset { get; set; }
@@ -462,12 +449,13 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return NameHash.ToString() + ": " + Offset.ToString() + ": " + Length.ToString();
+            return NameHash + ": " + Offset + ": " + Length;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoSchemaSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoSchemaSection
     {
         public int Ident { get; private set; } = 0x50534348;
         public int Length { get; set; }
@@ -512,13 +500,14 @@ namespace CodeWalker.GameFiles
                     Entries[i] = entry;
                 }
                 else
+                {
                     throw new Exception("unknown type!");
+                }
             }
         }
 
         public void Write(DataWriter writer)
         {
-
             MemoryStream entriesStream = new MemoryStream();
             DataWriter entriesWriter = new DataWriter(entriesStream, Endianess.BigEndian);
             for (int i = 0; i < Entries.Length; i++)
@@ -528,18 +517,15 @@ namespace CodeWalker.GameFiles
             }
 
 
-
             MemoryStream indexStream = new MemoryStream();
             DataWriter indexWriter = new DataWriter(indexStream, Endianess.BigEndian);
             foreach (PsoElementIndexInfo entry in EntriesIdx)
                 entry.Write(indexWriter);
 
 
-
-
             writer.Write(Ident);
             writer.Write((int)(12 + entriesStream.Length + indexStream.Length));
-            writer.Write((uint)(Entries.Length));
+            writer.Write((uint)Entries.Length);
 
             // write entries index data
             byte[] buf1 = new byte[indexStream.Length];
@@ -552,17 +538,16 @@ namespace CodeWalker.GameFiles
             entriesStream.Position = 0;
             entriesStream.Read(buf2, 0, buf2.Length);
             writer.Write(buf2);
-
-
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Count.ToString();
+            return Ident + ": " + Count;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoElementIndexInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoElementIndexInfo
     {
         public MetaName NameHash { get; set; }
         public int Offset { get; set; }
@@ -581,11 +566,12 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return NameHash.ToString() + ": " + Offset.ToString();
+            return NameHash + ": " + Offset;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public abstract class PsoElementInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public abstract class PsoElementInfo
     {
         public PsoElementIndexInfo IndexInfo { get; set; }
 
@@ -594,19 +580,15 @@ namespace CodeWalker.GameFiles
         public abstract void Write(DataWriter writer);
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoStructureInfo : PsoElementInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoStructureInfo : PsoElementInfo
     {
-        public byte Type { get; set; }
-        public short EntriesCount { get; private set; }
-        public byte Unk { get; set; }
-        public int StructureLength { get; set; }
-        public uint Unk_Ch { get; set; }
-        public PsoStructureEntryInfo[] Entries { get; set; }
-
-
         public PsoStructureInfo()
-        { }
-        public PsoStructureInfo(MetaName nameHash, byte type, byte unk, int length, params PsoStructureEntryInfo[] entries)
+        {
+        }
+
+        public PsoStructureInfo(MetaName nameHash, byte type, byte unk, int length,
+            params PsoStructureEntryInfo[] entries)
         {
             IndexInfo = new PsoElementIndexInfo();
             IndexInfo.NameHash = nameHash;
@@ -620,6 +602,13 @@ namespace CodeWalker.GameFiles
             Entries = entries;
         }
 
+        public byte Type { get; set; }
+        public short EntriesCount { get; private set; }
+        public byte Unk { get; set; }
+        public int StructureLength { get; set; }
+        public uint Unk_Ch { get; set; }
+        public PsoStructureEntryInfo[] Entries { get; set; }
+
         public override void Read(DataReader reader)
         {
             uint x = reader.ReadUInt32();
@@ -630,7 +619,8 @@ namespace CodeWalker.GameFiles
             Unk_Ch = reader.ReadUInt32();
 
             if (Unk_Ch != 0)
-            { }
+            {
+            }
 
             Entries = new PsoStructureEntryInfo[EntriesCount];
             for (int i = 0; i < EntriesCount; i++)
@@ -651,50 +641,38 @@ namespace CodeWalker.GameFiles
             writer.Write(StructureLength);
             writer.Write(Unk_Ch);
 
-            foreach (PsoStructureEntryInfo entry in Entries)
-            {
-                entry.Write(writer);
-            }
+            foreach (PsoStructureEntryInfo entry in Entries) entry.Write(writer);
         }
 
         public override string ToString()
         {
-            return IndexInfo.ToString() + " - " + Type.ToString() + ": " + EntriesCount.ToString();
+            return IndexInfo + " - " + Type + ": " + EntriesCount;
         }
 
         public PsoStructureEntryInfo FindEntry(MetaName name)
         {
             if (Entries != null)
-            {
                 foreach (PsoStructureEntryInfo entry in Entries)
-                {
-                    if (entry.EntryNameHash == name) return entry;
-                }
-            }
+                    if (entry.EntryNameHash == name)
+                        return entry;
+
             return null;
         }
+
         public PsoStructureEntryInfo GetEntry(int id)
         {
-            if ((Entries != null) && (id >= 0) && (id < Entries.Length))
-            {
-                return Entries[id];
-            }
+            if (Entries != null && id >= 0 && id < Entries.Length) return Entries[id];
             return null;
         }
-
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoStructureEntryInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoStructureEntryInfo
     {
-        public MetaName EntryNameHash { get; set; }
-        public PsoDataType Type { get; set; }
-        public byte Unk_5h { get; set; } //0 = default, 3 = pointer array?
-        public ushort DataOffset { get; set; }
-        public uint ReferenceKey { get; set; } // when array -> entry index with type
-
-
         public PsoStructureEntryInfo()
-        { }
+        {
+        }
+
         public PsoStructureEntryInfo(MetaName nameHash, PsoDataType type, ushort offset, byte unk, MetaName refKey)
         {
             EntryNameHash = nameHash;
@@ -703,6 +681,12 @@ namespace CodeWalker.GameFiles
             DataOffset = offset;
             ReferenceKey = (uint)refKey;
         }
+
+        public MetaName EntryNameHash { get; set; }
+        public PsoDataType Type { get; set; }
+        public byte Unk_5h { get; set; } //0 = default, 3 = pointer array?
+        public ushort DataOffset { get; set; }
+        public uint ReferenceKey { get; set; } // when array -> entry index with type
 
         public void Read(DataReader reader)
         {
@@ -724,23 +708,19 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            if(ReferenceKey!=0)
-            {
-                return EntryNameHash.ToString() + ": " + Type.ToString() + ": " + DataOffset.ToString() + ": " + ((MetaName)ReferenceKey).ToString();
-            }
-            return EntryNameHash.ToString() + ": " + Type.ToString() + ": " + DataOffset.ToString();
+            if (ReferenceKey != 0)
+                return EntryNameHash + ": " + Type + ": " + DataOffset + ": " + ((MetaName)ReferenceKey);
+            return EntryNameHash + ": " + Type + ": " + DataOffset;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoEnumInfo : PsoElementInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoEnumInfo : PsoElementInfo
     {
-        public byte Type { get; private set; } = 1;
-        public int EntriesCount { get; private set; }
-        public PsoEnumEntryInfo[] Entries { get; set; }
-
-
         public PsoEnumInfo()
-        { }
+        {
+        }
+
         public PsoEnumInfo(MetaName nameHash, byte type, params PsoEnumEntryInfo[] entries)
         {
             IndexInfo = new PsoElementIndexInfo();
@@ -750,6 +730,10 @@ namespace CodeWalker.GameFiles
             EntriesCount = entries?.Length ?? 0;
             Entries = entries;
         }
+
+        public byte Type { get; private set; } = 1;
+        public int EntriesCount { get; private set; }
+        public PsoEnumEntryInfo[] Entries { get; set; }
 
         public override void Read(DataReader reader)
         {
@@ -775,10 +759,7 @@ namespace CodeWalker.GameFiles
             uint typeAndEntriesCount = (uint)(Type << 24) | (uint)EntriesCount;
             writer.Write(typeAndEntriesCount);
 
-            foreach (PsoEnumEntryInfo entry in Entries)
-            {
-                entry.Write(writer);
-            }
+            foreach (PsoEnumEntryInfo entry in Entries) entry.Write(writer);
         }
 
         public PsoEnumEntryInfo FindEntry(int val)
@@ -787,11 +768,9 @@ namespace CodeWalker.GameFiles
             for (int i = 0; i < Entries.Length; i++)
             {
                 PsoEnumEntryInfo entry = Entries[i];
-                if (entry.EntryKey == val)
-                {
-                    return entry;
-                }
+                if (entry.EntryKey == val) return entry;
             }
+
             return null;
         }
 
@@ -801,35 +780,34 @@ namespace CodeWalker.GameFiles
             for (int i = 0; i < Entries.Length; i++)
             {
                 PsoEnumEntryInfo entry = Entries[i];
-                if (entry.EntryNameHash == name)
-                {
-                    return entry;
-                }
+                if (entry.EntryNameHash == name) return entry;
             }
+
             return null;
         }
 
 
-
         public override string ToString()
         {
-            return IndexInfo.ToString() + " - " + Type.ToString() + ": " + EntriesCount.ToString();
+            return IndexInfo + " - " + Type + ": " + EntriesCount;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoEnumEntryInfo
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoEnumEntryInfo
     {
-        public MetaName EntryNameHash { get; set; }
-        public int EntryKey { get; set; }
-
-
         public PsoEnumEntryInfo()
-        { }
+        {
+        }
+
         public PsoEnumEntryInfo(MetaName nameHash, int key)
         {
             EntryNameHash = nameHash;
             EntryKey = key;
         }
+
+        public MetaName EntryNameHash { get; set; }
+        public int EntryKey { get; set; }
 
         public void Read(DataReader reader)
         {
@@ -845,12 +823,13 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return EntryNameHash.ToString() + ": " + EntryKey.ToString();
+            return EntryNameHash + ": " + EntryKey;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoSTRFSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoSTRFSection
     {
         public int Ident { get; private set; } = 0x53545246;
         public int Length { get; set; }
@@ -861,15 +840,13 @@ namespace CodeWalker.GameFiles
             Ident = reader.ReadInt32();
             Length = reader.ReadInt32();
             List<string> strs = new List<string>();
-            while (reader.Position < reader.Length)
-            {
-                strs.Add(reader.ReadString());
-            }
+            while (reader.Position < reader.Length) strs.Add(reader.ReadString());
             foreach (string str in strs)
             {
                 JenkIndex.Ensure(str);
                 JenkIndex.Ensure(str.ToLowerInvariant());
             }
+
             Strings = strs.ToArray();
         }
 
@@ -877,10 +854,7 @@ namespace CodeWalker.GameFiles
         {
             MemoryStream strStream = new MemoryStream();
             DataWriter strWriter = new DataWriter(strStream, Endianess.BigEndian);
-            foreach (string str in Strings)
-            {
-                strWriter.Write(str);
-            }
+            foreach (string str in Strings) strWriter.Write(str);
 
             Length = (int)strStream.Length + 8;
 
@@ -894,16 +868,16 @@ namespace CodeWalker.GameFiles
                 strStream.Read(buf1, 0, buf1.Length);
                 writer.Write(buf1);
             }
-
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoSTRSSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoSTRSSection
     {
         public int Ident { get; private set; } = 0x53545253;
         public int Length { get; set; }
@@ -916,15 +890,13 @@ namespace CodeWalker.GameFiles
             Length = reader.ReadInt32();
 
             List<string> strs = new List<string>();
-            while (reader.Position < reader.Length)
-            {
-                strs.Add(reader.ReadString());
-            }
+            while (reader.Position < reader.Length) strs.Add(reader.ReadString());
             foreach (string str in strs)
             {
                 JenkIndex.Ensure(str);
                 JenkIndex.Ensure(str.ToLowerInvariant());
             }
+
             Strings = strs.ToArray();
         }
 
@@ -932,10 +904,7 @@ namespace CodeWalker.GameFiles
         {
             MemoryStream strStream = new MemoryStream();
             DataWriter strWriter = new DataWriter(strStream, Endianess.BigEndian);
-            foreach (string str in Strings)
-            {
-                strWriter.Write(str);
-            }
+            foreach (string str in Strings) strWriter.Write(str);
 
             Length = (int)strStream.Length + 8;
 
@@ -949,16 +918,16 @@ namespace CodeWalker.GameFiles
                 strStream.Read(buf1, 0, buf1.Length);
                 writer.Write(buf1);
             }
-
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoSTRESection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoSTRESection
     {
         public int Ident { get; private set; } = 0x53545245;
         public int Length { get; set; }
@@ -972,39 +941,30 @@ namespace CodeWalker.GameFiles
             Ident = reader.ReadInt32();
             Length = reader.ReadInt32();
 
-            if (Length > 8)
-            {
-                Data = reader.ReadBytes(Length - 8);
-
-                //Decr1 = GTACrypto.DecryptAES(Data);
-                //Decr2 = GTACrypto.DecryptNG(Data, )
-
-                //TODO: someone plz figure out that encryption
-            }
+            if (Length > 8) Data = reader.ReadBytes(Length - 8);
+            //Decr1 = GTACrypto.DecryptAES(Data);
+            //Decr2 = GTACrypto.DecryptNG(Data, )
+            //TODO: someone plz figure out that encryption
         }
 
         public void Write(DataWriter writer)
         {
-
-            Length = (Data?.Length??0) + 8;
+            Length = (Data?.Length ?? 0) + 8;
 
             writer.Write(Ident);
             writer.Write(Length);
 
-            if (Length > 8)
-            {
-                writer.Write(Data);
-            }
-
+            if (Length > 8) writer.Write(Data);
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoPSIGSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoPSIGSection
     {
         public int Ident { get; private set; } = 0x50534947;
         public int Length { get; set; }
@@ -1015,10 +975,7 @@ namespace CodeWalker.GameFiles
             Ident = reader.ReadInt32();
             Length = reader.ReadInt32();
 
-            if (Length > 8)
-            {
-                Data = reader.ReadBytes(Length - 8);
-            }
+            if (Length > 8) Data = reader.ReadBytes(Length - 8);
         }
 
         public void Write(DataWriter writer)
@@ -1028,34 +985,30 @@ namespace CodeWalker.GameFiles
             writer.Write(Ident);
             writer.Write(Length);
 
-            if (Length > 8)
-            {
-                writer.Write(Data);
-            }
-
+            if (Length > 8) writer.Write(Data);
         }
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class PsoCHKSSection
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class PsoCHKSSection
     {
         public int Ident { get; private set; } = 0x43484B53;
         public int Length { get; set; }
         public uint FileSize { get; set; }
         public uint Checksum { get; set; }
-        public uint Unk0 { get; set; } = 0x79707070;  // "yppp"
+        public uint Unk0 { get; set; } = 0x79707070; // "yppp"
 
         public void Read(DataReader reader)
         {
             Ident = reader.ReadInt32();
             Length = reader.ReadInt32();
 
-            if (Length != 20)
-            { return; }
+            if (Length != 20) return;
 
             FileSize = reader.ReadUInt32();
             Checksum = reader.ReadUInt32();
@@ -1075,10 +1028,7 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return Ident.ToString() + ": " + Length.ToString();
+            return Ident + ": " + Length;
         }
     }
-
-
-
 }

@@ -1,32 +1,33 @@
 ﻿using System;
-using SharpDX;
 using System.IO;
 using System.Xml;
-
+using SharpDX;
 using TC = System.ComponentModel.TypeConverterAttribute;
 using EXP = System.ComponentModel.ExpandableObjectConverter;
 
 namespace CodeWalker.GameFiles
 {
-    [TC(typeof(EXP))] public class CarColsFile : GameFile, PackedFile
+    [TC(typeof(EXP))]
+    public class CarColsFile : GameFile, PackedFile
     {
+        public CarColsFile() : base(null, GameFileType.CarCols)
+        {
+        }
+
+        public CarColsFile(RpfFileEntry entry) : base(entry, GameFileType.CarCols)
+        {
+        }
+
         public PsoFile Pso { get; set; }
         public string Xml { get; set; }
 
         public CVehicleModelInfoVarGlobal VehicleModelInfo { get; set; }
-
-        public CarColsFile() : base(null, GameFileType.CarCols)
-        { }
-        public CarColsFile(RpfFileEntry entry) : base(entry, GameFileType.CarCols)
-        {
-        }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
             RpfFileEntry = entry;
             Name = entry.Name;
             FilePath = Name;
-
 
 
             //can be PSO .ymt or XML .meta
@@ -44,7 +45,6 @@ namespace CodeWalker.GameFiles
 
             XmlDocument xdoc = new XmlDocument();
             if (!string.IsNullOrEmpty(Xml))
-            {
                 try
                 {
                     xdoc.LoadXml(Xml);
@@ -53,41 +53,21 @@ namespace CodeWalker.GameFiles
                 {
                     string msg = ex.Message;
                 }
-            }
-            else
-            { }
 
 
-            if (xdoc.DocumentElement != null)
-            {
-                VehicleModelInfo = new CVehicleModelInfoVarGlobal(xdoc.DocumentElement);
-            }
-
-
+            if (xdoc.DocumentElement != null) VehicleModelInfo = new CVehicleModelInfoVarGlobal(xdoc.DocumentElement);
 
 
             Loaded = true;
         }
-
     }
 
 
-    [TC(typeof(EXP))] public class CVehicleModelInfoVarGlobal
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVarGlobal
     {
-        public CVehicleModelInfoVarGlobal_465922034 VehiclePlates { get; set; }
-        public CVehicleModelColor[] Colors { get; set; }
-        public CVehicleMetallicSetting[] MetallicSettings { get; set; }
-        public CVehicleWindowColor[] WindowColors { get; set; }
-        public vehicleLightSettings[] Lights { get; set; }
-        public sirenSettings[] Sirens { get; set; }
-        public CVehicleKit[] Kits { get; set; }
-        public CVehicleWheel[][] Wheels { get; set; }
-        public CVehicleModelInfoVarGlobal_3062246906 GlobalVariationData { get; set; }
-        public CVehicleXenonLightColor[] XenonLightColors { get; set; }
-
         public CVehicleModelInfoVarGlobal(XmlNode node)
         {
-
             //for carcols wheels:
             //< Item /> < !--VWT_SPORT-- >
             //< Item /> < !--VWT_MUSCLE-- >
@@ -102,10 +82,7 @@ namespace CodeWalker.GameFiles
 
             XmlNode cnode;
             cnode = node.SelectSingleNode("VehiclePlates");
-            if (cnode != null)
-            {
-                VehiclePlates = new CVehicleModelInfoVarGlobal_465922034(cnode);
-            }
+            if (cnode != null) VehiclePlates = new CVehicleModelInfoVarGlobal_465922034(cnode);
             cnode = node.SelectSingleNode("Colors");
             if (cnode != null)
             {
@@ -113,12 +90,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     Colors = new CVehicleModelColor[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        Colors[i] = new CVehicleModelColor(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) Colors[i] = new CVehicleModelColor(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("MetallicSettings");
             if (cnode != null)
             {
@@ -126,12 +101,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     MetallicSettings = new CVehicleMetallicSetting[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        MetallicSettings[i] = new CVehicleMetallicSetting(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) MetallicSettings[i] = new CVehicleMetallicSetting(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("WindowColors");
             if (cnode != null)
             {
@@ -139,12 +112,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     WindowColors = new CVehicleWindowColor[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        WindowColors[i] = new CVehicleWindowColor(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) WindowColors[i] = new CVehicleWindowColor(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("Lights");
             if (cnode != null)
             {
@@ -152,12 +123,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     Lights = new vehicleLightSettings[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        Lights[i] = new vehicleLightSettings(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) Lights[i] = new vehicleLightSettings(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("Sirens");
             if (cnode != null)
             {
@@ -165,12 +134,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     Sirens = new sirenSettings[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        Sirens[i] = new sirenSettings(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) Sirens[i] = new sirenSettings(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("Kits");
             if (cnode != null)
             {
@@ -178,12 +145,10 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     Kits = new CVehicleKit[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        Kits[i] = new CVehicleKit(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) Kits[i] = new CVehicleKit(items[i]);
                 }
             }
+
             cnode = node.SelectSingleNode("Wheels");
             if (cnode != null)
             {
@@ -198,20 +163,15 @@ namespace CodeWalker.GameFiles
                         if (items2.Count > 0)
                         {
                             CVehicleWheel[] wheelarr = new CVehicleWheel[items2.Count];
-                            for (int j = 0; j < items2.Count; j++)
-                            {
-                                wheelarr[j] = new CVehicleWheel(items2[j]);
-                            }
+                            for (int j = 0; j < items2.Count; j++) wheelarr[j] = new CVehicleWheel(items2[j]);
                             Wheels[i] = wheelarr;
                         }
                     }
                 }
             }
+
             cnode = node.SelectSingleNode("GlobalVariationData");
-            if (cnode != null)
-            {
-                GlobalVariationData = new CVehicleModelInfoVarGlobal_3062246906(cnode);
-            }
+            if (cnode != null) GlobalVariationData = new CVehicleModelInfoVarGlobal_3062246906(cnode);
             cnode = node.SelectSingleNode("XenonLightColors");
             if (cnode != null)
             {
@@ -219,25 +179,26 @@ namespace CodeWalker.GameFiles
                 if (items.Count > 0)
                 {
                     XenonLightColors = new CVehicleXenonLightColor[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        XenonLightColors[i] = new CVehicleXenonLightColor(items[i]);
-                    }
+                    for (int i = 0; i < items.Count; i++) XenonLightColors[i] = new CVehicleXenonLightColor(items[i]);
                 }
             }
-
         }
-    }
-    [TC(typeof(EXP))] public class CVehicleModelInfoVarGlobal_465922034 //VehiclePlates
-    {
-        public CVehicleModelInfoVarGlobal_3027500557[] Textures { get; set; }
-        public int DefaultTexureIndex { get; set; }
-        public byte NumericOffset { get; set; }
-        public byte AlphabeticOffset { get; set; }
-        public byte SpaceOffset { get; set; }
-        public byte RandomCharOffset { get; set; }
-        public byte NumRandomChar { get; set; }
 
+        public CVehicleModelInfoVarGlobal_465922034 VehiclePlates { get; set; }
+        public CVehicleModelColor[] Colors { get; set; }
+        public CVehicleMetallicSetting[] MetallicSettings { get; set; }
+        public CVehicleWindowColor[] WindowColors { get; set; }
+        public vehicleLightSettings[] Lights { get; set; }
+        public sirenSettings[] Sirens { get; set; }
+        public CVehicleKit[] Kits { get; set; }
+        public CVehicleWheel[][] Wheels { get; set; }
+        public CVehicleModelInfoVarGlobal_3062246906 GlobalVariationData { get; set; }
+        public CVehicleXenonLightColor[] XenonLightColors { get; set; }
+    }
+
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVarGlobal_465922034 //VehiclePlates
+    {
         public CVehicleModelInfoVarGlobal_465922034(XmlNode node)
         {
             XmlNode cnode = node.SelectSingleNode("Textures");
@@ -248,26 +209,48 @@ namespace CodeWalker.GameFiles
                 {
                     Textures = new CVehicleModelInfoVarGlobal_3027500557[items.Count];
                     for (int i = 0; i < items.Count; i++)
-                    {
                         Textures[i] = new CVehicleModelInfoVarGlobal_3027500557(items[i]);
-                    }
                 }
             }
-            DefaultTexureIndex = Xml.GetChildIntAttribute(node, "DefaultTextureIndex", "value");
-            NumericOffset = (byte)Xml.GetChildIntAttribute(node, "NumericOffset", "value");
-            AlphabeticOffset = (byte)Xml.GetChildIntAttribute(node, "AlphabeticOffset", "value");
-            SpaceOffset = (byte)Xml.GetChildIntAttribute(node, "SpaceOffset", "value");
-            RandomCharOffset = (byte)Xml.GetChildIntAttribute(node, "RandomCharOffset", "value");
-            NumRandomChar = (byte)Xml.GetChildIntAttribute(node, "NumRandomChar", "value");
+
+            DefaultTexureIndex = Xml.GetChildIntAttribute(node, "DefaultTextureIndex");
+            NumericOffset = (byte)Xml.GetChildIntAttribute(node, "NumericOffset");
+            AlphabeticOffset = (byte)Xml.GetChildIntAttribute(node, "AlphabeticOffset");
+            SpaceOffset = (byte)Xml.GetChildIntAttribute(node, "SpaceOffset");
+            RandomCharOffset = (byte)Xml.GetChildIntAttribute(node, "RandomCharOffset");
+            NumRandomChar = (byte)Xml.GetChildIntAttribute(node, "NumRandomChar");
         }
+
+        public CVehicleModelInfoVarGlobal_3027500557[] Textures { get; set; }
+        public int DefaultTexureIndex { get; set; }
+        public byte NumericOffset { get; set; }
+        public byte AlphabeticOffset { get; set; }
+        public byte SpaceOffset { get; set; }
+        public byte RandomCharOffset { get; set; }
+        public byte NumRandomChar { get; set; }
 
         public override string ToString()
         {
-            return (Textures?.Length ?? 0).ToString() + " Textures";
+            return (Textures?.Length ?? 0) + " Textures";
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModelInfoVarGlobal_3027500557 //VehiclePlates Texture
+
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVarGlobal_3027500557 //VehiclePlates Texture
     {
+        public CVehicleModelInfoVarGlobal_3027500557(XmlNode node)
+        {
+            TextureSetName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "TextureSetName"));
+            DiffuseMapName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "DiffuseMapName"));
+            NormalMapName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "NormalMapName"));
+            FontExtents = Xml.GetChildVector4Attributes(node, "FontExtents");
+            MaxLettersOnPlate = Xml.GetChildVector2Attributes(node, "MaxLettersOnPlate");
+            FontColor = Xml.GetChildUIntAttribute(node, "FontColor");
+            FontOutlineColor = Xml.GetChildUIntAttribute(node, "FontOutlineColor");
+            IsFontOutlineEnabled = Xml.GetChildBoolAttribute(node, "IsFontOutlineEnabled");
+            FontOutlineMinMaxDepth = Xml.GetChildVector2Attributes(node, "FontOutlineMinMaxDepth");
+        }
+
         public MetaHash TextureSetName { get; set; }
         public MetaHash DiffuseMapName { get; set; }
         public MetaHash NormalMapName { get; set; }
@@ -278,26 +261,26 @@ namespace CodeWalker.GameFiles
         public bool IsFontOutlineEnabled { get; set; }
         public Vector2 FontOutlineMinMaxDepth { get; set; }
 
-        public CVehicleModelInfoVarGlobal_3027500557(XmlNode node)
-        {
-            TextureSetName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "TextureSetName"));
-            DiffuseMapName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "DiffuseMapName"));
-            NormalMapName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "NormalMapName"));
-            FontExtents = Xml.GetChildVector4Attributes(node, "FontExtents");
-            MaxLettersOnPlate = Xml.GetChildVector2Attributes(node, "MaxLettersOnPlate");
-            FontColor = Xml.GetChildUIntAttribute(node, "FontColor", "value");
-            FontOutlineColor = Xml.GetChildUIntAttribute(node, "FontOutlineColor", "value");
-            IsFontOutlineEnabled = Xml.GetChildBoolAttribute(node, "IsFontOutlineEnabled", "value");
-            FontOutlineMinMaxDepth = Xml.GetChildVector2Attributes(node, "FontOutlineMinMaxDepth");
-        }
-
         public override string ToString()
         {
-            return TextureSetName.ToString() + ", " + DiffuseMapName.ToString() + ", " + NormalMapName.ToString();
+            return TextureSetName + ", " + DiffuseMapName + ", " + NormalMapName;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModelColor
+
+    [TC(typeof(EXP))]
+    public class CVehicleModelColor
     {
+        public CVehicleModelColor(XmlNode node)
+        {
+            color = Xml.GetChildUIntAttribute(node, "color");
+            metallicID = Xml.GetChildEnumInnerText<CVehicleModelColor_360458334>(node, "metallicID");
+            audioColor = Xml.GetChildEnumInnerText<CVehicleModelColor_544262540>(node, "audioColor");
+            audioPrefix = Xml.GetChildEnumInnerText<CVehicleModelColor_2065815796>(node, "audioPrefix");
+            audioColorHash = (uint)Xml.GetChildIntAttribute(node, "audioColorHash");
+            audioPrefixHash = (uint)Xml.GetChildIntAttribute(node, "audioPrefixHash");
+            colorName = Xml.GetChildInnerText(node, "colorName");
+        }
+
         public uint color { get; set; }
         public CVehicleModelColor_360458334 metallicID { get; set; }
         public CVehicleModelColor_544262540 audioColor { get; set; }
@@ -306,56 +289,80 @@ namespace CodeWalker.GameFiles
         public MetaHash audioPrefixHash { get; set; }
         public string colorName { get; set; }
 
-        public CVehicleModelColor(XmlNode node)
-        {
-            color = Xml.GetChildUIntAttribute(node, "color", "value");
-            metallicID = Xml.GetChildEnumInnerText<CVehicleModelColor_360458334>(node, "metallicID");
-            audioColor = Xml.GetChildEnumInnerText<CVehicleModelColor_544262540>(node, "audioColor");
-            audioPrefix = Xml.GetChildEnumInnerText<CVehicleModelColor_2065815796>(node, "audioPrefix");
-            audioColorHash = (uint)Xml.GetChildIntAttribute(node, "audioColorHash", "value");
-            audioPrefixHash = (uint)Xml.GetChildIntAttribute(node, "audioPrefixHash", "value");
-            colorName = Xml.GetChildInnerText(node, "colorName");
-        }
-
         public override string ToString()
         {
             return colorName;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleMetallicSetting
+
+    [TC(typeof(EXP))]
+    public class CVehicleMetallicSetting
     {
+        public CVehicleMetallicSetting(XmlNode node)
+        {
+            specInt = Xml.GetChildFloatAttribute(node, "specInt");
+            specFalloff = Xml.GetChildFloatAttribute(node, "specFalloff");
+            specFresnel = Xml.GetChildFloatAttribute(node, "specFresnel");
+        }
+
         public float specInt { get; set; }
         public float specFalloff { get; set; }
         public float specFresnel { get; set; }
 
-        public CVehicleMetallicSetting(XmlNode node)
-        {
-            specInt = Xml.GetChildFloatAttribute(node, "specInt", "value");
-            specFalloff = Xml.GetChildFloatAttribute(node, "specFalloff", "value");
-            specFresnel = Xml.GetChildFloatAttribute(node, "specFresnel", "value");
-        }
         public override string ToString()
         {
-            return specInt.ToString() + ", " + specFalloff.ToString() + ", " + specFresnel.ToString();
+            return specInt + ", " + specFalloff + ", " + specFresnel;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleWindowColor
+
+    [TC(typeof(EXP))]
+    public class CVehicleWindowColor
     {
+        public CVehicleWindowColor(XmlNode node)
+        {
+            color = Xml.GetChildUIntAttribute(node, "color");
+            name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
+        }
+
         public uint color { get; set; }
         public MetaHash name { get; set; }
 
-        public CVehicleWindowColor(XmlNode node)
-        {
-            color = Xml.GetChildUIntAttribute(node, "color", "value");
-            name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
-        }
         public override string ToString()
         {
             return name.ToString();
         }
     }
-    [TC(typeof(EXP))] public class vehicleLightSettings
+
+    [TC(typeof(EXP))]
+    public class vehicleLightSettings
     {
+        public vehicleLightSettings(XmlNode node)
+        {
+            id = (byte)Xml.GetChildIntAttribute(node, "id");
+            XmlNode cnode;
+            cnode = node.SelectSingleNode("indicator");
+            if (cnode != null) indicator = new vehicleLight(cnode);
+            cnode = node.SelectSingleNode("rearIndicatorCorona");
+            if (cnode != null) rearIndicatorCorona = new vehicleCorona(cnode);
+            cnode = node.SelectSingleNode("frontIndicatorCorona");
+            if (cnode != null) frontIndicatorCorona = new vehicleCorona(cnode);
+            cnode = node.SelectSingleNode("tailLight");
+            if (cnode != null) tailLight = new vehicleLight(cnode);
+            cnode = node.SelectSingleNode("tailLightCorona");
+            if (cnode != null) tailLightCorona = new vehicleCorona(cnode);
+            cnode = node.SelectSingleNode("tailLightMiddleCorona");
+            if (cnode != null) tailLightMiddleCorona = new vehicleCorona(cnode);
+            cnode = node.SelectSingleNode("headLight");
+            if (cnode != null) headLight = new vehicleLight(cnode);
+            cnode = node.SelectSingleNode("headLightCorona");
+            if (cnode != null) headLightCorona = new vehicleCorona(cnode);
+            cnode = node.SelectSingleNode("reversingLight");
+            if (cnode != null) reversingLight = new vehicleLight(cnode);
+            cnode = node.SelectSingleNode("reversingLightCorona");
+            if (cnode != null) reversingLightCorona = new vehicleCorona(cnode);
+            name = Xml.GetChildInnerText(node, "name");
+        }
+
         public byte id { get; set; }
         public vehicleLight indicator { get; set; }
         public vehicleCorona rearIndicatorCorona { get; set; }
@@ -369,69 +376,28 @@ namespace CodeWalker.GameFiles
         public vehicleCorona reversingLightCorona { get; set; }
         public string name { get; set; }
 
-        public vehicleLightSettings(XmlNode node)
-        {
-            id = (byte)Xml.GetChildIntAttribute(node, "id", "value");
-            XmlNode cnode;
-            cnode = node.SelectSingleNode("indicator");
-            if (cnode != null)
-            {
-                indicator = new vehicleLight(cnode);
-            }
-            cnode = node.SelectSingleNode("rearIndicatorCorona");
-            if (cnode != null)
-            {
-                rearIndicatorCorona = new vehicleCorona(cnode);
-            }
-            cnode = node.SelectSingleNode("frontIndicatorCorona");
-            if (cnode != null)
-            {
-                frontIndicatorCorona = new vehicleCorona(cnode);
-            }
-            cnode = node.SelectSingleNode("tailLight");
-            if (cnode != null)
-            {
-                tailLight = new vehicleLight(cnode);
-            }
-            cnode = node.SelectSingleNode("tailLightCorona");
-            if (cnode != null)
-            {
-                tailLightCorona = new vehicleCorona(cnode);
-            }
-            cnode = node.SelectSingleNode("tailLightMiddleCorona");
-            if (cnode != null)
-            {
-                tailLightMiddleCorona = new vehicleCorona(cnode);
-            }
-            cnode = node.SelectSingleNode("headLight");
-            if (cnode != null)
-            {
-                headLight = new vehicleLight(cnode);
-            }
-            cnode = node.SelectSingleNode("headLightCorona");
-            if (cnode != null)
-            {
-                headLightCorona = new vehicleCorona(cnode);
-            }
-            cnode = node.SelectSingleNode("reversingLight");
-            if (cnode != null)
-            {
-                reversingLight = new vehicleLight(cnode);
-            }
-            cnode = node.SelectSingleNode("reversingLightCorona");
-            if (cnode != null)
-            {
-                reversingLightCorona = new vehicleCorona(cnode);
-            }
-            name = Xml.GetChildInnerText(node, "name");
-        }
         public override string ToString()
         {
-            return id.ToString() + ": " + name;
+            return id + ": " + name;
         }
     }
-    [TC(typeof(EXP))] public class vehicleLight
+
+    [TC(typeof(EXP))]
+    public class vehicleLight
     {
+        public vehicleLight(XmlNode node)
+        {
+            intensity = Xml.GetChildFloatAttribute(node, "intensity");
+            falloffMax = Xml.GetChildFloatAttribute(node, "falloffMax");
+            falloffExponent = Xml.GetChildFloatAttribute(node, "falloffExponent");
+            innerConeAngle = Xml.GetChildFloatAttribute(node, "innerConeAngle");
+            outerConeAngle = Xml.GetChildFloatAttribute(node, "outerConeAngle");
+            emmissiveBoost = Xml.GetChildBoolAttribute(node, "emmissiveBoost");
+            color = Xml.GetChildUIntAttribute(node, "color");
+            textureName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "textureName"));
+            mirrorTexture = Xml.GetChildBoolAttribute(node, "mirrorTexture");
+        }
+
         public float intensity { get; set; }
         public float falloffMax { get; set; }
         public float falloffExponent { get; set; }
@@ -441,22 +407,28 @@ namespace CodeWalker.GameFiles
         public uint color { get; set; }
         public MetaHash textureName { get; set; }
         public bool mirrorTexture { get; set; }
-
-        public vehicleLight(XmlNode node)
-        {
-            intensity = Xml.GetChildFloatAttribute(node, "intensity", "value");
-            falloffMax = Xml.GetChildFloatAttribute(node, "falloffMax", "value");
-            falloffExponent = Xml.GetChildFloatAttribute(node, "falloffExponent", "value");
-            innerConeAngle = Xml.GetChildFloatAttribute(node, "innerConeAngle", "value");
-            outerConeAngle = Xml.GetChildFloatAttribute(node, "outerConeAngle", "value");
-            emmissiveBoost = Xml.GetChildBoolAttribute(node, "emmissiveBoost", "value");
-            color = Xml.GetChildUIntAttribute(node, "color", "value");
-            textureName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "textureName"));
-            mirrorTexture = Xml.GetChildBoolAttribute(node, "mirrorTexture", "value");
-        }
     }
-    [TC(typeof(EXP))] public class vehicleCorona
+
+    [TC(typeof(EXP))]
+    public class vehicleCorona
     {
+        public vehicleCorona(XmlNode node)
+        {
+            size = Xml.GetChildFloatAttribute(node, "size");
+            size_far = Xml.GetChildFloatAttribute(node, "size_far");
+            intensity = Xml.GetChildFloatAttribute(node, "intensity");
+            intensity_far = Xml.GetChildFloatAttribute(node, "intensity_far");
+            color = Xml.GetChildUIntAttribute(node, "color");
+            numCoronas = (byte)Xml.GetChildIntAttribute(node, "numCoronas");
+            distBetweenCoronas = (byte)Xml.GetChildIntAttribute(node, "distBetweenCoronas");
+            distBetweenCoronas_far = (byte)Xml.GetChildIntAttribute(node, "distBetweenCoronas_far");
+            xRotation = Xml.GetChildFloatAttribute(node, "xRotation");
+            yRotation = Xml.GetChildFloatAttribute(node, "yRotation");
+            zRotation = Xml.GetChildFloatAttribute(node, "zRotation");
+            zBias = Xml.GetChildFloatAttribute(node, "zBias");
+            pullCoronaIn = Xml.GetChildBoolAttribute(node, "pullCoronaIn");
+        }
+
         public float size { get; set; }
         public float size_far { get; set; }
         public float intensity { get; set; }
@@ -470,26 +442,49 @@ namespace CodeWalker.GameFiles
         public float zRotation { get; set; }
         public float zBias { get; set; }
         public bool pullCoronaIn { get; set; }
-
-        public vehicleCorona(XmlNode node)
-        {
-            size = Xml.GetChildFloatAttribute(node, "size", "value");
-            size_far = Xml.GetChildFloatAttribute(node, "size_far", "value");
-            intensity = Xml.GetChildFloatAttribute(node, "intensity", "value");
-            intensity_far = Xml.GetChildFloatAttribute(node, "intensity_far", "value");
-            color = Xml.GetChildUIntAttribute(node, "color", "value");
-            numCoronas = (byte)Xml.GetChildIntAttribute(node, "numCoronas", "value");
-            distBetweenCoronas = (byte)Xml.GetChildIntAttribute(node, "distBetweenCoronas", "value");
-            distBetweenCoronas_far = (byte)Xml.GetChildIntAttribute(node, "distBetweenCoronas_far", "value");
-            xRotation = Xml.GetChildFloatAttribute(node, "xRotation", "value");
-            yRotation = Xml.GetChildFloatAttribute(node, "yRotation", "value");
-            zRotation = Xml.GetChildFloatAttribute(node, "zRotation", "value");
-            zBias = Xml.GetChildFloatAttribute(node, "zBias", "value");
-            pullCoronaIn = Xml.GetChildBoolAttribute(node, "pullCoronaIn", "value");
-        }
     }
-    [TC(typeof(EXP))] public class sirenSettings
+
+    [TC(typeof(EXP))]
+    public class sirenSettings
     {
+        public sirenSettings(XmlNode node)
+        {
+            id = (byte)Xml.GetChildIntAttribute(node, "id");
+            name = Xml.GetChildInnerText(node, "name");
+            timeMultiplier = Xml.GetChildFloatAttribute(node, "timeMultiplier");
+            lightFalloffMax = Xml.GetChildFloatAttribute(node, "lightFalloffMax");
+            lightFalloffExponent = Xml.GetChildFloatAttribute(node, "lightFalloffExponent");
+            lightInnerConeAngle = Xml.GetChildFloatAttribute(node, "lightInnerConeAngle");
+            lightOuterConeAngle = Xml.GetChildFloatAttribute(node, "lightOuterConeAngle");
+            lightOffset = Xml.GetChildFloatAttribute(node, "lightOffset");
+            textureName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "textureName"));
+            sequencerBpm = Xml.GetChildUIntAttribute(node, "sequencerBpm");
+            XmlNode cnode;
+            cnode = node.SelectSingleNode("leftHeadLight");
+            if (cnode != null) leftHeadLight = new sirenSettings_188820339(cnode);
+            cnode = node.SelectSingleNode("rightHeadLight");
+            if (cnode != null) rightHeadLight = new sirenSettings_188820339(cnode);
+            cnode = node.SelectSingleNode("leftTailLight");
+            if (cnode != null) leftTailLight = new sirenSettings_188820339(cnode);
+            cnode = node.SelectSingleNode("rightTailLight");
+            if (cnode != null) rightTailLight = new sirenSettings_188820339(cnode);
+            leftHeadLightMultiples = (byte)Xml.GetChildIntAttribute(node, "leftHeadLightMultiples");
+            rightHeadLightMultiples = (byte)Xml.GetChildIntAttribute(node, "rightHeadLightMultiples");
+            leftTailLightMultiples = (byte)Xml.GetChildIntAttribute(node, "leftTailLightMultiples");
+            rightTailLightMultiples = (byte)Xml.GetChildIntAttribute(node, "rightTailLightMultiples");
+            useRealLights = Xml.GetChildBoolAttribute(node, "useRealLights");
+            cnode = node.SelectSingleNode("sirens");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    sirens = new sirenLight[items.Count];
+                    for (int i = 0; i < items.Count; i++) sirens[i] = new sirenLight(items[i]);
+                }
+            }
+        }
+
         public byte id { get; set; }
         public string name { get; set; }
         public float timeMultiplier { get; set; }
@@ -511,75 +506,47 @@ namespace CodeWalker.GameFiles
         public bool useRealLights { get; set; }
         public sirenLight[] sirens { get; set; }
 
-        public sirenSettings(XmlNode node)
-        {
-            id = (byte)Xml.GetChildIntAttribute(node, "id", "value");
-            name = Xml.GetChildInnerText(node, "name");
-            timeMultiplier = Xml.GetChildFloatAttribute(node, "timeMultiplier", "value");
-            lightFalloffMax = Xml.GetChildFloatAttribute(node, "lightFalloffMax", "value");
-            lightFalloffExponent = Xml.GetChildFloatAttribute(node, "lightFalloffExponent", "value");
-            lightInnerConeAngle = Xml.GetChildFloatAttribute(node, "lightInnerConeAngle", "value");
-            lightOuterConeAngle = Xml.GetChildFloatAttribute(node, "lightOuterConeAngle", "value");
-            lightOffset = Xml.GetChildFloatAttribute(node, "lightOffset", "value");
-            textureName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "textureName"));
-            sequencerBpm = Xml.GetChildUIntAttribute(node, "sequencerBpm", "value");
-            XmlNode cnode;
-            cnode = node.SelectSingleNode("leftHeadLight");
-            if (cnode != null)
-            {
-                leftHeadLight = new sirenSettings_188820339(cnode);
-            }
-            cnode = node.SelectSingleNode("rightHeadLight");
-            if (cnode != null)
-            {
-                rightHeadLight = new sirenSettings_188820339(cnode);
-            }
-            cnode = node.SelectSingleNode("leftTailLight");
-            if (cnode != null)
-            {
-                leftTailLight = new sirenSettings_188820339(cnode);
-            }
-            cnode = node.SelectSingleNode("rightTailLight");
-            if (cnode != null)
-            {
-                rightTailLight = new sirenSettings_188820339(cnode);
-            }
-            leftHeadLightMultiples = (byte)Xml.GetChildIntAttribute(node, "leftHeadLightMultiples", "value");
-            rightHeadLightMultiples = (byte)Xml.GetChildIntAttribute(node, "rightHeadLightMultiples", "value");
-            leftTailLightMultiples = (byte)Xml.GetChildIntAttribute(node, "leftTailLightMultiples", "value");
-            rightTailLightMultiples = (byte)Xml.GetChildIntAttribute(node, "rightTailLightMultiples", "value");
-            useRealLights = Xml.GetChildBoolAttribute(node, "useRealLights", "value");
-            cnode = node.SelectSingleNode("sirens");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    sirens = new sirenLight[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        sirens[i] = new sirenLight(items[i]);
-                    }
-                }
-            }
-        }
-
         public override string ToString()
         {
-            return id.ToString() + ": " + name;
+            return id + ": " + name;
         }
     }
-    [TC(typeof(EXP))] public class sirenSettings_188820339
-    {
-        public uint sequencer { get; set; }
 
+    [TC(typeof(EXP))]
+    public class sirenSettings_188820339
+    {
         public sirenSettings_188820339(XmlNode node)
         {
-            sequencer = Xml.GetChildUIntAttribute(node, "sequencer", "value");
+            sequencer = Xml.GetChildUIntAttribute(node, "sequencer");
         }
+
+        public uint sequencer { get; set; }
     }
-    [TC(typeof(EXP))] public class sirenLight
+
+    [TC(typeof(EXP))]
+    public class sirenLight
     {
+        public sirenLight(XmlNode node)
+        {
+            XmlNode cnode;
+            cnode = node.SelectSingleNode("rotation");
+            if (cnode != null) rotation = new sirenLight_1356743507(cnode);
+            cnode = node.SelectSingleNode("flashiness");
+            if (cnode != null) flashiness = new sirenLight_1356743507(cnode);
+            cnode = node.SelectSingleNode("corona");
+            if (cnode != null) corona = new sirenCorona(cnode);
+            color = Xml.GetChildUIntAttribute(node, "color");
+            intensity = Xml.GetChildFloatAttribute(node, "intensity");
+            lightGroup = (byte)Xml.GetChildIntAttribute(node, "lightGroup");
+            rotate = Xml.GetChildBoolAttribute(node, "rotate");
+            scale = Xml.GetChildBoolAttribute(node, "scale");
+            scaleFactor = (byte)Xml.GetChildIntAttribute(node, "scaleFactor");
+            flash = Xml.GetChildBoolAttribute(node, "flash");
+            light = Xml.GetChildBoolAttribute(node, "light");
+            spotLight = Xml.GetChildBoolAttribute(node, "spotLight");
+            castShadows = Xml.GetChildBoolAttribute(node, "castShadows");
+        }
+
         public sirenLight_1356743507 rotation { get; set; }
         public sirenLight_1356743507 flashiness { get; set; }
         public sirenCorona corona { get; set; }
@@ -593,40 +560,22 @@ namespace CodeWalker.GameFiles
         public bool light { get; set; }
         public bool spotLight { get; set; }
         public bool castShadows { get; set; }
-
-        public sirenLight(XmlNode node)
-        {
-            XmlNode cnode;
-            cnode = node.SelectSingleNode("rotation");
-            if (cnode != null)
-            {
-                rotation = new sirenLight_1356743507(cnode);
-            }
-            cnode = node.SelectSingleNode("flashiness");
-            if (cnode != null)
-            {
-                flashiness = new sirenLight_1356743507(cnode);
-            }
-            cnode = node.SelectSingleNode("corona");
-            if (cnode != null)
-            {
-                corona = new sirenCorona(cnode);
-            }
-            color = Xml.GetChildUIntAttribute(node, "color", "value");
-            intensity = Xml.GetChildFloatAttribute(node, "intensity", "value");
-            lightGroup = (byte)Xml.GetChildIntAttribute(node, "lightGroup", "value");
-            rotate = Xml.GetChildBoolAttribute(node, "rotate", "value");
-            scale = Xml.GetChildBoolAttribute(node, "scale", "value");
-            scaleFactor = (byte)Xml.GetChildIntAttribute(node, "scaleFactor", "value");
-            flash = Xml.GetChildBoolAttribute(node, "flash", "value");
-            light = Xml.GetChildBoolAttribute(node, "light", "value");
-            spotLight = Xml.GetChildBoolAttribute(node, "spotLight", "value");
-            castShadows = Xml.GetChildBoolAttribute(node, "castShadows", "value");
-
-        }
     }
-    [TC(typeof(EXP))] public class sirenLight_1356743507
+
+    [TC(typeof(EXP))]
+    public class sirenLight_1356743507
     {
+        public sirenLight_1356743507(XmlNode node)
+        {
+            delta = Xml.GetChildFloatAttribute(node, "delta");
+            start = Xml.GetChildFloatAttribute(node, "start");
+            speed = Xml.GetChildFloatAttribute(node, "speed");
+            sequencer = Xml.GetChildUIntAttribute(node, "sequencer");
+            multiples = (byte)Xml.GetChildIntAttribute(node, "multiples");
+            direction = Xml.GetChildBoolAttribute(node, "direction");
+            syncToBpm = Xml.GetChildBoolAttribute(node, "syncToBpm");
+        }
+
         public float delta { get; set; }
         public float start { get; set; }
         public float speed { get; set; }
@@ -634,35 +583,101 @@ namespace CodeWalker.GameFiles
         public byte multiples { get; set; }
         public bool direction { get; set; }
         public bool syncToBpm { get; set; }
-
-        public sirenLight_1356743507(XmlNode node)
-        {
-            delta = Xml.GetChildFloatAttribute(node, "delta", "value");
-            start = Xml.GetChildFloatAttribute(node, "start", "value");
-            speed = Xml.GetChildFloatAttribute(node, "speed", "value");
-            sequencer = Xml.GetChildUIntAttribute(node, "sequencer", "value");
-            multiples = (byte)Xml.GetChildIntAttribute(node, "multiples", "value");
-            direction = Xml.GetChildBoolAttribute(node, "direction", "value");
-            syncToBpm = Xml.GetChildBoolAttribute(node, "syncToBpm", "value");
-        }
     }
-    [TC(typeof(EXP))] public class sirenCorona
+
+    [TC(typeof(EXP))]
+    public class sirenCorona
     {
+        public sirenCorona(XmlNode node)
+        {
+            intensity = Xml.GetChildFloatAttribute(node, "intensity");
+            size = Xml.GetChildFloatAttribute(node, "size");
+            pull = Xml.GetChildFloatAttribute(node, "pull");
+            faceCamera = Xml.GetChildBoolAttribute(node, "faceCamera");
+        }
+
         public float intensity { get; set; }
         public float size { get; set; }
         public float pull { get; set; }
         public bool faceCamera { get; set; }
-
-        public sirenCorona(XmlNode node)
-        {
-            intensity = Xml.GetChildFloatAttribute(node, "intensity", "value");
-            size = Xml.GetChildFloatAttribute(node, "size", "value");
-            pull = Xml.GetChildFloatAttribute(node, "pull", "value");
-            faceCamera = Xml.GetChildBoolAttribute(node, "faceCamera", "value");
-        }
     }
-    [TC(typeof(EXP))] public class CVehicleKit
+
+    [TC(typeof(EXP))]
+    public class CVehicleKit
     {
+        public CVehicleKit(XmlNode node)
+        {
+            kitName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "kitName"));
+            id = (ushort)Xml.GetChildUIntAttribute(node, "id");
+            kitType = Xml.GetChildEnumInnerText<eModKitType>(node, "kitType");
+            XmlNode cnode;
+            cnode = node.SelectSingleNode("visibleMods");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    visibleMods = new CVehicleModVisible[items.Count];
+                    for (int i = 0; i < items.Count; i++) visibleMods[i] = new CVehicleModVisible(items[i]);
+                }
+            }
+
+            cnode = node.SelectSingleNode("linkMods");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    linkMods = new CVehicleModLink[items.Count];
+                    for (int i = 0; i < items.Count; i++) linkMods[i] = new CVehicleModLink(items[i]);
+                }
+            }
+
+            cnode = node.SelectSingleNode("statMods");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    statMods = new CVehicleModStat[items.Count];
+                    for (int i = 0; i < items.Count; i++) statMods[i] = new CVehicleModStat(items[i]);
+                }
+            }
+
+            cnode = node.SelectSingleNode("slotNames");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    slotNames = new CVehicleKit_427606548[items.Count];
+                    for (int i = 0; i < items.Count; i++) slotNames[i] = new CVehicleKit_427606548(items[i]);
+                }
+            }
+
+            cnode = node.SelectSingleNode("liveryNames");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    liveryNames = new MetaHash[items.Count];
+                    for (int i = 0; i < items.Count; i++) liveryNames[i] = XmlMeta.GetHash(items[i].InnerText);
+                }
+            }
+
+            cnode = node.SelectSingleNode("livery2Names");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    livery2Names = new MetaHash[items.Count];
+                    for (int i = 0; i < items.Count; i++) livery2Names[i] = XmlMeta.GetHash(items[i].InnerText);
+                }
+            }
+        }
+
         public MetaHash kitName { get; set; }
         public ushort id { get; set; }
         public eModKitType kitType { get; set; }
@@ -673,100 +688,60 @@ namespace CodeWalker.GameFiles
         public MetaHash[] liveryNames { get; set; }
         public MetaHash[] livery2Names { get; set; }
 
-        public CVehicleKit(XmlNode node)
-        {
-            kitName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "kitName"));
-            id = (ushort)Xml.GetChildUIntAttribute(node, "id", "value");
-            kitType = Xml.GetChildEnumInnerText<eModKitType>(node, "kitType");
-            XmlNode cnode;
-            cnode = node.SelectSingleNode("visibleMods");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    visibleMods = new CVehicleModVisible[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        visibleMods[i] = new CVehicleModVisible(items[i]);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("linkMods");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    linkMods = new CVehicleModLink[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        linkMods[i] = new CVehicleModLink(items[i]);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("statMods");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    statMods = new CVehicleModStat[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        statMods[i] = new CVehicleModStat(items[i]);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("slotNames");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    slotNames = new CVehicleKit_427606548[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        slotNames[i] = new CVehicleKit_427606548(items[i]);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("liveryNames");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    liveryNames = new MetaHash[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        liveryNames[i] = XmlMeta.GetHash(items[i].InnerText);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("livery2Names");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    livery2Names = new MetaHash[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        livery2Names[i] = XmlMeta.GetHash(items[i].InnerText);
-                    }
-                }
-            }
-
-        }
-
         public override string ToString()
         {
-            return id.ToString() + ": " + kitName.ToString();
+            return id + ": " + kitName;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModVisible
+
+    [TC(typeof(EXP))]
+    public class CVehicleModVisible
     {
+        public CVehicleModVisible(XmlNode node)
+        {
+            modelName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "modelName"));
+            modShopLabel = Xml.GetChildInnerText(node, "modShopLabel");
+            XmlNode cnode;
+            cnode = node.SelectSingleNode("linkedModels");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    linkedModels = new MetaHash[items.Count];
+                    for (int i = 0; i < items.Count; i++) linkedModels[i] = XmlMeta.GetHash(items[i].InnerText);
+                }
+            }
+
+            cnode = node.SelectSingleNode("turnOffBones");
+            if (cnode != null)
+            {
+                XmlNodeList items = cnode.SelectNodes("Item");
+                if (items.Count > 0)
+                {
+                    turnOffBones = new CVehicleMod_3635907608[items.Count];
+                    for (int i = 0; i < items.Count; i++)
+                        turnOffBones[i] = Xml.GetEnumValue<CVehicleMod_3635907608>(items[i].InnerText);
+                }
+            }
+
+            type = Xml.GetChildEnumInnerText<eVehicleModType>(node, "type");
+            bone = Xml.GetChildEnumInnerText<CVehicleMod_3635907608>(node, "bone");
+            collisionBone = Xml.GetChildEnumInnerText<CVehicleMod_3635907608>(node, "collisionBone");
+            cameraPos = Xml.GetChildEnumInnerText<eVehicleModCameraPos>(node, "cameraPos");
+            audioApply = Xml.GetChildFloatAttribute(node, "audioApply");
+            weight = (byte)Xml.GetChildIntAttribute(node, "weight");
+            turnOffExtra = Xml.GetChildBoolAttribute(node, "turnOffExtra");
+            disableBonnetCamera = Xml.GetChildBoolAttribute(node, "disableBonnetCamera");
+            allowBonnetSlide = Xml.GetChildBoolAttribute(node, "allowBonnetSlide");
+            weaponSlot = (sbyte)Xml.GetChildIntAttribute(node, "weaponSlot");
+            weaponSlotSecondary = (sbyte)Xml.GetChildIntAttribute(node, "weaponSlotSecondary");
+            disableProjectileDriveby = Xml.GetChildBoolAttribute(node, "disableProjectileDriveby");
+            disableDriveby = Xml.GetChildBoolAttribute(node, "disableDriveby");
+            disableDrivebySeat = Xml.GetChildIntAttribute(node, "disableDrivebySeat");
+            disableDrivebySeatSecondary = Xml.GetChildIntAttribute(node, "disableDrivebySeatSecondary");
+        }
+
         public MetaHash modelName { get; set; }
         public string modShopLabel { get; set; }
         public MetaHash[] linkedModels { get; set; }
@@ -787,163 +762,130 @@ namespace CodeWalker.GameFiles
         public int disableDrivebySeat { get; set; }
         public int disableDrivebySeatSecondary { get; set; }
 
-        public CVehicleModVisible(XmlNode node)
-        {
-            modelName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "modelName"));
-            modShopLabel = Xml.GetChildInnerText(node, "modShopLabel");
-            XmlNode cnode;
-            cnode = node.SelectSingleNode("linkedModels");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    linkedModels = new MetaHash[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        linkedModels[i] = XmlMeta.GetHash(items[i].InnerText);
-                    }
-                }
-            }
-            cnode = node.SelectSingleNode("turnOffBones");
-            if (cnode != null)
-            {
-                XmlNodeList items = cnode.SelectNodes("Item");
-                if (items.Count > 0)
-                {
-                    turnOffBones = new CVehicleMod_3635907608[items.Count];
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        turnOffBones[i] = Xml.GetEnumValue<CVehicleMod_3635907608>(items[i].InnerText);
-                    }
-                }
-            }
-            type = Xml.GetChildEnumInnerText<eVehicleModType>(node, "type");
-            bone = Xml.GetChildEnumInnerText<CVehicleMod_3635907608>(node, "bone");
-            collisionBone = Xml.GetChildEnumInnerText<CVehicleMod_3635907608>(node, "collisionBone");
-            cameraPos = Xml.GetChildEnumInnerText<eVehicleModCameraPos>(node, "cameraPos");
-            audioApply = Xml.GetChildFloatAttribute(node, "audioApply", "value");
-            weight = (byte)Xml.GetChildIntAttribute(node, "weight", "value");
-            turnOffExtra = Xml.GetChildBoolAttribute(node, "turnOffExtra", "value");
-            disableBonnetCamera = Xml.GetChildBoolAttribute(node, "disableBonnetCamera", "value");
-            allowBonnetSlide = Xml.GetChildBoolAttribute(node, "allowBonnetSlide", "value");
-            weaponSlot = (sbyte)Xml.GetChildIntAttribute(node, "weaponSlot", "value");
-            weaponSlotSecondary = (sbyte)Xml.GetChildIntAttribute(node, "weaponSlotSecondary", "value");
-            disableProjectileDriveby = Xml.GetChildBoolAttribute(node, "disableProjectileDriveby", "value");
-            disableDriveby = Xml.GetChildBoolAttribute(node, "disableDriveby", "value");
-            disableDrivebySeat = Xml.GetChildIntAttribute(node, "disableDrivebySeat", "value");
-            disableDrivebySeatSecondary = Xml.GetChildIntAttribute(node, "disableDrivebySeatSecondary", "value");
-        }
-
         public override string ToString()
         {
-            return modelName.ToString() + ": " + modShopLabel + ": " + type.ToString() + ": " + bone.ToString();
+            return modelName + ": " + modShopLabel + ": " + type + ": " + bone;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModLink
-    {
-        public MetaHash modelName { get; set; }
-        public CVehicleMod_3635907608 bone { get; set; }
-        public bool turnOffExtra { get; set; }
 
+    [TC(typeof(EXP))]
+    public class CVehicleModLink
+    {
         public CVehicleModLink(XmlNode node)
         {
             modelName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "modelName"));
             bone = Xml.GetChildEnumInnerText<CVehicleMod_3635907608>(node, "bone");
-            turnOffExtra = Xml.GetChildBoolAttribute(node, "turnOffExtra", "value");
+            turnOffExtra = Xml.GetChildBoolAttribute(node, "turnOffExtra");
         }
+
+        public MetaHash modelName { get; set; }
+        public CVehicleMod_3635907608 bone { get; set; }
+        public bool turnOffExtra { get; set; }
 
         public override string ToString()
         {
-            return modelName.ToString() + ": " + bone.ToString();
+            return modelName + ": " + bone;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModStat
+
+    [TC(typeof(EXP))]
+    public class CVehicleModStat
     {
+        public CVehicleModStat(XmlNode node)
+        {
+            identifier = XmlMeta.GetHash(Xml.GetChildInnerText(node, "identifier"));
+            modifier = Xml.GetChildUIntAttribute(node, "modifier");
+            audioApply = Xml.GetChildFloatAttribute(node, "audioApply");
+            weight = (byte)Xml.GetChildIntAttribute(node, "weight");
+            type = Xml.GetChildEnumInnerText<eVehicleModType>(node, "type");
+        }
+
         public MetaHash identifier { get; set; }
         public uint modifier { get; set; }
         public float audioApply { get; set; }
         public byte weight { get; set; }
         public eVehicleModType type { get; set; }
 
-        public CVehicleModStat(XmlNode node)
-        {
-            identifier = XmlMeta.GetHash(Xml.GetChildInnerText(node, "identifier"));
-            modifier = Xml.GetChildUIntAttribute(node, "modifier", "value");
-            audioApply = Xml.GetChildFloatAttribute(node, "audioApply", "value");
-            weight = (byte)Xml.GetChildIntAttribute(node, "weight", "value");
-            type = Xml.GetChildEnumInnerText<eVehicleModType>(node, "type");
-        }
         public override string ToString()
         {
-            return identifier.ToString() + ": " + type.ToString();
+            return identifier + ": " + type;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleKit_427606548
-    {
-        public eVehicleModType slot { get; set; }
-        public string name { get; set; }
 
+    [TC(typeof(EXP))]
+    public class CVehicleKit_427606548
+    {
         public CVehicleKit_427606548(XmlNode node)
         {
             slot = Xml.GetChildEnumInnerText<eVehicleModType>(node, "slot");
             name = Xml.GetChildInnerText(node, "name");
         }
+
+        public eVehicleModType slot { get; set; }
+        public string name { get; set; }
+
         public override string ToString()
         {
-            return name + ": " + slot.ToString();
+            return name + ": " + slot;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleWheel
+
+    [TC(typeof(EXP))]
+    public class CVehicleWheel
     {
+        public CVehicleWheel(XmlNode node)
+        {
+            wheelName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "wheelName"));
+            wheelVariation = XmlMeta.GetHash(Xml.GetChildInnerText(node, "wheelVariation"));
+            modShopLabel = Xml.GetChildInnerText(node, "modShopLabel");
+            rimRadius = Xml.GetChildFloatAttribute(node, "rimRadius");
+            rear = Xml.GetChildBoolAttribute(node, "rear");
+        }
+
         public MetaHash wheelName { get; set; }
         public MetaHash wheelVariation { get; set; }
         public string modShopLabel { get; set; }
         public float rimRadius { get; set; }
         public bool rear { get; set; }
 
-        public CVehicleWheel(XmlNode node)
-        {
-            wheelName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "wheelName"));
-            wheelVariation = XmlMeta.GetHash(Xml.GetChildInnerText(node, "wheelVariation"));
-            modShopLabel = Xml.GetChildInnerText(node, "modShopLabel");
-            rimRadius = Xml.GetChildFloatAttribute(node, "rimRadius", "value");
-            rear = Xml.GetChildBoolAttribute(node, "rear", "value");
-        }
         public override string ToString()
         {
-            return wheelName.ToString() + ": " + wheelVariation.ToString() + ": " + modShopLabel;
+            return wheelName + ": " + wheelVariation + ": " + modShopLabel;
         }
     }
-    [TC(typeof(EXP))] public class CVehicleModelInfoVarGlobal_3062246906 //GlobalVariationData
+
+    [TC(typeof(EXP))]
+    public class CVehicleModelInfoVarGlobal_3062246906 //GlobalVariationData
     {
+        public CVehicleModelInfoVarGlobal_3062246906(XmlNode node)
+        {
+            xenonLightColor = Xml.GetChildUIntAttribute(node, "xenonLightColor");
+            xenonCoronaColor = Xml.GetChildUIntAttribute(node, "xenonCoronaColor");
+            xenonLightIntensityModifier = Xml.GetChildFloatAttribute(node, "xenonLightIntensityModifier");
+            xenonCoronaIntensityModifier = Xml.GetChildFloatAttribute(node, "xenonCoronaIntensityModifier");
+        }
+
         public uint xenonLightColor { get; set; }
         public uint xenonCoronaColor { get; set; }
         public float xenonLightIntensityModifier { get; set; }
         public float xenonCoronaIntensityModifier { get; set; }
-
-        public CVehicleModelInfoVarGlobal_3062246906(XmlNode node)
-        {
-            xenonLightColor = Xml.GetChildUIntAttribute(node, "xenonLightColor", "value");
-            xenonCoronaColor = Xml.GetChildUIntAttribute(node, "xenonCoronaColor", "value");
-            xenonLightIntensityModifier = Xml.GetChildFloatAttribute(node, "xenonLightIntensityModifier", "value");
-            xenonCoronaIntensityModifier = Xml.GetChildFloatAttribute(node, "xenonCoronaIntensityModifier", "value");
-        }
     }
-    [TC(typeof(EXP))] public class CVehicleXenonLightColor
+
+    [TC(typeof(EXP))]
+    public class CVehicleXenonLightColor
     {
+        public CVehicleXenonLightColor(XmlNode node)
+        {
+            lightColor = Xml.GetChildUIntAttribute(node, "lightColor");
+            coronaColor = Xml.GetChildUIntAttribute(node, "coronaColor");
+            lightIntensityModifier = Xml.GetChildFloatAttribute(node, "lightIntensityModifier");
+            coronaIntensityModifier = Xml.GetChildFloatAttribute(node, "coronaIntensityModifier");
+        }
+
         public uint lightColor { get; set; }
         public uint coronaColor { get; set; }
         public float lightIntensityModifier { get; set; }
         public float coronaIntensityModifier { get; set; }
-
-        public CVehicleXenonLightColor(XmlNode node)
-        {
-            lightColor = Xml.GetChildUIntAttribute(node, "lightColor", "value");
-            coronaColor = Xml.GetChildUIntAttribute(node, "coronaColor", "value");
-            lightIntensityModifier = Xml.GetChildFloatAttribute(node, "lightIntensityModifier", "value");
-            coronaIntensityModifier = Xml.GetChildFloatAttribute(node, "coronaIntensityModifier", "value");
-        }
     }
 
 
@@ -961,6 +903,7 @@ namespace CodeWalker.GameFiles
         EVehicleModelColorMetallic_8 = 8,
         EVehicleModelColorMetallic_9 = 9
     }
+
     public enum CVehicleModelColor_544262540 //vehicle mod color audio color
     {
         POLICE_SCANNER_COLOUR_black = 0,
@@ -977,6 +920,7 @@ namespace CodeWalker.GameFiles
         POLICE_SCANNER_COLOUR_white = 11,
         POLICE_SCANNER_COLOUR_yellow = 12
     }
+
     public enum CVehicleModelColor_2065815796 //vehicle mod color audio prefix
     {
         none = 0,
@@ -992,6 +936,7 @@ namespace CodeWalker.GameFiles
         MKT_SUV = 2,
         MKT_SPECIAL = 3
     }
+
     public enum CVehicleMod_3635907608 //vehicle mod bone
     {
         none = -1,
@@ -1200,6 +1145,7 @@ namespace CodeWalker.GameFiles
         scoop_2mod = 591,
         scoop_3mod = 592
     }
+
     public enum eVehicleModType //vehicle mod type
     {
         VMT_SPOILER = 0,
@@ -1253,6 +1199,7 @@ namespace CodeWalker.GameFiles
         VMT_WHEELS = 48,
         VMT_WHEELS_REAR_OR_HYDRAULICS = 49
     }
+
     public enum eVehicleModCameraPos //vehicle mod camera position
     {
         VMCP_DEFAULT = 0,
@@ -1267,7 +1214,4 @@ namespace CodeWalker.GameFiles
         VMCP_TOP = 9,
         VMCP_BOTTOM = 10
     }
-
-
 }
-

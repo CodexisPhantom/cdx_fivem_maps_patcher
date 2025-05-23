@@ -23,21 +23,26 @@
 //mangled to fit
 
 
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Xml;
+using SharpDX;
 
 namespace CodeWalker.GameFiles
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class NodeDictionary : ResourceFileBase, IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class NodeDictionary : ResourceFileBase, IMetaXmlItem
     {
-        public override long BlockLength
-        {
-            get { return 112; }
-        }
+        private ResourceSystemStructBlock<byte> JunctionHeightmapBytesBlock;
+        private ResourceSystemStructBlock<NodeJunctionRef> JunctionRefsBlock;
+        private ResourceSystemStructBlock<NodeJunction> JunctionsBlock;
+        private ResourceSystemStructBlock<NodeLink> LinksBlock;
+
+
+        private ResourceSystemStructBlock<Node> NodesBlock;
+        public override long BlockLength => 112;
 
         public ulong NodesPointer { get; set; }
         public uint NodesCount { get; set; }
@@ -67,127 +72,6 @@ namespace CodeWalker.GameFiles
         public NodeJunctionRef[] JunctionRefs { get; set; }
 
 
-        private ResourceSystemStructBlock<Node> NodesBlock;
-        private ResourceSystemStructBlock<NodeLink> LinksBlock;
-        private ResourceSystemStructBlock<NodeJunction> JunctionsBlock;
-        private ResourceSystemStructBlock<byte> JunctionHeightmapBytesBlock;
-        private ResourceSystemStructBlock<NodeJunctionRef> JunctionRefsBlock;
-
-
-
-        public override void Read(ResourceDataReader reader, params object[] parameters)
-        {
-            base.Read(reader, parameters);
-
-            this.NodesPointer = reader.ReadUInt64();
-            this.NodesCount = reader.ReadUInt32();
-            this.NodesCountVehicle = reader.ReadUInt32();
-            this.NodesCountPed = reader.ReadUInt32();
-            this.Unk24 = reader.ReadUInt32();
-            this.LinksPtr = reader.ReadUInt64();
-            this.LinksCount = reader.ReadUInt32();
-            this.Unk34 = reader.ReadUInt32();
-            this.JunctionsPtr = reader.ReadUInt64();
-            this.JunctionHeightmapBytesPtr = reader.ReadUInt64();
-            this.Unk48 = reader.ReadUInt32();
-            this.Unk4C = reader.ReadUInt32();
-            this.JunctionRefsPtr = reader.ReadUInt64();
-            this.JunctionRefsCount0 = reader.ReadUInt16();
-            this.JunctionRefsCount1 = reader.ReadUInt16();
-            this.Unk5C = reader.ReadUInt32();
-            this.JunctionsCount = reader.ReadUInt32();
-            this.JunctionHeightmapBytesCount = reader.ReadUInt32();
-            this.Unk68 = reader.ReadUInt32();
-            this.Unk6C = reader.ReadUInt32();
-
-            this.Nodes = reader.ReadStructsAt<Node>(this.NodesPointer, this.NodesCount);
-            this.Links = reader.ReadStructsAt<NodeLink>(this.LinksPtr, this.LinksCount);
-            this.Junctions = reader.ReadStructsAt<NodeJunction>(this.JunctionsPtr, this.JunctionsCount);
-            this.JunctionHeightmapBytes = reader.ReadBytesAt(this.JunctionHeightmapBytesPtr, this.JunctionHeightmapBytesCount);
-            this.JunctionRefs = reader.ReadStructsAt<NodeJunctionRef>(this.JunctionRefsPtr, this.JunctionRefsCount1);
-
-
-
-        }
-
-        public override void Write(ResourceDataWriter writer, params object[] parameters)
-        {
-            base.Write(writer, parameters);
-
-            // update structure data
-            NodesPointer = (ulong)(NodesBlock?.FilePosition ?? 0);
-            NodesCount = (uint)(Nodes?.Length ?? 0); //assume NodesCountVehicle and Ped already updated..
-            LinksPtr = (ulong)(LinksBlock?.FilePosition ?? 0);
-            LinksCount = (uint)(Links?.Length ?? 0);
-            JunctionsPtr = (ulong)(JunctionsBlock?.FilePosition ?? 0);
-            JunctionHeightmapBytesPtr = (ulong)(JunctionHeightmapBytesBlock?.FilePosition ?? 0);
-            JunctionRefsPtr = (ulong)(JunctionRefsBlock?.FilePosition ?? 0);
-            JunctionRefsCount0 = (ushort)(JunctionRefs?.Length ?? 0);
-            JunctionRefsCount1 = JunctionRefsCount1;
-            JunctionsCount = (uint)(Junctions?.Length ?? 0);
-            JunctionHeightmapBytesCount = (uint)(JunctionHeightmapBytes?.Length ?? 0);
-
-
-            // write structure data
-            writer.Write(this.NodesPointer);
-            writer.Write(this.NodesCount);
-            writer.Write(this.NodesCountVehicle);
-            writer.Write(this.NodesCountPed);
-            writer.Write(this.Unk24);
-            writer.Write(this.LinksPtr);
-            writer.Write(this.LinksCount);
-            writer.Write(this.Unk34);
-            writer.Write(this.JunctionsPtr);
-            writer.Write(this.JunctionHeightmapBytesPtr);
-            writer.Write(this.Unk48);
-            writer.Write(this.Unk4C);
-            writer.Write(this.JunctionRefsPtr);
-            writer.Write(this.JunctionRefsCount0);
-            writer.Write(this.JunctionRefsCount1);
-            writer.Write(this.Unk5C);
-            writer.Write(this.JunctionsCount);
-            writer.Write(this.JunctionHeightmapBytesCount);
-            writer.Write(this.Unk68);
-            writer.Write(this.Unk6C);
-        }
-
-        public override IResourceBlock[] GetReferences()
-        {
-            List<IResourceBlock> list = new List<IResourceBlock>(base.GetReferences());
-
-            if ((JunctionRefs != null) && (JunctionRefs.Length > 0))
-            {
-                JunctionRefsBlock = new ResourceSystemStructBlock<NodeJunctionRef>(JunctionRefs);
-                list.Add(JunctionRefsBlock);
-            }
-            if ((JunctionHeightmapBytes != null) && (JunctionHeightmapBytes.Length > 0))
-            {
-                JunctionHeightmapBytesBlock = new ResourceSystemStructBlock<byte>(JunctionHeightmapBytes);
-                list.Add(JunctionHeightmapBytesBlock);
-            }
-            if ((Junctions != null) && (Junctions.Length > 0))
-            {
-                JunctionsBlock = new ResourceSystemStructBlock<NodeJunction>(Junctions);
-                list.Add(JunctionsBlock);
-            }
-            if ((Links != null) && (Links.Length > 0))
-            {
-                LinksBlock = new ResourceSystemStructBlock<NodeLink>(Links);
-                list.Add(LinksBlock);
-            }
-            if ((Nodes != null) && (Nodes.Length > 0))
-            {
-                NodesBlock = new ResourceSystemStructBlock<Node>(Nodes);
-                list.Add(NodesBlock);
-            }
-
-
-            return list.ToArray();
-        }
-
-
-
-
         public void WriteXml(StringBuilder sb, int indent)
         {
             YndXml.ValueTag(sb, indent, "VehicleNodeCount", NodesCountVehicle.ToString());
@@ -198,11 +82,9 @@ namespace CodeWalker.GameFiles
             if (nodecount > 0)
             {
                 nodes = new XmlNodeWrapper[nodecount];
-                for (int i = 0; i < nodecount; i++)
-                {
-                    nodes[i] = new XmlNodeWrapper(Nodes[i], Links);
-                }
+                for (int i = 0; i < nodecount; i++) nodes[i] = new XmlNodeWrapper(Nodes[i], Links);
             }
+
             YndXml.WriteItemArray(sb, nodes, indent, "Nodes");
 
 
@@ -212,19 +94,18 @@ namespace CodeWalker.GameFiles
             {
                 juncs = new XmlJunctionWrapper[junccount];
                 for (int i = 0; i < junccount; i++)
-                {
                     juncs[i] = new XmlJunctionWrapper(Junctions[i], JunctionHeightmapBytes);
-                }
             }
+
             YndXml.WriteItemArray(sb, juncs, indent, "Junctions");
 
             YndXml.WriteItemArray(sb, JunctionRefs, indent, "JunctionRefs");
-
         }
+
         public void ReadXml(XmlNode node)
         {
-            NodesCountVehicle = Xml.GetChildUIntAttribute(node, "VehicleNodeCount", "value");
-            NodesCountPed = Xml.GetChildUIntAttribute(node, "PedNodeCount", "value");
+            NodesCountVehicle = Xml.GetChildUIntAttribute(node, "VehicleNodeCount");
+            NodesCountPed = Xml.GetChildUIntAttribute(node, "PedNodeCount");
 
             List<Node> nodelist = new List<Node>();
             List<NodeLink> linklist = new List<NodeLink>();
@@ -279,54 +160,172 @@ namespace CodeWalker.GameFiles
             JunctionRefsCount0 = (ushort)jreflist.Count;
             JunctionRefsCount1 = JunctionRefsCount0;
             JunctionRefs = jreflist.ToArray();
-
         }
 
 
-        class XmlNodeWrapper : IMetaXmlItem
+        public override void Read(ResourceDataReader reader, params object[] parameters)
         {
+            base.Read(reader, parameters);
+
+            NodesPointer = reader.ReadUInt64();
+            NodesCount = reader.ReadUInt32();
+            NodesCountVehicle = reader.ReadUInt32();
+            NodesCountPed = reader.ReadUInt32();
+            Unk24 = reader.ReadUInt32();
+            LinksPtr = reader.ReadUInt64();
+            LinksCount = reader.ReadUInt32();
+            Unk34 = reader.ReadUInt32();
+            JunctionsPtr = reader.ReadUInt64();
+            JunctionHeightmapBytesPtr = reader.ReadUInt64();
+            Unk48 = reader.ReadUInt32();
+            Unk4C = reader.ReadUInt32();
+            JunctionRefsPtr = reader.ReadUInt64();
+            JunctionRefsCount0 = reader.ReadUInt16();
+            JunctionRefsCount1 = reader.ReadUInt16();
+            Unk5C = reader.ReadUInt32();
+            JunctionsCount = reader.ReadUInt32();
+            JunctionHeightmapBytesCount = reader.ReadUInt32();
+            Unk68 = reader.ReadUInt32();
+            Unk6C = reader.ReadUInt32();
+
+            Nodes = reader.ReadStructsAt<Node>(NodesPointer, NodesCount);
+            Links = reader.ReadStructsAt<NodeLink>(LinksPtr, LinksCount);
+            Junctions = reader.ReadStructsAt<NodeJunction>(JunctionsPtr, JunctionsCount);
+            JunctionHeightmapBytes = reader.ReadBytesAt(JunctionHeightmapBytesPtr, JunctionHeightmapBytesCount);
+            JunctionRefs = reader.ReadStructsAt<NodeJunctionRef>(JunctionRefsPtr, JunctionRefsCount1);
+        }
+
+        public override void Write(ResourceDataWriter writer, params object[] parameters)
+        {
+            base.Write(writer, parameters);
+
+            // update structure data
+            NodesPointer = (ulong)(NodesBlock?.FilePosition ?? 0);
+            NodesCount = (uint)(Nodes?.Length ?? 0); //assume NodesCountVehicle and Ped already updated..
+            LinksPtr = (ulong)(LinksBlock?.FilePosition ?? 0);
+            LinksCount = (uint)(Links?.Length ?? 0);
+            JunctionsPtr = (ulong)(JunctionsBlock?.FilePosition ?? 0);
+            JunctionHeightmapBytesPtr = (ulong)(JunctionHeightmapBytesBlock?.FilePosition ?? 0);
+            JunctionRefsPtr = (ulong)(JunctionRefsBlock?.FilePosition ?? 0);
+            JunctionRefsCount0 = (ushort)(JunctionRefs?.Length ?? 0);
+            JunctionRefsCount1 = JunctionRefsCount1;
+            JunctionsCount = (uint)(Junctions?.Length ?? 0);
+            JunctionHeightmapBytesCount = (uint)(JunctionHeightmapBytes?.Length ?? 0);
+
+
+            // write structure data
+            writer.Write(NodesPointer);
+            writer.Write(NodesCount);
+            writer.Write(NodesCountVehicle);
+            writer.Write(NodesCountPed);
+            writer.Write(Unk24);
+            writer.Write(LinksPtr);
+            writer.Write(LinksCount);
+            writer.Write(Unk34);
+            writer.Write(JunctionsPtr);
+            writer.Write(JunctionHeightmapBytesPtr);
+            writer.Write(Unk48);
+            writer.Write(Unk4C);
+            writer.Write(JunctionRefsPtr);
+            writer.Write(JunctionRefsCount0);
+            writer.Write(JunctionRefsCount1);
+            writer.Write(Unk5C);
+            writer.Write(JunctionsCount);
+            writer.Write(JunctionHeightmapBytesCount);
+            writer.Write(Unk68);
+            writer.Write(Unk6C);
+        }
+
+        public override IResourceBlock[] GetReferences()
+        {
+            List<IResourceBlock> list = new List<IResourceBlock>(base.GetReferences());
+
+            if (JunctionRefs != null && JunctionRefs.Length > 0)
+            {
+                JunctionRefsBlock = new ResourceSystemStructBlock<NodeJunctionRef>(JunctionRefs);
+                list.Add(JunctionRefsBlock);
+            }
+
+            if (JunctionHeightmapBytes != null && JunctionHeightmapBytes.Length > 0)
+            {
+                JunctionHeightmapBytesBlock = new ResourceSystemStructBlock<byte>(JunctionHeightmapBytes);
+                list.Add(JunctionHeightmapBytesBlock);
+            }
+
+            if (Junctions != null && Junctions.Length > 0)
+            {
+                JunctionsBlock = new ResourceSystemStructBlock<NodeJunction>(Junctions);
+                list.Add(JunctionsBlock);
+            }
+
+            if (Links != null && Links.Length > 0)
+            {
+                LinksBlock = new ResourceSystemStructBlock<NodeLink>(Links);
+                list.Add(LinksBlock);
+            }
+
+            if (Nodes != null && Nodes.Length > 0)
+            {
+                NodesBlock = new ResourceSystemStructBlock<Node>(Nodes);
+                list.Add(NodesBlock);
+            }
+
+
+            return list.ToArray();
+        }
+
+
+        private class XmlNodeWrapper : IMetaXmlItem
+        {
+            private readonly NodeLink[] AllLinks;
+            private readonly List<NodeLink> AllLinksList;
             public Node Node;
-            private NodeLink[] AllLinks;
-            private List<NodeLink> AllLinksList;
 
             public XmlNodeWrapper(Node node, NodeLink[] allLinks)
             {
                 Node = node;
                 AllLinks = allLinks;
             }
+
             public XmlNodeWrapper(List<NodeLink> allLinksList)
             {
                 AllLinksList = allLinksList;
             }
+
             public void WriteXml(StringBuilder sb, int indent)
             {
                 Node.WriteXml(sb, indent, AllLinks);
             }
+
             public void ReadXml(XmlNode node)
             {
                 Node = new Node();
                 Node.ReadXml(node, AllLinksList);
             }
         }
-        class XmlJunctionWrapper : IMetaXmlItem
+
+        private class XmlJunctionWrapper : IMetaXmlItem
         {
+            private readonly byte[] AllHeightmapData;
+            private readonly List<byte> AllHeightmapDataList;
             public NodeJunction Junction;
-            private byte[] AllHeightmapData;
-            private List<byte> AllHeightmapDataList;
 
             public XmlJunctionWrapper(NodeJunction junc, byte[] allHeightmapData)
             {
                 Junction = junc;
                 AllHeightmapData = allHeightmapData;
             }
+
             public XmlJunctionWrapper(List<byte> allHeightmapDataList)
             {
                 AllHeightmapDataList = allHeightmapDataList;
             }
+
             public void WriteXml(StringBuilder sb, int indent)
             {
                 Junction.WriteXml(sb, indent, AllHeightmapData);
             }
+
             public void ReadXml(XmlNode node)
             {
                 Junction = new NodeJunction();
@@ -335,7 +334,8 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct Node
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct Node
     {
         public uint Unused0 { get; set; } // 0x00000000
         public uint Unused1 { get; set; } // 0x00000000
@@ -364,12 +364,11 @@ namespace CodeWalker.GameFiles
             //       PositionX.ToString() + ", " + PositionY.ToString() + ", " + Unk20.ToString() + ", " + Unk21.ToString() + ", " + 
             //       Unk22.ToString() + ", " + Unk24.ToString() + ", " + Unk26.ToString();
 
-            return AreaID.ToString() + ", " + NodeID.ToString() + ", " + StreetName.ToString();// + ", X:" +
-                                                                                               //PositionX.ToString() + ", Y:" + PositionY.ToString() + ", " + PositionZ.ToString();// + ", " + 
-                                                                                               //Flags0.ToString() + ", " + Flags1.ToString() + ", Z:" +
-                                                                                               //Flags2.ToString() + ", " + LinkCountFlags.ToString() + ", " + 
-                                                                                               //Flags3.ToString() + ", " + Flags4.ToString();
-
+            return AreaID + ", " + NodeID + ", " + StreetName; // + ", X:" +
+            //PositionX.ToString() + ", Y:" + PositionY.ToString() + ", " + PositionZ.ToString();// + ", " + 
+            //Flags0.ToString() + ", " + Flags1.ToString() + ", Z:" +
+            //Flags2.ToString() + ", " + LinkCountFlags.ToString() + ", " + 
+            //Flags3.ToString() + ", " + Flags4.ToString();
         }
 
         public void WriteXml(StringBuilder sb, int indent, NodeLink[] allLinks)
@@ -396,29 +395,27 @@ namespace CodeWalker.GameFiles
             if (linkCount > 0)
             {
                 links = new NodeLink[linkCount];
-                for (int i = 0; i < linkCount; i++)
-                {
-                    links[i] = allLinks[LinkID + i];
-                }
+                for (int i = 0; i < linkCount; i++) links[i] = allLinks[LinkID + i];
             }
-            YndXml.WriteItemArray(sb, links, indent, "Links");
 
+            YndXml.WriteItemArray(sb, links, indent, "Links");
         }
+
         public void ReadXml(XmlNode node, List<NodeLink> allLinksList)
         {
-            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "AreaID", "value");
-            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "NodeID", "value");
+            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "AreaID");
+            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "NodeID");
             StreetName = XmlYnd.GetTextHash(Xml.GetChildInnerText(node, "StreetName"));
             Vector3 p = Xml.GetChildVector3Attributes(node, "Position");
             PositionX = (short)(p.X * 4.0f);
             PositionY = (short)(p.Y * 4.0f);
             PositionZ = (short)(p.Z * 32.0f);
-            Flags0 = (byte)Xml.GetChildUIntAttribute(node, "Flags0", "value");
-            Flags1 = (byte)Xml.GetChildUIntAttribute(node, "Flags1", "value");
-            Flags2 = (byte)Xml.GetChildUIntAttribute(node, "Flags2", "value");
-            Flags3 = (byte)Xml.GetChildUIntAttribute(node, "Flags3", "value");
-            Flags4 = (byte)Xml.GetChildUIntAttribute(node, "Flags4", "value");
-            int linkCountUnk = (byte)Xml.GetChildUIntAttribute(node, "Flags5", "value");
+            Flags0 = (byte)Xml.GetChildUIntAttribute(node, "Flags0");
+            Flags1 = (byte)Xml.GetChildUIntAttribute(node, "Flags1");
+            Flags2 = (byte)Xml.GetChildUIntAttribute(node, "Flags2");
+            Flags3 = (byte)Xml.GetChildUIntAttribute(node, "Flags3");
+            Flags4 = (byte)Xml.GetChildUIntAttribute(node, "Flags4");
+            int linkCountUnk = (byte)Xml.GetChildUIntAttribute(node, "Flags5");
 
             LinkID = (ushort)allLinksList.Count;
             int linkCount = 0;
@@ -434,11 +431,13 @@ namespace CodeWalker.GameFiles
                     linkCount++;
                 }
             }
+
             LinkCountFlags = (byte)((linkCount << 3) + (linkCountUnk & 7));
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct NodeLink : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct NodeLink : IMetaXmlItem
     {
         public ushort AreaID { get; set; }
         public ushort NodeID { get; set; }
@@ -449,7 +448,8 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return AreaID.ToString() + ", " + NodeID.ToString() + ", " + Flags0.Value.ToString() + ", " + Flags1.Value.ToString() + ", " + Flags2.Value.ToString() + ", " + LinkLength.Value.ToString();
+            return AreaID + ", " + NodeID + ", " + Flags0.Value + ", " + Flags1.Value + ", " + Flags2.Value + ", " +
+                   LinkLength.Value;
         }
 
         public void WriteXml(StringBuilder sb, int indent)
@@ -461,18 +461,20 @@ namespace CodeWalker.GameFiles
             YndXml.ValueTag(sb, indent, "Flags2", Flags2.Value.ToString());
             YndXml.ValueTag(sb, indent, "LinkLength", LinkLength.Value.ToString());
         }
+
         public void ReadXml(XmlNode node)
         {
-            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "ToAreaID", "value");
-            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "ToNodeID", "value");
-            Flags0 = (byte)Xml.GetChildUIntAttribute(node, "Flags0", "value");
-            Flags1 = (byte)Xml.GetChildUIntAttribute(node, "Flags1", "value");
-            Flags2 = (byte)Xml.GetChildUIntAttribute(node, "Flags2", "value");
-            LinkLength = (byte)Xml.GetChildUIntAttribute(node, "LinkLength", "value");
+            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "ToAreaID");
+            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "ToNodeID");
+            Flags0 = (byte)Xml.GetChildUIntAttribute(node, "Flags0");
+            Flags1 = (byte)Xml.GetChildUIntAttribute(node, "Flags1");
+            Flags2 = (byte)Xml.GetChildUIntAttribute(node, "Flags2");
+            LinkLength = (byte)Xml.GetChildUIntAttribute(node, "LinkLength");
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct NodeJunction
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct NodeJunction
     {
         public short MaxZ { get; set; }
         public short PositionX { get; set; }
@@ -484,7 +486,8 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return PositionX.ToString() + ", " + PositionY.ToString() + ": " + MinZ.ToString() + ", " + MaxZ.ToString() + ": " + HeightmapDimX.ToString() + " x " + HeightmapDimY.ToString();
+            return PositionX + ", " + PositionY + ": " + MinZ + ", " + MaxZ + ": " + HeightmapDimX + " x " +
+                   HeightmapDimY;
         }
 
         public void WriteXml(StringBuilder sb, int indent, byte[] allHeightmapData)
@@ -508,16 +511,18 @@ namespace CodeWalker.GameFiles
                 hmdata = new byte[hmbcount];
                 Buffer.BlockCopy(allHeightmapData, HeightmapPtr, hmdata, 0, hmbcount);
             }
-            YndXml.WriteRawArray(sb, hmdata, indent, "Heightmap", "", RelXml.FormatHexByte, Math.Max(HeightmapDimX, (byte)1));
 
+            YndXml.WriteRawArray(sb, hmdata, indent, "Heightmap", "", RelXml.FormatHexByte,
+                Math.Max(HeightmapDimX, (byte)1));
         }
+
         public void ReadXml(XmlNode node, List<byte> allHeightmapDataList)
         {
             Vector2 p = Xml.GetChildVector2Attributes(node, "Position");
-            float minz = Xml.GetChildFloatAttribute(node, "MinZ", "value");
-            float maxz = Xml.GetChildFloatAttribute(node, "MaxZ", "value");
-            HeightmapDimX = (byte)Xml.GetChildUIntAttribute(node, "SizeX", "value");
-            HeightmapDimY = (byte)Xml.GetChildUIntAttribute(node, "SizeY", "value");
+            float minz = Xml.GetChildFloatAttribute(node, "MinZ");
+            float maxz = Xml.GetChildFloatAttribute(node, "MaxZ");
+            HeightmapDimX = (byte)Xml.GetChildUIntAttribute(node, "SizeX");
+            HeightmapDimY = (byte)Xml.GetChildUIntAttribute(node, "SizeY");
             PositionX = (short)(p.X * 4.0f);
             PositionY = (short)(p.Y * 4.0f);
             MinZ = (short)(minz * 32.0f);
@@ -525,15 +530,12 @@ namespace CodeWalker.GameFiles
 
             byte[] hmdata = Xml.GetChildRawByteArray(node, "Heightmap");
             HeightmapPtr = (ushort)allHeightmapDataList.Count;
-            if (hmdata != null)
-            {
-                allHeightmapDataList.AddRange(hmdata);
-            }
-
+            if (hmdata != null) allHeightmapDataList.AddRange(hmdata);
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct NodeJunctionRef : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct NodeJunctionRef : IMetaXmlItem
     {
         public ushort AreaID { get; set; }
         public ushort NodeID { get; set; }
@@ -542,7 +544,7 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return AreaID.ToString() + ", " + NodeID.ToString() + ", " + JunctionID.ToString();
+            return AreaID + ", " + NodeID + ", " + JunctionID;
         }
 
         public void WriteXml(StringBuilder sb, int indent)
@@ -552,20 +554,13 @@ namespace CodeWalker.GameFiles
             YndXml.ValueTag(sb, indent, "JunctionID", JunctionID.ToString());
             YndXml.ValueTag(sb, indent, "Unk0", Unk0.ToString());
         }
+
         public void ReadXml(XmlNode node)
         {
-            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "AreaID", "value");
-            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "NodeID", "value");
-            JunctionID = (ushort)Xml.GetChildUIntAttribute(node, "JunctionID", "value");
-            Unk0 = (ushort)Xml.GetChildUIntAttribute(node, "Unk0", "value");
+            AreaID = (ushort)Xml.GetChildUIntAttribute(node, "AreaID");
+            NodeID = (ushort)Xml.GetChildUIntAttribute(node, "NodeID");
+            JunctionID = (ushort)Xml.GetChildUIntAttribute(node, "JunctionID");
+            Unk0 = (ushort)Xml.GetChildUIntAttribute(node, "Unk0");
         }
     }
-
-
-
-
-
-
-
-
 }

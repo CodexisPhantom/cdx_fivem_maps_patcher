@@ -1,13 +1,23 @@
-﻿using SharpDX;
-using System;
+﻿using System;
 using System.IO;
+using SharpDX;
 using TC = System.ComponentModel.TypeConverterAttribute;
 using EXP = System.ComponentModel.ExpandableObjectConverter;
 
 namespace CodeWalker.GameFiles
 {
-    [TC(typeof(EXP))] public class DistantLightsFile : GameFile, PackedFile
+    [TC(typeof(EXP))]
+    public class DistantLightsFile : GameFile, PackedFile
     {
+        public DistantLightsFile() : base(null, GameFileType.DistantLights)
+        {
+        }
+
+        public DistantLightsFile(RpfFileEntry entry) : base(entry, GameFileType.DistantLights)
+        {
+            RpfFileEntry = entry;
+        }
+
         public bool HD { get; set; } = true;
         public uint GridSize { get; set; } = 32;
         public uint CellSize { get; set; } = 512;
@@ -20,15 +30,6 @@ namespace CodeWalker.GameFiles
         public DistantLightsNode[] Nodes { get; set; } //NodeCount
         public DistantLightsPath[] Paths { get; set; } //PathCount
         public DistantLightsCell[] Cells { get; set; } //CellCount (built from loaded data)
-
-
-        public DistantLightsFile() : base(null, GameFileType.DistantLights)
-        {
-        }
-        public DistantLightsFile(RpfFileEntry entry) : base(entry, GameFileType.DistantLights)
-        {
-            RpfFileEntry = entry;
-        }
 
 
         public void Load(byte[] data, RpfFileEntry entry)
@@ -52,10 +53,13 @@ namespace CodeWalker.GameFiles
                 DataReader r = new DataReader(ms, Endianess.BigEndian);
 
                 Read(r);
-            };
+            }
+
+            ;
 
             Loaded = true;
         }
+
         public byte[] Save()
         {
             MemoryStream s = new MemoryStream();
@@ -79,57 +83,26 @@ namespace CodeWalker.GameFiles
             PathCounts2 = new uint[CellCount];
             Nodes = new DistantLightsNode[NodeCount];
             Paths = new DistantLightsPath[PathCount];
-            for (uint i = 0; i < CellCount; i++)
-            {
-                PathIndices[i] = r.ReadUInt32();
-            }
-            for (uint i = 0; i < CellCount; i++)
-            {
-                PathCounts1[i] = r.ReadUInt32();
-            }
-            for (uint i = 0; i < CellCount; i++)
-            {
-                PathCounts2[i] = r.ReadUInt32();
-            }
-            for (uint i = 0; i < NodeCount; i++)
-            {
-                Nodes[i] = new DistantLightsNode(r);
-            }
-            for (uint i = 0; i < PathCount; i++)
-            {
-                Paths[i] = new DistantLightsPath(r, HD);
-            }
+            for (uint i = 0; i < CellCount; i++) PathIndices[i] = r.ReadUInt32();
+            for (uint i = 0; i < CellCount; i++) PathCounts1[i] = r.ReadUInt32();
+            for (uint i = 0; i < CellCount; i++) PathCounts2[i] = r.ReadUInt32();
+            for (uint i = 0; i < NodeCount; i++) Nodes[i] = new DistantLightsNode(r);
+            for (uint i = 0; i < PathCount; i++) Paths[i] = new DistantLightsPath(r, HD);
 
 
             BuildCells();
-
         }
+
         private void Write(DataWriter w)
         {
             w.Write(NodeCount);
             w.Write(PathCount);
 
-            for (uint i = 0; i < CellCount; i++)
-            {
-                w.Write(PathIndices[i]);
-            }
-            for (uint i = 0; i < CellCount; i++)
-            {
-                w.Write(PathCounts1[i]);
-            }
-            for (uint i = 0; i < CellCount; i++)
-            {
-                w.Write(PathCounts2[i]);
-            }
-            for (uint i = 0; i < NodeCount; i++)
-            {
-                Nodes[i].Write(w);
-            }
-            for (uint i = 0; i < PathCount; i++)
-            {
-                Paths[i].Write(w, HD);
-            }
-
+            for (uint i = 0; i < CellCount; i++) w.Write(PathIndices[i]);
+            for (uint i = 0; i < CellCount; i++) w.Write(PathCounts1[i]);
+            for (uint i = 0; i < CellCount; i++) w.Write(PathCounts2[i]);
+            for (uint i = 0; i < NodeCount; i++) Nodes[i].Write(w);
+            for (uint i = 0; i < PathCount; i++) Paths[i].Write(w, HD);
         }
 
 
@@ -139,61 +112,64 @@ namespace CodeWalker.GameFiles
             {
                 DistantLightsPath path = Paths[i];
                 path.Nodes = new DistantLightsNode[path.NodeCount];
-                for (uint n = 0; n < path.NodeCount; n++)
-                {
-                    path.Nodes[n] = Nodes[path.NodeIndex + n];
-                }
+                for (uint n = 0; n < path.NodeCount; n++) path.Nodes[n] = Nodes[path.NodeIndex + n];
             }
 
             Cells = new DistantLightsCell[CellCount];
             for (uint x = 0; x < GridSize; x++)
+            for (uint y = 0; y < GridSize; y++)
             {
-                for (uint y = 0; y < GridSize; y++)
+                uint i = x * GridSize + y;
+                DistantLightsCell cell = new DistantLightsCell();
+                cell.Index = i;
+                cell.CellX = x;
+                cell.CellY = y;
+                cell.CellMin = new Vector2(x, y) * CellSize - 8192.0f;
+                cell.CellMax = cell.CellMin + CellSize;
+                uint pc1 = PathCounts1[i];
+                if (pc1 > 0)
                 {
-                    uint i = x * GridSize + y;
-                    DistantLightsCell cell = new DistantLightsCell();
-                    cell.Index = i;
-                    cell.CellX = x;
-                    cell.CellY = y;
-                    cell.CellMin = new Vector2(x, y) * CellSize - 8192.0f;
-                    cell.CellMax = cell.CellMin + CellSize;
-                    uint pc1 = PathCounts1[i];
-                    if (pc1 > 0)
-                    {
-                        cell.Paths1 = new DistantLightsPath[pc1];
-                        for (uint l = 0; l < pc1; l++)
-                        {
-                            cell.Paths1[l] = Paths[PathIndices[i] + l];
-                        }
-                    }
-                    uint pc2 = PathCounts2[i];
-                    if (pc2 > 0)
-                    {
-                        cell.Paths2 = new DistantLightsPath[pc2];
-                        for (uint l = 0; l < pc2; l++)
-                        {
-                            cell.Paths2[l] = Paths[PathIndices[i] + l + pc1];
-                        }
-                    }
-                    Cells[i] = cell;
+                    cell.Paths1 = new DistantLightsPath[pc1];
+                    for (uint l = 0; l < pc1; l++) cell.Paths1[l] = Paths[PathIndices[i] + l];
                 }
+
+                uint pc2 = PathCounts2[i];
+                if (pc2 > 0)
+                {
+                    cell.Paths2 = new DistantLightsPath[pc2];
+                    for (uint l = 0; l < pc2; l++) cell.Paths2[l] = Paths[PathIndices[i] + l + pc1];
+                }
+
+                Cells[i] = cell;
             }
-
         }
-
     }
 
-    [TC(typeof(EXP))] public class DistantLightsNode 
+    [TC(typeof(EXP))]
+    public class DistantLightsNode
     {
+        public DistantLightsNode()
+        {
+        }
+
+        public DistantLightsNode(DataReader r)
+        {
+            Read(r);
+        }
+
         public short X { get; set; }
         public short Y { get; set; }
         public short Z { get; set; }
 
-        public DistantLightsNode()
-        { }
-        public DistantLightsNode(DataReader r)
+        public Vector3 Vector
         {
-            Read(r);
+            get => new Vector3(X, Y, Z);
+            set
+            {
+                X = (short)Math.Round(value.X);
+                Y = (short)Math.Round(value.Y);
+                Z = (short)Math.Round(value.Z);
+            }
         }
 
         public void Read(DataReader r)
@@ -202,17 +178,12 @@ namespace CodeWalker.GameFiles
             Y = r.ReadInt16();
             Z = r.ReadInt16();
         }
+
         public void Write(DataWriter w)
         {
             w.Write(X);
             w.Write(Y);
             w.Write(Z);
-        }
-
-        public Vector3 Vector
-        {
-            get { return new Vector3(X, Y, Z); }
-            set { X = (short)Math.Round(value.X); Y = (short)Math.Round(value.Y); Z = (short)Math.Round(value.Z); }
         }
 
         public override string ToString()
@@ -221,8 +192,18 @@ namespace CodeWalker.GameFiles
         }
     }
 
-    [TC(typeof(EXP))] public class DistantLightsPath 
+    [TC(typeof(EXP))]
+    public class DistantLightsPath
     {
+        public DistantLightsPath()
+        {
+        }
+
+        public DistantLightsPath(DataReader r, bool hd)
+        {
+            Read(r, hd);
+        }
+
         public short CenterX { get; set; }
         public short CenterY { get; set; }
         public ushort SizeX { get; set; }
@@ -238,13 +219,6 @@ namespace CodeWalker.GameFiles
         public byte Byte4 { get; set; }
 
         public DistantLightsNode[] Nodes { get; set; }
-
-        public DistantLightsPath()
-        { }
-        public DistantLightsPath(DataReader r, bool hd)
-        {
-            Read(r, hd);
-        }
 
         public void Read(DataReader r, bool hd)
         {
@@ -270,6 +244,7 @@ namespace CodeWalker.GameFiles
                 Byte2 = r.ReadByte();
             }
         }
+
         public void Write(DataWriter w, bool hd)
         {
             w.Write(CenterX);
@@ -297,13 +272,14 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return CenterX.ToString() + ", " + CenterY.ToString() + ", " + SizeX.ToString() + ", " + SizeY.ToString() + ", " +
-                NodeIndex.ToString() + ", " + NodeCount.ToString() + ", " + Short7.ToString() + ", " + Short8.ToString() + ", " +
-                FloatUtil.ToString(Float1) + ", " + Byte1.ToString() + ", " + Byte2.ToString() + ", " + Byte3.ToString() + ", " + Byte4.ToString();
+            return CenterX + ", " + CenterY + ", " + SizeX + ", " + SizeY + ", " +
+                   NodeIndex + ", " + NodeCount + ", " + Short7 + ", " + Short8 + ", " +
+                   FloatUtil.ToString(Float1) + ", " + Byte1 + ", " + Byte2 + ", " + Byte3 + ", " + Byte4;
         }
     }
 
-    [TC(typeof(EXP))] public class DistantLightsCell 
+    [TC(typeof(EXP))]
+    public class DistantLightsCell
     {
         public uint Index { get; set; }
         public uint CellX { get; set; }
@@ -315,10 +291,9 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return Index.ToString() + " (" + CellX.ToString() + ", " + CellY.ToString() + ") - " +
-                (Paths1?.Length ?? 0).ToString() + ", " + (Paths2?.Length ?? 0).ToString() + " - (" +
-                CellMin.ToString() + " - " + CellMax.ToString() + ")";
+            return Index + " (" + CellX + ", " + CellY + ") - " +
+                   (Paths1?.Length ?? 0) + ", " + (Paths2?.Length ?? 0) + " - (" +
+                   CellMin + " - " + CellMax + ")";
         }
     }
-
 }

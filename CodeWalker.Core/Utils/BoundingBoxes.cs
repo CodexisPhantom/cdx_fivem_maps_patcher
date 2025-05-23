@@ -8,7 +8,7 @@ namespace CodeWalker.Core.Utils
         public static Vector3 Size(this BoundingBox bounds)
         {
             return new Vector3(
-                Math.Abs(bounds.Maximum.X - bounds.Minimum.X), 
+                Math.Abs(bounds.Maximum.X - bounds.Minimum.X),
                 Math.Abs(bounds.Maximum.Y - bounds.Minimum.Y),
                 Math.Abs(bounds.Maximum.Z - bounds.Minimum.Z));
         }

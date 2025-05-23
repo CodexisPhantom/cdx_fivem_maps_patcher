@@ -9,78 +9,11 @@ namespace CodeWalker.GameFiles
     {
         protected const int RESOURCE_IDENT = 0x37435352;
         protected const int BASE_SIZE = 0x2000;
-        private const int SKIP_SIZE = 16;//512;//256;//64;
-        private const int ALIGN_SIZE = 16;//512;//64;
+        private const int SKIP_SIZE = 16; //512;//256;//64;
+        private const int ALIGN_SIZE = 16; //512;//64;
 
-        public class ResourceBuilderBlock
-        {
-            public IResourceBlock Block;
-            public long Length;
-
-            public ResourceBuilderBlock(IResourceBlock block)
-            {
-                Block = block;
-                Length = block?.BlockLength ?? 0;
-            }
-        }
-        public class ResourceBuilderBlockSet
-        {
-            public bool IsSystemSet;
-            public ResourceBuilderBlock RootBlock;
-            public LinkedList<ResourceBuilderBlock> BlockList = new LinkedList<ResourceBuilderBlock>();
-            public Dictionary<ResourceBuilderBlock, LinkedListNode<ResourceBuilderBlock>> BlockDict = new Dictionary<ResourceBuilderBlock, LinkedListNode<ResourceBuilderBlock>>();
-
-            public int Count => BlockList.Count;
-
-            public ResourceBuilderBlockSet(IList<IResourceBlock> blocks, bool sys)
-            {
-                IsSystemSet = sys;
-                if (sys && (blocks.Count > 0))
-                {
-                    RootBlock = new ResourceBuilderBlock(blocks[0]);
-                }
-                List<ResourceBuilderBlock> list = new List<ResourceBuilderBlock>();
-                int start = sys ? 1 : 0;
-                for (int i = start; i < blocks.Count; i++)
-                {
-                    ResourceBuilderBlock bb = new ResourceBuilderBlock(blocks[i]);
-                    list.Add(bb);
-                }
-                list.Sort((a, b) => b.Length.CompareTo(a.Length));
-                foreach (ResourceBuilderBlock bb in list)
-                {
-                    LinkedListNode<ResourceBuilderBlock> ln = BlockList.AddLast(bb);
-                    BlockDict[bb] = ln;
-                }
-            }
-
-            public ResourceBuilderBlock FindBestBlock(long maxSize)
-            {
-                LinkedListNode<ResourceBuilderBlock> n = BlockList.First;
-                while ((n != null) && (n.Value.Length > maxSize))
-                {
-                    n = n.Next;
-                }
-                return n?.Value;
-            }
-
-            public ResourceBuilderBlock TakeBestBlock(long maxSize)
-            {
-                ResourceBuilderBlock r = FindBestBlock(maxSize);
-                if (r != null)
-                {
-                    if (BlockDict.TryGetValue(r, out LinkedListNode<ResourceBuilderBlock> ln))
-                    {
-                        BlockList.Remove(ln);
-                        BlockDict.Remove(r);
-                    }
-                }
-                return r;
-            }
-
-        }
-
-        public static void GetBlocks(IResourceBlock rootBlock, out IList<IResourceBlock> sys, out IList<IResourceBlock> gfx)
+        public static void GetBlocks(IResourceBlock rootBlock, out IList<IResourceBlock> sys,
+            out IList<IResourceBlock> gfx)
         {
             HashSet<IResourceBlock> systemBlocks = new HashSet<IResourceBlock>();
             HashSet<IResourceBlock> graphicBlocks = new HashSet<IResourceBlock>();
@@ -93,30 +26,27 @@ namespace CodeWalker.GameFiles
                 {
                     if (!systemBlocks.Contains(block)) systemBlocks.Add(block);
                 }
-                else if(block is IResourceGraphicsBlock)
+                else if (block is IResourceGraphicsBlock)
                 {
                     if (!graphicBlocks.Contains(block)) graphicBlocks.Add(block);
                 }
             }
+
             void addChildren(IResourceBlock block)
             {
                 if (block is IResourceSystemBlock sblock)
                 {
                     IResourceBlock[] references = sblock.GetReferences();
                     foreach (IResourceBlock reference in references)
-                    {
                         if (!processed.Contains(reference))
                         {
                             processed.Add(reference);
                             addBlock(reference);
                             addChildren(reference);
                         }
-                    }
+
                     Tuple<long, IResourceBlock>[] parts = sblock.GetParts();
-                    foreach (Tuple<long, IResourceBlock> part in parts)
-                    {
-                        addChildren(part.Item2);
-                    }
+                    foreach (Tuple<long, IResourceBlock> part in parts) addChildren(part.Item2);
                 }
             }
 
@@ -125,50 +55,40 @@ namespace CodeWalker.GameFiles
 
 
             sys = new List<IResourceBlock>();
-            foreach (IResourceBlock s in systemBlocks)
-            {
-                sys.Add(s);
-            }
+            foreach (IResourceBlock s in systemBlocks) sys.Add(s);
             gfx = new List<IResourceBlock>();
-            foreach (IResourceBlock s in graphicBlocks)
-            {
-                gfx.Add(s);
-            }
+            foreach (IResourceBlock s in graphicBlocks) gfx.Add(s);
         }
 
-        public static void AssignPositions(IList<IResourceBlock> blocks, uint basePosition, out RpfResourcePageFlags pageFlags, uint maxPageCount)
+        public static void AssignPositions(IList<IResourceBlock> blocks, uint basePosition,
+            out RpfResourcePageFlags pageFlags, uint maxPageCount)
         {
-            if ((blocks.Count > 0) && (blocks[0] is Meta))
+            if (blocks.Count > 0 && blocks[0] is Meta)
             {
                 //use naive packing strategy for Meta resources, due to crashes caused by the improved packing
                 AssignPositionsForMeta(blocks, basePosition, out pageFlags);
                 return;
             }
 
-            bool sys = (basePosition == 0x50000000);
+            bool sys = basePosition == 0x50000000;
 
             long pad(long p)
             {
-                return ((ALIGN_SIZE - (p % ALIGN_SIZE)) % ALIGN_SIZE);
+                return (ALIGN_SIZE - p % ALIGN_SIZE) % ALIGN_SIZE;
             }
 
             long largestBlockSize = 0; // find largest structure
-            long startPageSize = BASE_SIZE;// 0x2000; // find starting page size
+            long startPageSize = BASE_SIZE; // 0x2000; // find starting page size
             long totalBlockSize = 0;
             foreach (IResourceBlock block in blocks)
             {
                 long blockLength = block.BlockLength;
                 totalBlockSize += blockLength;
                 totalBlockSize += pad(totalBlockSize);
-                if (largestBlockSize < blockLength)
-                {
-                    largestBlockSize = blockLength;
-                }
+                if (largestBlockSize < blockLength) largestBlockSize = blockLength;
             }
-            while (startPageSize < largestBlockSize)
-            {
-                startPageSize *= 2;
-            }
+
+            while (startPageSize < largestBlockSize) startPageSize *= 2;
 
 
             pageFlags = new RpfResourcePageFlags();
@@ -198,6 +118,7 @@ namespace CodeWalker.GameFiles
                     baseSize *= 2;
                     if (baseShift >= 0xF) break;
                 }
+
                 int baseSizeMax = baseSize << 8;
                 long baseSizeMaxTest = startPageSize;
                 while (baseSizeMaxTest < baseSizeMax)
@@ -205,11 +126,12 @@ namespace CodeWalker.GameFiles
                     pageCountIndex++;
                     baseSizeMaxTest *= 2;
                 }
+
                 pageCounts[pageCountIndex] = 1;
 
                 while (true)
                 {
-                    bool isroot = sys && (currentPosition == 0);
+                    bool isroot = sys && currentPosition == 0;
                     ResourceBuilderBlock block = isroot ? rootblock : blockset.TakeBestBlock(currentPageSpace);
                     long blockLength = block?.Length ?? 0;
                     if (block != null)
@@ -221,8 +143,7 @@ namespace CodeWalker.GameFiles
                         currentPosition += pad(currentPosition);
                         long usedspace = currentPosition - opos;
                         currentPageSpace -= usedspace;
-                        currentRemainder -= usedspace;//blockLength;// 
-
+                        currentRemainder -= usedspace; //blockLength;// 
                     }
                     else if (blockset.Count > 0)
                     {
@@ -231,15 +152,17 @@ namespace CodeWalker.GameFiles
                         currentPosition = currentPageStart;
                         block = blockset.FindBestBlock(long.MaxValue); //just find the biggest block
                         blockLength = block?.Length ?? 0;
-                        while (blockLength <= (currentPageSize >> 1))//determine best new page size
+                        while (blockLength <= currentPageSize >> 1) //determine best new page size
                         {
                             if (currentPageSize <= minPageSize) break;
                             if (pageCountIndex >= 8) break;
-                            if ((currentPageSize <= targetPageSize) && (currentRemainder >= (currentPageSize - minPageSize))) break;
+                            if (currentPageSize <= targetPageSize &&
+                                currentRemainder >= currentPageSize - minPageSize) break;
 
                             currentPageSize = currentPageSize >> 1;
                             pageCountIndex++;
                         }
+
                         currentPageSpace = currentPageSize;
                         pageCounts[pageCountIndex]++;
                         pageCount++;
@@ -253,26 +176,23 @@ namespace CodeWalker.GameFiles
 
                 pageFlags = new RpfResourcePageFlags(pageCounts, baseShift);
 
-                if ((pageCount == pageFlags.Count) && (pageFlags.Size >= currentPosition) && (pageCount <= maxPageCount)) //make sure page counts fit in the flags value
-                {
+                if (pageCount == pageFlags.Count && pageFlags.Size >= currentPosition &&
+                    pageCount <= maxPageCount) //make sure page counts fit in the flags value
                     break;
-                }
 
                 startPageSize *= 2;
                 pageSizeMult *= 2;
             }
-
         }
 
-        public static void AssignPositionsForMeta(IList<IResourceBlock> blocks, uint basePosition, out RpfResourcePageFlags pageFlags)
+        public static void AssignPositionsForMeta(IList<IResourceBlock> blocks, uint basePosition,
+            out RpfResourcePageFlags pageFlags)
         {
             // find largest structure
             long largestBlockSize = 0;
             foreach (IResourceBlock block in blocks)
-            {
                 if (largestBlockSize < block.BlockLength)
                     largestBlockSize = block.BlockLength;
-            }
 
             // find minimum page size
             long currentPageSize = 0x2000;
@@ -298,7 +218,7 @@ namespace CodeWalker.GameFiles
                     // check if new page is necessary...
                     // if yes, add a new page and align to it
                     long maxSpace = currentPageCount * currentPageSize - currentPosition;
-                    if (maxSpace < (block.BlockLength + SKIP_SIZE))
+                    if (maxSpace < block.BlockLength + SKIP_SIZE)
                     {
                         currentPageCount++;
                         currentPosition = currentPageSize * (currentPageCount - 1);
@@ -309,8 +229,8 @@ namespace CodeWalker.GameFiles
                     currentPosition += block.BlockLength; // + SKIP_SIZE; //is padding everywhere really necessary??
 
                     // align...
-                    if ((currentPosition % ALIGN_SIZE) != 0)
-                        currentPosition += (ALIGN_SIZE - (currentPosition % ALIGN_SIZE));
+                    if (currentPosition % ALIGN_SIZE != 0)
+                        currentPosition += ALIGN_SIZE - currentPosition % ALIGN_SIZE;
                 }
 
                 // break if everything fits...
@@ -320,14 +240,15 @@ namespace CodeWalker.GameFiles
                 currentPageSize *= 2;
             }
 
-            pageFlags = new RpfResourcePageFlags(RpfResourceFileEntry.GetFlagsFromBlocks((uint)currentPageCount, (uint)currentPageSize, 0));
-
+            pageFlags = new RpfResourcePageFlags(
+                RpfResourceFileEntry.GetFlagsFromBlocks((uint)currentPageCount, (uint)currentPageSize, 0));
         }
 
 
-        public static void AssignPositions2(IList<IResourceBlock> blocks, uint basePosition, out RpfResourcePageFlags pageFlags, uint maxPageCount, bool gen9)
+        public static void AssignPositions2(IList<IResourceBlock> blocks, uint basePosition,
+            out RpfResourcePageFlags pageFlags, uint maxPageCount, bool gen9)
         {
-            if ((blocks.Count > 0) && (blocks[0] is Meta))//TODO: try remove this?
+            if (blocks.Count > 0 && blocks[0] is Meta) //TODO: try remove this?
             {
                 //use naive packing strategy for Meta resources, due to crashes caused by the improved packing
                 AssignPositionsForMeta(blocks, basePosition, out pageFlags);
@@ -342,60 +263,54 @@ namespace CodeWalker.GameFiles
             //allows for 5 page sizes, each double the size of the previous, with max counts 0x7F, 0x3F, 0xF, 3, 1
             //also allows for 4 tail pages, each half the size of the previous, only one page of each size [TODO?] 
 
-            bool sys = (basePosition == 0x50000000);
-            long maxPageSizeMult = 16L;//the biggest page is 16x the base page size.
+            bool sys = basePosition == 0x50000000;
+            long maxPageSizeMult = 16L; //the biggest page is 16x the base page size.
             long maxPageSize = (0x2000 << 0xF) * maxPageSizeMult; //this is the size of the biggest possible page [4GB!]
             long maxBlockSize = 0L;
-            long minBlockSize = (blocks.Count == 0) ? 0 : maxPageSize;
+            long minBlockSize = blocks.Count == 0 ? 0 : maxPageSize;
             if (gen9)
-            {
                 foreach (IResourceBlock block in blocks)
                 {
                     if (block.BlockLength_Gen9 > maxBlockSize) maxBlockSize = block.BlockLength_Gen9;
                     if (block.BlockLength_Gen9 < minBlockSize) minBlockSize = block.BlockLength_Gen9;
                 }
-            }
             else
-            {
                 foreach (IResourceBlock block in blocks)
                 {
                     if (block.BlockLength > maxBlockSize) maxBlockSize = block.BlockLength;
                     if (block.BlockLength < minBlockSize) minBlockSize = block.BlockLength;
                 }
-            }
 
-            int baseShift = 0;//want to find the best value for this
-            long baseSize = 0x2000L;//corresponding size for the baseShift value
-            while (((baseSize < minBlockSize) || ((baseSize * maxPageSizeMult) < maxBlockSize)) && (baseShift < 0xF))
+            int baseShift = 0; //want to find the best value for this
+            long baseSize = 0x2000L; //corresponding size for the baseShift value
+            while ((baseSize < minBlockSize || baseSize * maxPageSizeMult < maxBlockSize) && baseShift < 0xF)
             {
                 baseShift++;
                 baseSize = 0x2000L << baseShift;
             }
-            if ((baseSize * maxPageSizeMult) < maxBlockSize) throw new Exception("Unable to fit largest block!");
 
+            if (baseSize * maxPageSizeMult < maxBlockSize) throw new Exception("Unable to fit largest block!");
 
 
             List<IResourceBlock> sortedBlocks = new List<IResourceBlock>();
-            IResourceBlock rootBlock = (sys && (blocks.Count > 0)) ? blocks[0] : null;
+            IResourceBlock rootBlock = sys && blocks.Count > 0 ? blocks[0] : null;
             foreach (IResourceBlock block in blocks)
             {
                 if (block == null) continue;
                 if (block != rootBlock) sortedBlocks.Add(block);
             }
+
             if (gen9)
-            {
                 sortedBlocks.Sort((a, b) => b.BlockLength_Gen9.CompareTo(a.BlockLength_Gen9));
-            }
             else
-            {
                 sortedBlocks.Sort((a, b) => b.BlockLength.CompareTo(a.BlockLength));
-            }
             if (rootBlock != null) sortedBlocks.Insert(0, rootBlock);
 
 
             uint[] pageCounts = new uint[5];
             List<long>[] pageSizes = new List<long>[5];
-            Dictionary<IResourceBlock, (int, int, long)> blockPages = new Dictionary<IResourceBlock, (int, int, long)>();//(pageSizeIndex, pageIndex, offset)
+            Dictionary<IResourceBlock, (int, int, long)>
+                blockPages = new Dictionary<IResourceBlock, (int, int, long)>(); //(pageSizeIndex, pageIndex, offset)
             while (true)
             {
                 for (int i = 0; i < 5; i++)
@@ -416,32 +331,33 @@ namespace CodeWalker.GameFiles
                 {
                     IResourceBlock block = sortedBlocks[i];
                     long size = gen9 ? block.BlockLength_Gen9 : block.BlockLength;
-                    if (i == 0)//first block should always go in the first page, it's either root block or largest
+                    if (i == 0) //first block should always go in the first page, it's either root block or largest
                     {
-                        pageSizes[largestPageSizeI] = new List<long>() { size };//allocate the first new page
+                        pageSizes[largestPageSizeI] = new List<long> { size }; //allocate the first new page
                         blockPages[block] = (largestPageSizeI, 0, 0);
                     }
                     else
                     {
                         int pageSizeIndex = 0;
                         long pageSize = baseSize;
-                        while ((size > pageSize) && (pageSizeIndex < largestPageSizeI))//find the smallest page that will fit this block
+                        while (size > pageSize &&
+                               pageSizeIndex < largestPageSizeI) //find the smallest page that will fit this block
                         {
                             pageSizeIndex++;
                             pageSize *= 2;
                         }
-                        bool found = false;//find an existing page of this size or larger which has space
+
+                        bool found = false; //find an existing page of this size or larger which has space
                         int testPageSizeI = pageSizeIndex;
                         long testPageSize = pageSize;
-                        while ((found == false) && (testPageSizeI <= largestPageSizeI))
+                        while (found == false && testPageSizeI <= largestPageSizeI)
                         {
                             List<long> list = pageSizes[testPageSizeI];
                             if (list != null)
-                            {
                                 for (int p = 0; p < list.Count; p++)
                                 {
                                     long s = list[p];
-                                    s += ((ALIGN_SIZE - (s % ALIGN_SIZE)) % ALIGN_SIZE);
+                                    s += (ALIGN_SIZE - s % ALIGN_SIZE) % ALIGN_SIZE;
                                     long o = s;
                                     s += size;
                                     if (s <= testPageSize)
@@ -452,11 +368,12 @@ namespace CodeWalker.GameFiles
                                         break;
                                     }
                                 }
-                            }
+
                             testPageSizeI++;
                             testPageSize *= 2;
                         }
-                        if (found == false)//couldn't find an existing page for this block, so allocate a new page
+
+                        if (found == false) //couldn't find an existing page for this block, so allocate a new page
                         {
                             List<long> list = pageSizes[pageSizeIndex];
                             if (list == null)
@@ -464,6 +381,7 @@ namespace CodeWalker.GameFiles
                                 list = new List<long>();
                                 pageSizes[pageSizeIndex] = list;
                             }
+
                             int pageIndex = list.Count;
                             list.Add(size);
                             blockPages[block] = (pageSizeIndex, pageIndex, 0);
@@ -479,29 +397,30 @@ namespace CodeWalker.GameFiles
                     pageCounts[i] = pc;
                     totalPageCount += pc;
                 }
+
                 if (totalPageCount > maxPageCount) testOk = false;
                 if (pageCounts[0] > 0x7F) testOk = false;
                 if (pageCounts[1] > 0x3F) testOk = false;
                 if (pageCounts[2] > 0xF) testOk = false;
                 if (pageCounts[3] > 0x3) testOk = false;
                 if (pageCounts[4] > 0x1) testOk = false;
-                if (testOk) break;//everything fits, so we're done here
+                if (testOk) break; //everything fits, so we're done here
                 if (baseShift >= 0xF) throw new Exception("Unable to pack blocks with largest possible base!");
                 baseShift++;
                 baseSize = 0x2000 << baseShift;
             }
 
 
-            
-            long pageOffset = 0L;//pages are allocated, assign actual positions
-            long[] pageOffsets = new long[5];//base offsets for each page size
+            long pageOffset = 0L; //pages are allocated, assign actual positions
+            long[] pageOffsets = new long[5]; //base offsets for each page size
             for (int i = 4; i >= 0; i--)
             {
                 pageOffsets[i] = pageOffset;
                 long pageSize = baseSize * (1 << i);
                 uint pageCount = pageCounts[i];
-                pageOffset += (pageSize * pageCount);
+                pageOffset += pageSize * pageCount;
             }
+
             foreach (KeyValuePair<IResourceBlock, (int, int, long)> kvp in blockPages)
             {
                 IResourceBlock block = kvp.Key;
@@ -509,7 +428,7 @@ namespace CodeWalker.GameFiles
                 int pageIndex = kvp.Value.Item2;
                 long offset = kvp.Value.Item3;
                 long pageSize = baseSize * (1 << pageSizeIndex);
-                long blockPosition = pageOffsets[pageSizeIndex] + (pageSize * pageIndex) + offset;
+                long blockPosition = pageOffsets[pageSizeIndex] + pageSize * pageIndex + offset;
                 block.FilePosition = basePosition + blockPosition;
             }
 
@@ -521,14 +440,11 @@ namespace CodeWalker.GameFiles
             v += (pageCounts[1] & 0x3F) << 11;
             v += (pageCounts[0] & 0x7F) << 17;
             pageFlags = new RpfResourcePageFlags(v);
-
-
         }
 
 
         public static byte[] Build(ResourceFileBase fileBase, int version, bool compress = true, bool gen9 = false)
         {
-
             fileBase.FilePagesInfo = new ResourcePagesInfo();
 
             IList<IResourceBlock> systemBlocks;
@@ -561,10 +477,7 @@ namespace CodeWalker.GameFiles
                 long pos_after = resourceWriter.Position;
                 long blen = resourceWriter.IsGen9 ? block.BlockLength_Gen9 : block.BlockLength;
 
-                if ((pos_after - pos_before) != blen)
-                {
-                    throw new Exception("error in system length");
-                }
+                if (pos_after - pos_before != blen) throw new Exception("error in system length");
             }
 
             resourceWriter.Position = 0x60000000;
@@ -577,13 +490,8 @@ namespace CodeWalker.GameFiles
                 long pos_after = resourceWriter.Position;
                 long blen = resourceWriter.IsGen9 ? block.BlockLength_Gen9 : block.BlockLength;
 
-                if ((pos_after - pos_before) != blen)
-                {
-                    throw new Exception("error in graphics length");
-                }
+                if (pos_after - pos_before != blen) throw new Exception("error in graphics length");
             }
-
-
 
 
             int sysDataSize = (int)systemPageFlags.Size;
@@ -598,7 +506,6 @@ namespace CodeWalker.GameFiles
             graphicsStream.Flush();
             graphicsStream.Position = 0;
             graphicsStream.Read(gfxData, 0, (int)graphicsStream.Length);
-
 
 
             uint uv = (uint)version;
@@ -621,7 +528,7 @@ namespace CodeWalker.GameFiles
             byte[] data = new byte[dataSize];
 
             byte[] h1 = BitConverter.GetBytes((uint)0x37435352);
-            byte[] h2 = BitConverter.GetBytes((int)version);
+            byte[] h2 = BitConverter.GetBytes(version);
             byte[] h3 = BitConverter.GetBytes(sf);
             byte[] h4 = BitConverter.GetBytes(gf);
             Buffer.BlockCopy(h1, 0, data, 0, 4);
@@ -632,10 +539,6 @@ namespace CodeWalker.GameFiles
 
             return data;
         }
-
-
-
-
 
 
         public static byte[] AddResourceHeader(RpfResourceFileEntry entry, byte[] data)
@@ -668,6 +571,7 @@ namespace CodeWalker.GameFiles
                 return outbuf;
             }
         }
+
         public static byte[] Decompress(byte[] data)
         {
             using (MemoryStream ms = new MemoryStream(data))
@@ -682,5 +586,68 @@ namespace CodeWalker.GameFiles
             }
         }
 
+        public class ResourceBuilderBlock
+        {
+            public IResourceBlock Block;
+            public long Length;
+
+            public ResourceBuilderBlock(IResourceBlock block)
+            {
+                Block = block;
+                Length = block?.BlockLength ?? 0;
+            }
+        }
+
+        public class ResourceBuilderBlockSet
+        {
+            public Dictionary<ResourceBuilderBlock, LinkedListNode<ResourceBuilderBlock>> BlockDict =
+                new Dictionary<ResourceBuilderBlock, LinkedListNode<ResourceBuilderBlock>>();
+
+            public LinkedList<ResourceBuilderBlock> BlockList = new LinkedList<ResourceBuilderBlock>();
+            public bool IsSystemSet;
+            public ResourceBuilderBlock RootBlock;
+
+            public ResourceBuilderBlockSet(IList<IResourceBlock> blocks, bool sys)
+            {
+                IsSystemSet = sys;
+                if (sys && blocks.Count > 0) RootBlock = new ResourceBuilderBlock(blocks[0]);
+                List<ResourceBuilderBlock> list = new List<ResourceBuilderBlock>();
+                int start = sys ? 1 : 0;
+                for (int i = start; i < blocks.Count; i++)
+                {
+                    ResourceBuilderBlock bb = new ResourceBuilderBlock(blocks[i]);
+                    list.Add(bb);
+                }
+
+                list.Sort((a, b) => b.Length.CompareTo(a.Length));
+                foreach (ResourceBuilderBlock bb in list)
+                {
+                    LinkedListNode<ResourceBuilderBlock> ln = BlockList.AddLast(bb);
+                    BlockDict[bb] = ln;
+                }
+            }
+
+            public int Count => BlockList.Count;
+
+            public ResourceBuilderBlock FindBestBlock(long maxSize)
+            {
+                LinkedListNode<ResourceBuilderBlock> n = BlockList.First;
+                while (n != null && n.Value.Length > maxSize) n = n.Next;
+                return n?.Value;
+            }
+
+            public ResourceBuilderBlock TakeBestBlock(long maxSize)
+            {
+                ResourceBuilderBlock r = FindBestBlock(maxSize);
+                if (r != null)
+                    if (BlockDict.TryGetValue(r, out LinkedListNode<ResourceBuilderBlock> ln))
+                    {
+                        BlockList.Remove(ln);
+                        BlockDict.Remove(r);
+                    }
+
+                return r;
+            }
+        }
     }
 }

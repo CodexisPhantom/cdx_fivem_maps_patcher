@@ -1,32 +1,32 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class Weather
     {
+        public WeatherValues CurrentValues;
+        public float CurrentWeatherChangeBlend;
+        public float CurrentWeatherChangeTime;
+        public WeatherCycleKeyframeRegion CurrentWeatherRegion;
+        public WeatherType CurrentWeatherType;
+
+        public volatile bool Inited;
+        public WeatherCycleKeyframeRegion NextWeatherRegion;
+        public WeatherType NextWeatherType;
+        public string Region = "GLOBAL"; //URBAN or GLOBAL..
+
+        public Timecycle Timecycle;
+        public TimecycleMods TimecycleMods;
+        public float WeatherChangeTime = 0.33f;
 
         public Dictionary<string, WeatherGpuFx> WeatherGpuFx { get; set; } = new Dictionary<string, WeatherGpuFx>();
         public Dictionary<string, WeatherType> WeatherTypes { get; set; } = new Dictionary<string, WeatherType>();
         public List<WeatherCycle> WeatherCycles { get; set; } = new List<WeatherCycle>();
-        public WeatherValues CurrentValues;
-
-        public volatile bool Inited;
-        public WeatherType CurrentWeatherType;
-        public WeatherType NextWeatherType;
-        public float WeatherChangeTime = 0.33f;
-        public float CurrentWeatherChangeTime;
-        public float CurrentWeatherChangeBlend;
-        public string Region = "GLOBAL"; //URBAN or GLOBAL..
-        public WeatherCycleKeyframeRegion CurrentWeatherRegion;
-        public WeatherCycleKeyframeRegion NextWeatherRegion;
-
-        public Timecycle Timecycle;
-        public TimecycleMods TimecycleMods;
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus, Timecycle timecycle)
         {
@@ -35,10 +35,7 @@ namespace CodeWalker.World
 
             //TODO: RpfMan should be able to get the right version? or maybe let gameFileCache do it!
             string filename = "common.rpf\\data\\levels\\gta5\\weather.xml";
-            if (gameFileCache.EnableDlc)
-            {
-                filename = "update\\update.rpf\\common\\data\\levels\\gta5\\weather.xml";
-            }
+            if (gameFileCache.EnableDlc) filename = "update\\update.rpf\\common\\data\\levels\\gta5\\weather.xml";
 
             XmlDocument weatherxml = rpfman.GetFileXml(filename);
 
@@ -72,7 +69,6 @@ namespace CodeWalker.World
             }
 
 
-
             if (WeatherTypes.Count > 0)
             {
                 CurrentWeatherType = WeatherTypes.Values.First();
@@ -101,16 +97,12 @@ namespace CodeWalker.World
                     CurrentWeatherType = NextWeatherType;
                     CurrentWeatherChangeTime = 0.0f;
                 }
+
                 CurrentWeatherChangeBlend = Math.Min(CurrentWeatherChangeTime / WeatherChangeTime, 1.0f);
             }
-            if (CurrentWeatherType != null)
-            {
-                CurrentWeatherRegion = CurrentWeatherType.GetRegion(Region);
-            }
-            if (NextWeatherType != null)
-            {
-                NextWeatherRegion = NextWeatherType.GetRegion(Region);
-            }
+
+            if (CurrentWeatherType != null) CurrentWeatherRegion = CurrentWeatherType.GetRegion(Region);
+            if (NextWeatherType != null) NextWeatherRegion = NextWeatherType.GetRegion(Region);
 
             CurrentValues.Update(this);
         }
@@ -119,37 +111,32 @@ namespace CodeWalker.World
         {
             WeatherTypes.TryGetValue(name, out NextWeatherType);
             if (NextWeatherType == null)
-            {
                 NextWeatherType = CurrentWeatherType;
-            }
             else
-            {
                 CurrentWeatherChangeTime = 0.0f;
-            }
         }
 
         public float GetDynamicValue(string name)
         {
             int csi = Timecycle.CurrentSampleIndex;
             float csb = Timecycle.CurrentSampleBlend;
-            if ((CurrentWeatherRegion != null) && (NextWeatherRegion != null))
+            if (CurrentWeatherRegion != null && NextWeatherRegion != null)
             {
                 float cv = CurrentWeatherRegion.GetCurrentValue(name, csi, csb);
                 float nv = NextWeatherRegion.GetCurrentValue(name, csi, csb);
                 return cv * (1.0f - CurrentWeatherChangeBlend) + nv * CurrentWeatherChangeBlend;
             }
-            else if (CurrentWeatherRegion != null)
-            {
-                return CurrentWeatherRegion.GetCurrentValue(name, csi, csb);
-            }
+
+            if (CurrentWeatherRegion != null) return CurrentWeatherRegion.GetCurrentValue(name, csi, csb);
             //throw new Exception("CurrentWeatherRegion was null.");
             return 0.0f;
         }
+
         public Vector3 GetDynamicRGB(string rname, string gname, string bname)
         {
             int csi = Timecycle.CurrentSampleIndex;
             float csb = Timecycle.CurrentSampleBlend;
-            if ((CurrentWeatherRegion != null) && (NextWeatherRegion != null))
+            if (CurrentWeatherRegion != null && NextWeatherRegion != null)
             {
                 float cvr = CurrentWeatherRegion.GetCurrentValue(rname, csi, csb);
                 float cvg = CurrentWeatherRegion.GetCurrentValue(gname, csi, csb);
@@ -161,21 +148,24 @@ namespace CodeWalker.World
                 Vector3 nv = new Vector3(nvr, nvg, nvb);
                 return cv * (1.0f - CurrentWeatherChangeBlend) + nv * CurrentWeatherChangeBlend;
             }
-            else if (CurrentWeatherRegion != null)
+
+            if (CurrentWeatherRegion != null)
             {
                 float cvr = CurrentWeatherRegion.GetCurrentValue(rname, csi, csb);
                 float cvg = CurrentWeatherRegion.GetCurrentValue(gname, csi, csb);
                 float cvb = CurrentWeatherRegion.GetCurrentValue(bname, csi, csb);
                 return new Vector3(cvr, cvg, cvb);
             }
+
             //throw new Exception("CurrentWeatherRegion was null.");
             return Vector3.Zero;
         }
+
         public Vector4 GetDynamicRGBA(string rname, string gname, string bname, string aname)
         {
             int csi = Timecycle.CurrentSampleIndex;
             float csb = Timecycle.CurrentSampleBlend;
-            if ((CurrentWeatherRegion != null) && (NextWeatherRegion != null))
+            if (CurrentWeatherRegion != null && NextWeatherRegion != null)
             {
                 float cvr = CurrentWeatherRegion.GetCurrentValue(rname, csi, csb);
                 float cvg = CurrentWeatherRegion.GetCurrentValue(gname, csi, csb);
@@ -189,7 +179,8 @@ namespace CodeWalker.World
                 Vector4 nv = new Vector4(nvr, nvg, nvb, nva);
                 return cv * (1.0f - CurrentWeatherChangeBlend) + nv * CurrentWeatherChangeBlend;
             }
-            else if (CurrentWeatherRegion != null)
+
+            if (CurrentWeatherRegion != null)
             {
                 float cvr = CurrentWeatherRegion.GetCurrentValue(rname, csi, csb);
                 float cvg = CurrentWeatherRegion.GetCurrentValue(gname, csi, csb);
@@ -197,10 +188,10 @@ namespace CodeWalker.World
                 float cva = CurrentWeatherRegion.GetCurrentValue(aname, csi, csb);
                 return new Vector4(cvr, cvg, cvb, cva);
             }
+
             //throw new Exception("CurrentWeatherRegion was null.");
             return Vector4.Zero;
         }
-
     }
 
     public class WeatherGpuFx
@@ -224,8 +215,8 @@ namespace CodeWalker.World
             distortionTexture = Xml.GetChildInnerText(node, "distortionTexture");
             diffuseSplashName = Xml.GetChildInnerText(node, "diffuseSplashName");
             driveType = Xml.GetChildInnerText(node, "driveType");
-            windInfluence = Xml.GetChildFloatAttribute(node, "windInfluence", "value");
-            gravity = Xml.GetChildFloatAttribute(node, "gravity", "value");
+            windInfluence = Xml.GetChildFloatAttribute(node, "windInfluence");
+            gravity = Xml.GetChildFloatAttribute(node, "gravity");
             emitterSettingsName = Xml.GetChildInnerText(node, "emitterSettingsName");
             renderSettingsName = Xml.GetChildInnerText(node, "renderSettingsName");
         }
@@ -238,6 +229,7 @@ namespace CodeWalker.World
 
     public class WeatherType
     {
+        public WeatherCycleKeyframeData TimeCycleData;
         public MetaHash NameHash { get; set; }
         public string Name { get; set; }
         public float Sun { get; set; }
@@ -278,43 +270,41 @@ namespace CodeWalker.World
         public string TimeCycleFilename { get; set; }
         public string CloudSettingsName { get; set; }
 
-        public WeatherCycleKeyframeData TimeCycleData;
-
         public void Init(GameFileCache gameFileCache, XmlNode node)
         {
             Name = Xml.GetChildInnerText(node, "Name");
             NameHash = new MetaHash(JenkHash.GenHash(Name.ToLowerInvariant()));
-            Sun = Xml.GetChildFloatAttribute(node, "Sun", "value");
-            Cloud = Xml.GetChildFloatAttribute(node, "Cloud", "value");
-            WindMin = Xml.GetChildFloatAttribute(node, "WindMin", "value");
-            WindMax = Xml.GetChildFloatAttribute(node, "WindMax", "value");
-            Rain = Xml.GetChildFloatAttribute(node, "Rain", "value");
-            Snow = Xml.GetChildFloatAttribute(node, "Snow", "value");
-            SnowMist = Xml.GetChildFloatAttribute(node, "SnowMist", "value");
-            Fog = Xml.GetChildFloatAttribute(node, "Fog", "value");
-            RippleBumpiness = Xml.GetChildFloatAttribute(node, "RippleBumpiness", "value");
-            RippleMinBumpiness = Xml.GetChildFloatAttribute(node, "RippleMinBumpiness", "value");
-            RippleMaxBumpiness = Xml.GetChildFloatAttribute(node, "RippleMaxBumpiness", "value");
-            RippleBumpinessWindScale = Xml.GetChildFloatAttribute(node, "RippleBumpinessWindScale", "value");
-            RippleScale = Xml.GetChildFloatAttribute(node, "RippleScale", "value");
-            RippleSpeed = Xml.GetChildFloatAttribute(node, "RippleSpeed", "value");
-            RippleVelocityTransfer = Xml.GetChildFloatAttribute(node, "RippleVelocityTransfer", "value");
-            OceanBumpiness = Xml.GetChildFloatAttribute(node, "OceanBumpiness", "value");
-            DeepOceanScale = Xml.GetChildFloatAttribute(node, "DeepOceanScale", "value");
-            OceanNoiseMinAmplitude = Xml.GetChildFloatAttribute(node, "OceanNoiseMinAmplitude", "value");
-            OceanWaveAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveAmplitude", "value");
-            ShoreWaveAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveAmplitude", "value");
-            OceanWaveWindScale = Xml.GetChildFloatAttribute(node, "OceanWaveWindScale", "value");
-            ShoreWaveWindScale = Xml.GetChildFloatAttribute(node, "ShoreWaveWindScale", "value");
-            OceanWaveMinAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveMinAmplitude", "value");
-            ShoreWaveMinAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveMinAmplitude", "value");
-            OceanWaveMaxAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveMaxAmplitude", "value");
-            ShoreWaveMaxAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveMaxAmplitude", "value");
-            OceanFoamIntensity = Xml.GetChildFloatAttribute(node, "OceanFoamIntensity", "value");
-            OceanFoamScale = Xml.GetChildFloatAttribute(node, "OceanFoamScale", "value");
-            RippleDisturb = Xml.GetChildFloatAttribute(node, "RippleDisturb", "value");
-            Lightning = Xml.GetChildFloatAttribute(node, "Lightning", "value");
-            Sandstorm = Xml.GetChildFloatAttribute(node, "Sandstorm", "value");
+            Sun = Xml.GetChildFloatAttribute(node, "Sun");
+            Cloud = Xml.GetChildFloatAttribute(node, "Cloud");
+            WindMin = Xml.GetChildFloatAttribute(node, "WindMin");
+            WindMax = Xml.GetChildFloatAttribute(node, "WindMax");
+            Rain = Xml.GetChildFloatAttribute(node, "Rain");
+            Snow = Xml.GetChildFloatAttribute(node, "Snow");
+            SnowMist = Xml.GetChildFloatAttribute(node, "SnowMist");
+            Fog = Xml.GetChildFloatAttribute(node, "Fog");
+            RippleBumpiness = Xml.GetChildFloatAttribute(node, "RippleBumpiness");
+            RippleMinBumpiness = Xml.GetChildFloatAttribute(node, "RippleMinBumpiness");
+            RippleMaxBumpiness = Xml.GetChildFloatAttribute(node, "RippleMaxBumpiness");
+            RippleBumpinessWindScale = Xml.GetChildFloatAttribute(node, "RippleBumpinessWindScale");
+            RippleScale = Xml.GetChildFloatAttribute(node, "RippleScale");
+            RippleSpeed = Xml.GetChildFloatAttribute(node, "RippleSpeed");
+            RippleVelocityTransfer = Xml.GetChildFloatAttribute(node, "RippleVelocityTransfer");
+            OceanBumpiness = Xml.GetChildFloatAttribute(node, "OceanBumpiness");
+            DeepOceanScale = Xml.GetChildFloatAttribute(node, "DeepOceanScale");
+            OceanNoiseMinAmplitude = Xml.GetChildFloatAttribute(node, "OceanNoiseMinAmplitude");
+            OceanWaveAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveAmplitude");
+            ShoreWaveAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveAmplitude");
+            OceanWaveWindScale = Xml.GetChildFloatAttribute(node, "OceanWaveWindScale");
+            ShoreWaveWindScale = Xml.GetChildFloatAttribute(node, "ShoreWaveWindScale");
+            OceanWaveMinAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveMinAmplitude");
+            ShoreWaveMinAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveMinAmplitude");
+            OceanWaveMaxAmplitude = Xml.GetChildFloatAttribute(node, "OceanWaveMaxAmplitude");
+            ShoreWaveMaxAmplitude = Xml.GetChildFloatAttribute(node, "ShoreWaveMaxAmplitude");
+            OceanFoamIntensity = Xml.GetChildFloatAttribute(node, "OceanFoamIntensity");
+            OceanFoamScale = Xml.GetChildFloatAttribute(node, "OceanFoamScale");
+            RippleDisturb = Xml.GetChildFloatAttribute(node, "RippleDisturb");
+            Lightning = Xml.GetChildFloatAttribute(node, "Lightning");
+            Sandstorm = Xml.GetChildFloatAttribute(node, "Sandstorm");
             OldSettingName = Xml.GetChildInnerText(node, "OldSettingName");
             DropSettingName = Xml.GetChildInnerText(node, "DropSettingName");
             MistSettingName = Xml.GetChildInnerText(node, "MistSettingName");
@@ -325,14 +315,10 @@ namespace CodeWalker.World
 
             if (!string.IsNullOrEmpty(TimeCycleFilename))
             {
-
                 //TODO: RpfMan should be able to get the right version? or maybe let gameFileCache do it!
                 string fname = TimeCycleFilename.ToLowerInvariant();
                 bool useupd = gameFileCache.EnableDlc;
-                if (useupd)
-                {
-                    fname = fname.Replace("common:", "update/update.rpf/common");
-                }
+                if (useupd) fname = fname.Replace("common:", "update/update.rpf/common");
                 XmlDocument tcxml = gameFileCache.RpfMan.GetFileXml(fname);
                 if (useupd && !tcxml.HasChildNodes)
                 {
@@ -347,20 +333,17 @@ namespace CodeWalker.World
                     TimeCycleData.Init(cycle);
                 }
             }
-
         }
 
         public WeatherCycleKeyframeRegion GetRegion(string name)
         {
-            if ((TimeCycleData != null) && (TimeCycleData.Regions != null))
+            if (TimeCycleData != null && TimeCycleData.Regions != null)
             {
                 WeatherCycleKeyframeRegion r;
-                if (TimeCycleData.Regions.TryGetValue(name, out r))
-                {
-                    return r;
-                }
+                if (TimeCycleData.Regions.TryGetValue(name, out r)) return r;
                 return TimeCycleData.Regions.Values.FirstOrDefault();
             }
+
             return null;
         }
 
@@ -378,12 +361,12 @@ namespace CodeWalker.World
         public void Init(XmlNode node)
         {
             CycleName = Xml.GetChildInnerText(node, "CycleName");
-            TimeMult = Xml.GetChildFloatAttribute(node, "TimeMult", "value");
+            TimeMult = Xml.GetChildFloatAttribute(node, "TimeMult");
         }
 
         public override string ToString()
         {
-            return CycleName + ", " + TimeMult.ToString();
+            return CycleName + ", " + TimeMult;
         }
     }
 
@@ -413,6 +396,7 @@ namespace CodeWalker.World
             return Name;
         }
     }
+
     public class WeatherCycleKeyframeRegion
     {
         public string Name { get; set; }
@@ -441,15 +425,14 @@ namespace CodeWalker.World
             if (Data.TryGetValue(name, out e))
             {
                 if (sample >= e.Values.Length)
-                {
                     //System.Windows.Forms.MessageBox.Show("Sample index was out of range: " + sample.ToString());
                     sample = e.Values.Length - 1;
-                }
-                int nxtsample = (sample < e.Values.Length - 1) ? sample + 1 : 0;
+                int nxtsample = sample < e.Values.Length - 1 ? sample + 1 : 0;
                 float cv = e.Values[sample];
                 float nv = e.Values[nxtsample];
                 return cv * curblend + nv * (1.0f - curblend);
             }
+
             //throw new Exception("WeatherCycleKeyframeDataEntry " + name + " not found in region " + Name + ".");
             return 0.0f;
         }
@@ -459,6 +442,7 @@ namespace CodeWalker.World
             return Name;
         }
     }
+
     public class WeatherCycleKeyframeDataEntry
     {
         public string Name { get; set; }
@@ -471,14 +455,12 @@ namespace CodeWalker.World
             string[] strvals = node.InnerText.Trim().Split(' ');
             Values = new float[strvals.Length];
             for (int i = 0; i < strvals.Length; i++)
-            {
                 if (!FloatUtil.TryParse(strvals[i], out Values[i]))
                 {
                     //System.Windows.Forms.MessageBox.Show("Error parsing float value: " + strvals[i] + "\n" +
                     //    "Node: " + node.OuterXml.ToString());
                     //throw new Exception();
                 }
-            }
         }
 
         public override string ToString()
@@ -530,13 +512,19 @@ namespace CodeWalker.World
         {
             sunDirection = w.GetDynamicRGB("sun_direction_x", "sun_direction_y", "sun_direction_z");
             moonDirection = w.GetDynamicRGB("moon_direction_x", "moon_direction_y", "moon_direction_z");
-            skyZenithCol = w.GetDynamicRGBA("sky_zenith_col_r", "sky_zenith_col_g", "sky_zenith_col_b", "sky_zenith_col_inten");
-            skyZenithTransitionCol = w.GetDynamicRGBA("sky_zenith_transition_col_r", "sky_zenith_transition_col_g", "sky_zenith_transition_col_b", "sky_zenith_transition_col_inten");
+            skyZenithCol = w.GetDynamicRGBA("sky_zenith_col_r", "sky_zenith_col_g", "sky_zenith_col_b",
+                "sky_zenith_col_inten");
+            skyZenithTransitionCol = w.GetDynamicRGBA("sky_zenith_transition_col_r", "sky_zenith_transition_col_g",
+                "sky_zenith_transition_col_b", "sky_zenith_transition_col_inten");
             //skyZenithTransition = w.GetDynamicRGBA("sky_zenith_transition_position", "sky_zenith_transition_east_blend", "sky_zenith_transition_west_blend", "sky_zenith_blend_start");
-            skyZenithTransition = w.GetDynamicRGBA("sky_zenith_blend_start", "sky_zenith_transition_east_blend", "sky_zenith_transition_west_blend", "sky_zenith_transition_position");
-            skyAzimuthEastCol = w.GetDynamicRGBA("sky_azimuth_east_col_r", "sky_azimuth_east_col_g", "sky_azimuth_east_col_b", "sky_azimuth_east_col_inten");
-            skyAzimuthWestCol = w.GetDynamicRGBA("sky_azimuth_west_col_r", "sky_azimuth_west_col_g", "sky_azimuth_west_col_b", "sky_azimuth_west_col_inten");
-            skyAzimuthTransitionCol = w.GetDynamicRGBA("sky_azimuth_transition_col_r", "sky_azimuth_transition_col_g", "sky_azimuth_transition_col_b", "sky_azimuth_transition_col_inten");
+            skyZenithTransition = w.GetDynamicRGBA("sky_zenith_blend_start", "sky_zenith_transition_east_blend",
+                "sky_zenith_transition_west_blend", "sky_zenith_transition_position");
+            skyAzimuthEastCol = w.GetDynamicRGBA("sky_azimuth_east_col_r", "sky_azimuth_east_col_g",
+                "sky_azimuth_east_col_b", "sky_azimuth_east_col_inten");
+            skyAzimuthWestCol = w.GetDynamicRGBA("sky_azimuth_west_col_r", "sky_azimuth_west_col_g",
+                "sky_azimuth_west_col_b", "sky_azimuth_west_col_inten");
+            skyAzimuthTransitionCol = w.GetDynamicRGBA("sky_azimuth_transition_col_r", "sky_azimuth_transition_col_g",
+                "sky_azimuth_transition_col_b", "sky_azimuth_transition_col_inten");
             skyAzimuthTransition = w.GetDynamicValue("sky_azimuth_transition_position");
             skyHdr = w.GetDynamicValue("sky_hdr");
             skyPlane = w.GetDynamicRGBA("sky_plane_r", "sky_plane_g", "sky_plane_b", "sky_plane_inten");
@@ -554,17 +542,25 @@ namespace CodeWalker.World
             skyMoonScatterInten = w.GetDynamicValue("sky_moon_scatter_inten");
             skyStarsIten = w.GetDynamicValue("sky_stars_iten");
             lightDirCol = w.GetDynamicRGBA("light_dir_col_r", "light_dir_col_g", "light_dir_col_b", "light_dir_mult");
-            lightDirAmbCol = w.GetDynamicRGBA("light_directional_amb_col_r", "light_directional_amb_col_g", "light_directional_amb_col_b", "light_directional_amb_intensity");
+            lightDirAmbCol = w.GetDynamicRGBA("light_directional_amb_col_r", "light_directional_amb_col_g",
+                "light_directional_amb_col_b", "light_directional_amb_intensity");
             lightDirAmbIntensityMult = w.GetDynamicValue("light_directional_amb_intensity_mult");
             lightDirAmbBounce = w.GetDynamicValue("light_directional_amb_bounce_enabled");
-            lightNaturalAmbDown = w.GetDynamicRGBA("light_natural_amb_down_col_r", "light_natural_amb_down_col_g", "light_natural_amb_down_col_b", "light_natural_amb_down_intensity");
-            lightNaturalAmbUp = w.GetDynamicRGBA("light_natural_amb_up_col_r", "light_natural_amb_up_col_g", "light_natural_amb_up_col_b", "light_natural_amb_up_intensity");
+            lightNaturalAmbDown = w.GetDynamicRGBA("light_natural_amb_down_col_r", "light_natural_amb_down_col_g",
+                "light_natural_amb_down_col_b", "light_natural_amb_down_intensity");
+            lightNaturalAmbUp = w.GetDynamicRGBA("light_natural_amb_up_col_r", "light_natural_amb_up_col_g",
+                "light_natural_amb_up_col_b", "light_natural_amb_up_intensity");
             lightNaturalAmbUpIntensityMult = w.GetDynamicValue("light_natural_amb_up_intensity_mult");
-            lightArtificialIntDown = w.GetDynamicRGBA("light_artificial_int_down_col_r", "light_artificial_int_down_col_g", "light_artificial_int_down_col_b", "light_artificial_int_down_intensity");
-            lightArtificialIntUp = w.GetDynamicRGBA("light_artificial_int_up_col_r", "light_artificial_int_up_col_g", "light_artificial_int_up_col_b", "light_artificial_int_up_intensity");
-            lightArtificialExtDown = w.GetDynamicRGBA("light_artificial_ext_down_col_r", "light_artificial_ext_down_col_g", "light_artificial_ext_down_col_b", "light_artificial_ext_down_intensity");
-            lightArtificialExtUp = w.GetDynamicRGBA("light_artificial_ext_up_col_r", "light_artificial_ext_up_col_g", "light_artificial_ext_up_col_b", "light_artificial_ext_up_intensity");
-
+            lightArtificialIntDown = w.GetDynamicRGBA("light_artificial_int_down_col_r",
+                "light_artificial_int_down_col_g", "light_artificial_int_down_col_b",
+                "light_artificial_int_down_intensity");
+            lightArtificialIntUp = w.GetDynamicRGBA("light_artificial_int_up_col_r", "light_artificial_int_up_col_g",
+                "light_artificial_int_up_col_b", "light_artificial_int_up_intensity");
+            lightArtificialExtDown = w.GetDynamicRGBA("light_artificial_ext_down_col_r",
+                "light_artificial_ext_down_col_g", "light_artificial_ext_down_col_b",
+                "light_artificial_ext_down_intensity");
+            lightArtificialExtUp = w.GetDynamicRGBA("light_artificial_ext_up_col_r", "light_artificial_ext_up_col_g",
+                "light_artificial_ext_up_col_b", "light_artificial_ext_up_intensity");
         }
     }
 }

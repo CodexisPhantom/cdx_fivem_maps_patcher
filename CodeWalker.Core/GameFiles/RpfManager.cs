@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 
@@ -8,6 +9,7 @@ namespace CodeWalker.GameFiles
 {
     public class RpfManager
     {
+        public volatile bool IsInited;
         //for caching and management of RPF file data.
 
         public string Folder { get; private set; }
@@ -28,11 +30,11 @@ namespace CodeWalker.GameFiles
         public Dictionary<string, RpfFile> ModRpfDict { get; private set; }
         public Dictionary<string, RpfEntry> ModEntryDict { get; private set; }
 
-        public volatile bool IsInited;
+        public static bool
+            IsGen9 { get; set; } //not ideal for this to be static, but it's most convenient for ResourceData
 
-        public static bool IsGen9 { get; set; } //not ideal for this to be static, but it's most convenient for ResourceData
-
-        public void Init(string folder, bool gen9, Action<string> updateStatus, Action<string> errorLog, bool rootOnly = false, bool buildIndex = true)
+        public void Init(string folder, bool gen9, Action<string> updateStatus, Action<string> errorLog,
+            bool rootOnly = false, bool buildIndex = true)
         {
             UpdateStatus = updateStatus;
             ErrorLog = errorLog;
@@ -54,7 +56,6 @@ namespace CodeWalker.GameFiles
             ModEntryDict = new Dictionary<string, RpfEntry>();
 
             foreach (string rpfpath in allfiles)
-            {
                 try
                 {
                     RpfFile rf = new RpfFile(rpfpath, rpfpath.Replace(replpath, ""));
@@ -63,30 +64,26 @@ namespace CodeWalker.GameFiles
                     {
                         bool excl = false;
                         for (int i = 0; i < ExcludePaths.Length; i++)
-                        {
                             if (rf.Path.StartsWith(ExcludePaths[i]))
                             {
                                 excl = true;
                                 break;
                             }
-                        }
+
                         if (excl) continue; //skip files in exclude paths.
                     }
 
                     rf.ScanStructure(updateStatus, errorLog);
 
                     if (rf.LastException != null) //incase of corrupted rpf (or renamed NG encrypted RPF)
-                    {
                         continue;
-                    }
 
                     AddRpfFile(rf, false, false);
                 }
                 catch (Exception ex)
                 {
-                    errorLog(rpfpath + ": " + ex.ToString());
+                    errorLog(rpfpath + ": " + ex);
                 }
-            }
 
             if (buildIndex)
             {
@@ -118,10 +115,7 @@ namespace CodeWalker.GameFiles
             {
                 RpfDict[rpf.Path] = rpf;
                 if (rpf.AllEntries == null) continue;
-                foreach (RpfEntry entry in rpf.AllEntries)
-                {
-                    EntryDict[entry.Path] = entry;
-                }
+                foreach (RpfEntry entry in rpf.AllEntries) EntryDict[entry.Path] = entry;
             }
 
             BuildBaseJenkIndex();
@@ -132,44 +126,32 @@ namespace CodeWalker.GameFiles
 
         private void AddRpfFile(RpfFile file, bool isdlc, bool ismod)
         {
-            isdlc = isdlc || (file.NameLower == "update.rpf") || (file.NameLower.StartsWith("dlc") && file.NameLower.EndsWith(".rpf"));
-            ismod = ismod || (file.Path.StartsWith("mods\\"));
+            isdlc = isdlc || file.NameLower == "update.rpf" ||
+                    (file.NameLower.StartsWith("dlc") && file.NameLower.EndsWith(".rpf"));
+            ismod = ismod || file.Path.StartsWith("mods\\");
 
             if (file.AllEntries != null)
             {
                 AllRpfs.Add(file);
-                if (!ismod)
-                {
-                    AllNoModRpfs.Add(file);
-                }
+                if (!ismod) AllNoModRpfs.Add(file);
                 if (isdlc)
                 {
                     DlcRpfs.Add(file);
-                    if (!ismod)
-                    {
-                        DlcNoModRpfs.Add(file);
-                    }
+                    if (!ismod) DlcNoModRpfs.Add(file);
                 }
                 else
                 {
                     if (ismod)
-                    {
                         ModRpfs.Add(file);
-                    }
                     else
-                    {
                         BaseRpfs.Add(file);
-                    }
                 }
-                if (ismod)
-                {
-                    ModRpfDict[file.Path.Substring(5)] = file;
-                }
+
+                if (ismod) ModRpfDict[file.Path.Substring(5)] = file;
 
                 RpfDict[file.Path] = file;
 
                 foreach (RpfEntry entry in file.AllEntries)
-                {
                     try
                     {
                         if (!string.IsNullOrEmpty(entry.Name))
@@ -189,62 +171,49 @@ namespace CodeWalker.GameFiles
                                 RpfFileEntry fentry = entry as RpfFileEntry;
                                 entry.NameHash = JenkHash.GenHash(entry.NameLower);
                                 int ind = entry.NameLower.LastIndexOf('.');
-                                entry.ShortNameHash = (ind > 0) ? JenkHash.GenHash(entry.NameLower.Substring(0, ind)) : entry.NameHash;
+                                entry.ShortNameHash = ind > 0
+                                    ? JenkHash.GenHash(entry.NameLower.Substring(0, ind))
+                                    : entry.NameHash;
                                 if (entry.ShortNameHash != 0)
                                 {
                                     //EntryHashDict[entry.ShortNameHash] = entry;
                                 }
                             }
-
                         }
                     }
                     catch (Exception ex)
                     {
                         file.LastError = ex.ToString();
                         file.LastException = ex;
-                        ErrorLog(entry.Path + ": " + ex.ToString());
+                        ErrorLog(entry.Path + ": " + ex);
                     }
-                }
             }
 
             if (file.Children != null)
-            {
                 foreach (RpfFile cfile in file.Children)
-                {
                     AddRpfFile(cfile, isdlc, ismod);
-                }
-            }
         }
 
 
-        public RpfFile FindRpfFile(string path) => FindRpfFile(path, false);
+        public RpfFile FindRpfFile(string path)
+        {
+            return FindRpfFile(path, false);
+        }
 
 
         public RpfFile FindRpfFile(string path, bool exactPathOnly)
         {
             RpfFile file = null; //check the dictionary
 
-            if (EnableMods && ModRpfDict.TryGetValue(path, out file))
-            {
-                return file;
-            }
+            if (EnableMods && ModRpfDict.TryGetValue(path, out file)) return file;
 
-            if (RpfDict.TryGetValue(path, out file))
-            {
-                return file;
-            }
+            if (RpfDict.TryGetValue(path, out file)) return file;
 
             string lpath = path.ToLowerInvariant(); //try look at names etc
             foreach (RpfFile tfile in AllRpfs)
             {
-                if (!exactPathOnly && tfile.NameLower == lpath)
-                {
-                    return tfile;
-                }
-                if (tfile.Path == lpath)
-                {
-                    return tfile;
-                }
+                if (!exactPathOnly && tfile.NameLower == lpath) return tfile;
+                if (tfile.Path == lpath) return tfile;
             }
 
             return file;
@@ -255,46 +224,38 @@ namespace CodeWalker.GameFiles
         {
             RpfEntry entry;
             string pathl = path.ToLowerInvariant();
-            if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry))
-            {
-                return entry;
-            }
+            if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry)) return entry;
             EntryDict.TryGetValue(pathl, out entry);
             if (entry == null)
             {
                 pathl = pathl.Replace("/", "\\");
                 pathl = pathl.Replace("common:", "common.rpf");
-                if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry))
-                {
-                    return entry;
-                }
+                if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry)) return entry;
                 EntryDict.TryGetValue(pathl, out entry);
             }
+
             return entry;
         }
+
         public byte[] GetFileData(string path)
         {
             byte[] data = null;
             RpfFileEntry entry = GetEntry(path) as RpfFileEntry;
-            if (entry != null)
-            {
-                data = entry.File.ExtractFile(entry);
-            }
+            if (entry != null) data = entry.File.ExtractFile(entry);
             return data;
         }
+
         public string GetFileUTF8Text(string path)
         {
             byte[] bytes = GetFileData(path);
             return TextUtil.GetUTF8Text(bytes);
         }
+
         public XmlDocument GetFileXml(string path)
         {
             XmlDocument doc = new XmlDocument();
             string text = GetFileUTF8Text(path);
-            if (!string.IsNullOrEmpty(text))
-            {
-                doc.LoadXml(text);
-            }
+            if (!string.IsNullOrEmpty(text)) doc.LoadXml(text);
             return doc;
         }
 
@@ -303,49 +264,44 @@ namespace CodeWalker.GameFiles
             T file = null;
             byte[] data = null;
             RpfFileEntry entry = GetEntry(path) as RpfFileEntry;
-            if (entry != null)
-            {
-                data = entry.File.ExtractFile(entry);
-            }
+            if (entry != null) data = entry.File.ExtractFile(entry);
             if (data != null)
             {
                 file = new T();
                 file.Load(data, entry);
             }
+
             return file;
         }
+
         public T GetFile<T>(RpfEntry e) where T : class, PackedFile, new()
         {
             T file = null;
             byte[] data = null;
             RpfFileEntry entry = e as RpfFileEntry;
-            if (entry != null)
-            {
-                data = entry.File.ExtractFile(entry);
-            }
+            if (entry != null) data = entry.File.ExtractFile(entry);
             if (data != null)
             {
                 file = new T();
                 file.Load(data, entry);
             }
+
             return file;
         }
+
         public bool LoadFile<T>(T file, RpfEntry e) where T : class, PackedFile
         {
             byte[] data = null;
             RpfFileEntry entry = e as RpfFileEntry;
-            if (entry != null)
-            {
-                data = entry.File.ExtractFile(entry);
-            }
+            if (entry != null) data = entry.File.ExtractFile(entry);
             if (data != null)
             {
                 file.Load(data, entry);
                 return true;
             }
+
             return false;
         }
-
 
 
         public void BuildBaseJenkIndex()
@@ -353,7 +309,6 @@ namespace CodeWalker.GameFiles
             JenkIndex.Clear();
             StringBuilder sb = new StringBuilder();
             foreach (RpfFile file in AllRpfs)
-            {
                 try
                 {
                     JenkIndex.Ensure(file.Name);
@@ -368,7 +323,6 @@ namespace CodeWalker.GameFiles
                         {
                             JenkIndex.Ensure(entry.Name.Substring(0, ind));
                             JenkIndex.Ensure(nlow.Substring(0, ind));
-
                             //if (ind < entry.Name.Length - 2)
                             //{
                             //    JenkIndex.Ensure(entry.Name.Substring(0, ind) + ".#" + entry.Name.Substring(ind + 2));
@@ -380,15 +334,17 @@ namespace CodeWalker.GameFiles
                             JenkIndex.Ensure(entry.Name);
                             JenkIndex.Ensure(nlow);
                         }
+
                         if (BuildExtendedJenkIndex)
                         {
-                            if (nlow.EndsWith(".ydr"))// || nlow.EndsWith(".yft")) //do yft's get lods?
+                            if (nlow.EndsWith(".ydr")) // || nlow.EndsWith(".yft")) //do yft's get lods?
                             {
                                 string sname = nlow.Substring(0, nlow.Length - 4);
                                 JenkIndex.Ensure(sname + "_lod");
                                 JenkIndex.Ensure(sname + "_loda");
                                 JenkIndex.Ensure(sname + "_lodb");
                             }
+
                             if (nlow.EndsWith(".ydd"))
                             {
                                 if (nlow.EndsWith("_children.ydd"))
@@ -399,6 +355,7 @@ namespace CodeWalker.GameFiles
                                     JenkIndex.Ensure(strn + "_loda");
                                     JenkIndex.Ensure(strn + "_lodb");
                                 }
+
                                 int idx = nlow.LastIndexOf('_');
                                 if (idx > 0)
                                 {
@@ -418,10 +375,8 @@ namespace CodeWalker.GameFiles
                                     }
                                 }
                             }
-                            if (nlow.EndsWith(".sps"))
-                            {
-                                JenkIndex.Ensure(nlow);//for shader preset filename hashes!
-                            }
+
+                            if (nlow.EndsWith(".sps")) JenkIndex.Ensure(nlow); //for shader preset filename hashes!
                             if (nlow.EndsWith(".awc")) //create audio container path hashes...
                             {
                                 string[] parts = entry.Path.Split('\\');
@@ -431,17 +386,16 @@ namespace CodeWalker.GameFiles
                                     string fn = parts[pl - 1];
                                     string fd = parts[pl - 2];
                                     string hpath = fn.Substring(0, fn.Length - 4);
-                                    if (fd.EndsWith(".rpf"))
-                                    {
-                                        fd = fd.Substring(0, fd.Length - 4);
-                                    }
+                                    if (fd.EndsWith(".rpf")) fd = fd.Substring(0, fd.Length - 4);
                                     hpath = fd + "/" + hpath;
                                     if (parts[pl - 3] != "sfx")
-                                    { }//no hit
+                                    {
+                                    } //no hit
 
                                     JenkIndex.Ensure(hpath);
                                 }
                             }
+
                             if (nlow.EndsWith(".nametable"))
                             {
                                 RpfBinaryFileEntry binfe = entry as RpfBinaryFileEntry;
@@ -462,7 +416,6 @@ namespace CodeWalker.GameFiles
                                                     string strl = str.ToLowerInvariant();
                                                     //JenkIndex.Ensure(str);
                                                     JenkIndex.Ensure(strl);
-
                                                     ////DirMod_Sounds_ entries apparently can be used to infer SP audio strings
                                                     ////no luck here yet though
                                                     //if (strl.StartsWith("dirmod_sounds_") && (strl.Length > 14))
@@ -471,6 +424,7 @@ namespace CodeWalker.GameFiles
                                                     //    JenkIndex.Ensure(strl);
                                                     //}
                                                 }
+
                                                 sb.Clear();
                                             }
                                             else
@@ -480,33 +434,25 @@ namespace CodeWalker.GameFiles
                                         }
                                     }
                                 }
-                                else
-                                { }
                             }
                         }
                     }
-
                 }
                 catch
                 {
                     //failing silently!! not so good really
                 }
-            }
 
-            for (int i = 0; i < 100; i++)
-            {
-                JenkIndex.Ensure(i.ToString("00"));
-            }
+            for (int i = 0; i < 100; i++) JenkIndex.Ensure(i.ToString("00"));
 
 
-            string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string path = Assembly.GetExecutingAssembly().Location;
             string dir = Path.GetDirectoryName(path);
             string fpath = Path.Combine(dir, "strings.txt");
             if (File.Exists(fpath))
             {
                 string[] lines = File.ReadAllLines(fpath);
                 if (lines != null)
-                {
                     foreach (string line in lines)
                     {
                         string str = line?.Trim();
@@ -514,10 +460,7 @@ namespace CodeWalker.GameFiles
                         if (str.StartsWith("//")) continue;
                         JenkIndex.Ensure(str);
                     }
-                }
             }
-
         }
-
     }
 }

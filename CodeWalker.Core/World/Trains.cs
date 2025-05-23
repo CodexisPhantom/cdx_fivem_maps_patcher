@@ -1,16 +1,16 @@
-﻿using CodeWalker.GameFiles;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml;
+using CodeWalker.GameFiles;
 using SharpDX;
 
 namespace CodeWalker.World
 {
     public class Trains
     {
-        public volatile bool Inited;
         public GameFileCache GameFileCache;
+        public volatile bool Inited;
 
         public List<TrainTrack> TrainTracks { get; set; } = new List<TrainTrack>();
 
@@ -44,7 +44,6 @@ namespace CodeWalker.World
 
             Inited = true;
         }
-
     }
 
     public class TrainTrack : BasePathData
@@ -68,15 +67,10 @@ namespace CodeWalker.World
             {
                 int sc = 0;
                 if (Nodes != null)
-                {
                     foreach (TrainTrackNode node in Nodes)
-                    {
-                        if ((node.NodeType == 1) || (node.NodeType == 2) || (node.NodeType == 5))
-                        {
+                        if (node.NodeType == 1 || node.NodeType == 2 || node.NodeType == 5)
                             sc++;
-                        }
-                    }
-                }
+
                 return sc;
             }
         }
@@ -84,19 +78,6 @@ namespace CodeWalker.World
 
         public EditorVertex[] LinkedVerts { get; set; }
         public Vector4[] NodePositions { get; set; }
-
-        public EditorVertex[] GetPathVertices()
-        {
-            return LinkedVerts;
-        }
-        public EditorVertex[] GetTriangleVertices()
-        {
-            return null;
-        }
-        public Vector4[] GetNodePositions()
-        {
-            return NodePositions;
-        }
 
         public PathBVH BVH { get; set; }
 
@@ -107,7 +88,20 @@ namespace CodeWalker.World
         public bool HasChanged { get; set; }
         public bool Loaded { get; set; }
 
+        public EditorVertex[] GetPathVertices()
+        {
+            return LinkedVerts;
+        }
 
+        public EditorVertex[] GetTriangleVertices()
+        {
+            return null;
+        }
+
+        public Vector4[] GetNodePositions()
+        {
+            return NodePositions;
+        }
 
 
         public void Load(GameFileCache gameFileCache, XmlNode node)
@@ -141,7 +135,7 @@ namespace CodeWalker.World
             filename = string.Empty;
             trainConfigName = string.Empty;
             RpfFileEntry = new RpfBinaryFileEntry();
-            
+
 
             string str = Encoding.UTF8.GetString(data);
             Load(str);
@@ -160,9 +154,10 @@ namespace CodeWalker.World
             sb.AppendLine(Nodes.Count.ToString());
             foreach (TrainTrackNode node in Nodes)
             {
-                string nstr = FloatUtil.GetVector3String(node.Position).Replace(",","") + " " + node.NodeType.ToString();
+                string nstr = FloatUtil.GetVector3String(node.Position).Replace(",", "") + " " + node.NodeType;
                 sb.AppendLine(nstr);
             }
+
             string str = sb.ToString();
             return Encoding.UTF8.GetBytes(str);
         }
@@ -171,14 +166,10 @@ namespace CodeWalker.World
         public void SetNameFromFilename()
         {
             string[] fparts = filename.Replace('\\', '/').Split('/');
-            if ((fparts == null) || (fparts.Length == 0))
-            {
+            if (fparts == null || fparts.Length == 0)
                 Name = filename;
-            }
             else
-            {
                 Name = fparts[fparts.Length - 1];
-            }
         }
 
 
@@ -212,35 +203,23 @@ namespace CodeWalker.World
                             ttnode.NodeType = nodetype;
                             ttnode.Track = this;
                             ttnode.Index = nodes.Count;
-                            ttnode.Links[0] = (nodes.Count > 0) ? nodes[nodes.Count - 1] : null;
-                            if (ttnode.Links[0] != null)
-                            {
-                                ttnode.Links[0].Links[1] = ttnode;
-                            }
+                            ttnode.Links[0] = nodes.Count > 0 ? nodes[nodes.Count - 1] : null;
+                            if (ttnode.Links[0] != null) ttnode.Links[0].Links[1] = ttnode;
                             nodes.Add(ttnode);
                         }
-                        else
-                        { }
                     }
+
                     Nodes = nodes;
                 }
-                else
-                { }
-            }
-            else
-            { }
-
-            if (Nodes == null)
-            {
-                Nodes = new List<TrainTrackNode>();
             }
 
+            if (Nodes == null) Nodes = new List<TrainTrackNode>();
         }
 
 
         public void BuildVertices()
         {
-            if ((Nodes != null) && (Nodes.Count > 0))
+            if (Nodes != null && Nodes.Count > 0)
             {
                 int nc = Nodes.Count;
                 int lc = nc - 1;
@@ -261,14 +240,11 @@ namespace CodeWalker.World
                         lv[ni].Colour = (uint)Nodes[i].GetColour();
                     }
                 }
+
                 NodePositions = np;
                 LinkedVerts = lv;
             }
-
         }
-
-
-
 
 
         public void UpdateBvhForNode(TrainTrackNode node)
@@ -283,17 +259,12 @@ namespace CodeWalker.World
 
             //also updates the NodePositions for the visible vertex
             if (Nodes != null)
-            {
                 for (int i = 0; i < Nodes.Count; i++)
-                {
                     if (Nodes[i] == node)
                     {
                         NodePositions[i] = new Vector4(node.Position, 1.0f);
                         break;
                     }
-                }
-            }
-
         }
 
         public void BuildBVH()
@@ -302,21 +273,14 @@ namespace CodeWalker.World
         }
 
 
-
-
-
-
         public TrainTrackNode AddNode(TrainTrackNode afternode = null)
         {
             int cnt = Nodes?.Count ?? 0;
             TrainTrackNode tn = new TrainTrackNode();
             tn.Track = this;
-            tn.Index = (afternode != null) ? afternode.Index + 1 : cnt;
+            tn.Index = afternode != null ? afternode.Index + 1 : cnt;
 
-            if (Nodes == null)
-            {
-                Nodes = new List<TrainTrackNode>();
-            }
+            if (Nodes == null) Nodes = new List<TrainTrackNode>();
 
             if (afternode != null)
             {
@@ -329,11 +293,7 @@ namespace CodeWalker.World
                 int idx = tn.Index;
                 Nodes.Insert(idx, tn);
 
-                for (int i = 0; i < Nodes.Count; i++)
-                {
-                    Nodes[i].Index = i;
-                }
-
+                for (int i = 0; i < Nodes.Count; i++) Nodes[i].Index = i;
             }
             else
             {
@@ -360,25 +320,16 @@ namespace CodeWalker.World
             r = Nodes.Remove(node);
 
             NodeCount = Nodes.Count;
-            
+
             if (r)
             {
                 TrainTrackNode l0 = node.Links[0];
                 TrainTrackNode l1 = node.Links[1];
 
-                if (l0 != null)
-                {
-                    l0.Links[1] = l1;
-                }
-                if (l1 != null)
-                {
-                    l1.Links[0] = l0;
-                }
+                if (l0 != null) l0.Links[1] = l1;
+                if (l1 != null) l1.Links[0] = l0;
 
-                for (int i = 0; i < Nodes.Count; i++)
-                {
-                    Nodes[i].Index = i;
-                }
+                for (int i = 0; i < Nodes.Count; i++) Nodes[i].Index = i;
 
                 BuildVertices();
             }
@@ -387,23 +338,20 @@ namespace CodeWalker.World
         }
 
 
-
-
-
         public override string ToString()
         {
-            return Name + ": " + filename + " (" + NodeCount.ToString() + " nodes)";
+            return Name + ": " + filename + " (" + NodeCount + " nodes)";
         }
     }
 
     public class TrainTrackNode : BasePathNode
     {
-        public Vector3 Position { get; set; }
         public int NodeType { get; set; }
 
         public TrainTrack Track { get; set; }
         public int Index { get; set; }
         public TrainTrackNode[] Links { get; set; } = new TrainTrackNode[2];
+        public Vector3 Position { get; set; }
 
         public int GetColour()
         {
@@ -427,8 +375,7 @@ namespace CodeWalker.World
 
         public override string ToString()
         {
-            return Index.ToString() + ": " + NodeType.ToString();// + ": " + FloatUtil.GetVector3String(Position);
+            return Index + ": " + NodeType; // + ": " + FloatUtil.GetVector3String(Position);
         }
     }
-
 }

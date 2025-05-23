@@ -7,14 +7,15 @@ namespace CodeWalker.GameFiles
 {
     public class YvrFile : GameFile, PackedFile
     {
-        public VehicleRecordList Records { get; set; }
-
         public YvrFile() : base(null, GameFileType.Yvr)
         {
         }
+
         public YvrFile(RpfFileEntry entry) : base(entry, GameFileType.Yvr)
         {
         }
+
+        public VehicleRecordList Records { get; set; }
 
         public void Load(byte[] data, RpfFileEntry entry)
         {
@@ -23,10 +24,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
@@ -35,7 +33,6 @@ namespace CodeWalker.GameFiles
             try
             {
                 Records = rd.ReadBlock<VehicleRecordList>();
-
             }
             catch (Exception ex)
             {
@@ -43,9 +40,7 @@ namespace CodeWalker.GameFiles
             }
 
 
-
             Loaded = true;
-
         }
 
         public byte[] Save()
@@ -54,32 +49,24 @@ namespace CodeWalker.GameFiles
 
             return data;
         }
-
-
     }
 
 
     public class YvrXml : MetaXmlBase
     {
-
         public static string GetXml(YvrFile yvr)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if (yvr?.Records != null)
-            {
-                VehicleRecordList.WriteXmlNode(yvr.Records, sb, 0);
-            }
+            if (yvr?.Records != null) VehicleRecordList.WriteXmlNode(yvr.Records, sb, 0);
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYvr
     {
-
         public static YvrFile GetYvr(string xml, string inputFolder = "")
         {
             XmlDocument doc = new XmlDocument();
@@ -92,16 +79,11 @@ namespace CodeWalker.GameFiles
             YvrFile r = new YvrFile();
 
             XmlElement node = doc.DocumentElement;
-            if (node != null)
-            {
-                r.Records = VehicleRecordList.ReadXmlNode(node);
-            }
+            if (node != null) r.Records = VehicleRecordList.ReadXmlNode(node);
 
             r.Name = Path.GetFileName(inputFolder);
 
             return r;
         }
-
     }
-
 }

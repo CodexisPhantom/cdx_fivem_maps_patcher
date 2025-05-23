@@ -2,13 +2,6 @@ namespace cdx_fivem_maps_patcher.Classes;
 
 public static class Messages
 {
-    private static string _lang = "fr";
-    public static string Lang
-    {
-        get => _lang;
-        set => _lang = value;
-    }
-
     private static readonly Dictionary<string, Dictionary<string, string>> _messages = new()
     {
         ["fr"] = new Dictionary<string, string>
@@ -38,7 +31,7 @@ public static class Messages
             ["patch_menu_patch"] = "[1] Patch ymaps",
             ["patch_menu_return"] = "[2] Retourner",
             ["no_duplicates_found"] = "Aucun fichier .ymap dupliqué trouvé.",
-            ["duplicates_found"] = "Fichiers .ymap dupliqués trouvés :",
+            ["duplicates_found"] = "Fichiers .ymap dupliqués trouvés :"
         },
         ["en"] = new Dictionary<string, string>
         {
@@ -67,17 +60,16 @@ public static class Messages
             ["patch_menu_patch"] = "[1] Patch ymaps",
             ["patch_menu_return"] = "[2] Return",
             ["no_duplicates_found"] = "No duplicate .ymap files found.",
-            ["duplicates_found"] = "Duplicate .ymap files found:",
+            ["duplicates_found"] = "Duplicate .ymap files found:"
         }
     };
 
+    public static string Lang { get; set; } = "fr";
+
     public static string Get(string key, params object[] args)
     {
-        if (_messages.TryGetValue(_lang, out Dictionary<string, string>? dict) && dict.TryGetValue(key, out string? value))
-        {
-            return args.Length > 0 ? string.Format(value, args) : value;
-        }
+        if (_messages.TryGetValue(Lang, out Dictionary<string, string>? dict) &&
+            dict.TryGetValue(key, out string? value)) return args.Length > 0 ? string.Format(value, args) : value;
         return key;
     }
 }
-

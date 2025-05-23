@@ -1,11 +1,10 @@
-﻿using SharpDX;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using SharpDX;
 
 namespace CodeWalker
 {
     public class TriangleBVH : TriangleBVHNode
     {
-
         public TriangleBVH(TriangleBVHItem[] tris, int depth = 8)
         {
             if (tris == null) return;
@@ -18,10 +17,10 @@ namespace CodeWalker
                 min = Vector3.Min(min, tri.Box.Minimum);
                 max = Vector3.Max(max, tri.Box.Maximum);
             }
+
             Box = new BoundingBox(min, max);
 
             Build(tris, depth);
-
         }
     }
 
@@ -48,7 +47,7 @@ namespace CodeWalker
                 Vector3 cen = Box.Center;
                 Vector3 siz = Box.Size;
                 BoundingBox b1, b2;
-                if ((siz.X >= siz.Y) && (siz.X >= siz.Z))
+                if (siz.X >= siz.Y && siz.X >= siz.Z)
                 {
                     b1 = new BoundingBox(min, new Vector3(cen.X, max.Y, max.Z));
                     b2 = new BoundingBox(new Vector3(cen.X, min.Y, min.Z), max);
@@ -63,26 +62,25 @@ namespace CodeWalker
                     b1 = new BoundingBox(min, new Vector3(max.X, max.Y, cen.Z));
                     b2 = new BoundingBox(new Vector3(min.X, min.Y, cen.Z), max);
                 }
+
                 List<TriangleBVHItem> l1 = new List<TriangleBVHItem>();
                 List<TriangleBVHItem> l2 = new List<TriangleBVHItem>();
                 for (int i = 0; i < tris.Length; i++)
                 {
                     TriangleBVHItem tri = tris[i];
-                    if (tri.Box.Contains(b1) != ContainmentType.Disjoint)// (tri.Box.Intersects(b1))
-                    {
+                    if (tri.Box.Contains(b1) != ContainmentType.Disjoint) // (tri.Box.Intersects(b1))
                         l1.Add(tri);
-                    }
-                    if (tri.Box.Contains(b2) != ContainmentType.Disjoint)// (tri.Box.Intersects(b2))
-                    {
+                    if (tri.Box.Contains(b2) != ContainmentType.Disjoint) // (tri.Box.Intersects(b2))
                         l2.Add(tri);
-                    }
                 }
+
                 if (l1.Count > 0)
                 {
                     Node1 = new TriangleBVHNode();
                     Node1.Box = b1;
                     Node1.Build(l1.ToArray(), depth - 1);
                 }
+
                 if (l2.Count > 0)
                 {
                     Node2 = new TriangleBVHNode();
@@ -99,35 +97,35 @@ namespace CodeWalker
 
             TriangleBVHItem hit = null;
             if (Triangles != null)
-            {
                 for (int i = 0; i < Triangles.Length; i++)
                 {
                     TriangleBVHItem tri = Triangles[i];
                     Vector3 v1 = tri.Corner1;
                     Vector3 v2 = tri.Corner2;
                     Vector3 v3 = tri.Corner3;
-                    if (ray.Intersects(ref v1, ref v2, ref v3, out float d) && (d < hitdist) && (d > 0))
+                    if (ray.Intersects(ref v1, ref v2, ref v3, out float d) && d < hitdist && d > 0)
                     {
                         hitdist = d;
                         hit = tri;
                     }
                 }
-            }
+
             if (Node1 != null)
             {
                 float hd = hitdist;
                 TriangleBVHItem h = Node1.RayIntersect(ref ray, ref hd);
-                if ((h != null) && (hd < hitdist))
+                if (h != null && hd < hitdist)
                 {
                     hitdist = hd;
                     hit = h;
                 }
             }
+
             if (Node2 != null)
             {
                 float hd = hitdist;
                 TriangleBVHItem h = Node2.RayIntersect(ref ray, ref hd);
-                if ((h != null) && (hd < hitdist))
+                if (h != null && hd < hitdist)
                 {
                     hitdist = hd;
                     hit = h;
@@ -136,11 +134,12 @@ namespace CodeWalker
 
             return hit;
         }
-
     }
 
     public abstract class TriangleBVHItem
     {
+        private Quaternion _Orientation = Quaternion.Identity;
+        private Vector3 _Scale = Vector3.One;
         public Vector3 Corner1 { get; set; }
         public Vector3 Corner2 { get; set; }
         public Vector3 Corner3 { get; set; }
@@ -148,10 +147,7 @@ namespace CodeWalker
 
         public Vector3 Center
         {
-            get
-            {
-                return (Corner1 + Corner2 + Corner3) * 0.3333333f;
-            }
+            get => (Corner1 + Corner2 + Corner3) * 0.3333333f;
             set
             {
                 Vector3 delta = value - Center;
@@ -160,12 +156,10 @@ namespace CodeWalker
                 Corner3 += delta;
             }
         }
-        public Quaternion Orientation 
+
+        public Quaternion Orientation
         {
-            get
-            {
-                return _Orientation;
-            }
+            get => _Orientation;
             set
             {
                 Quaternion inv = Quaternion.Invert(_Orientation);
@@ -177,13 +171,10 @@ namespace CodeWalker
                 _Orientation = value;
             }
         }
-        private Quaternion _Orientation = Quaternion.Identity;
+
         public Vector3 Scale
         {
-            get
-            {
-                return _Scale;
-            }
+            get => _Scale;
             set
             {
                 Quaternion inv = Quaternion.Invert(_Orientation);
@@ -195,7 +186,6 @@ namespace CodeWalker
                 _Scale = value;
             }
         }
-        private Vector3 _Scale = Vector3.One;
 
         public void UpdateBox()
         {
@@ -209,8 +199,5 @@ namespace CodeWalker
             max = Vector3.Max(max, Corner3);
             Box = new BoundingBox(min, max);
         }
-
-
     }
-
 }

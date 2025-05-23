@@ -1,9 +1,9 @@
-﻿using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Xml;
+using SharpDX;
 
 /*
     Copyright(c) 2017 Neodymium
@@ -30,17 +30,18 @@ using System.Xml;
 
 namespace CodeWalker.GameFiles
 {
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ClothDictionary : ResourceFileBase
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ClothDictionary : ResourceFileBase
     {
+        // structure data
+        public ulong Unknown_10h; // 0x0000000000000000
+
+        public ulong Unknown_18h = 1; // 0x0000000000000001
+
         // pgBase
         // pgDictionaryBase
         // pgDictionary<characterCloth>
         public override long BlockLength => 0x40;
-
-        // structure data
-        public ulong Unknown_10h; // 0x0000000000000000
-        public ulong Unknown_18h = 1; // 0x0000000000000001
         public ResourceSimpleList64_s<MetaHash> ClothNameHashes { get; set; }
         public ResourcePointerList64<CharacterCloth> Clothes { get; set; }
 
@@ -49,54 +50,49 @@ namespace CodeWalker.GameFiles
             base.Read(reader, parameters);
 
             // read structure data
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.ClothNameHashes = reader.ReadBlock<ResourceSimpleList64_s<MetaHash>>();
-            this.Clothes = reader.ReadBlock<ResourcePointerList64<CharacterCloth>>();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h = reader.ReadUInt64();
+            ClothNameHashes = reader.ReadBlock<ResourceSimpleList64_s<MetaHash>>();
+            Clothes = reader.ReadBlock<ResourcePointerList64<CharacterCloth>>();
 
             if (Clothes?.data_items != null)
-            {
                 for (int i = 0; i < Clothes.data_items.Length; i++)
                 {
-                    MetaHash h = ((ClothNameHashes?.data_items != null) && (i < ClothNameHashes.data_items.Length)) ? ClothNameHashes.data_items[i] : 0;
-                    if (Clothes.data_items[i] != null)
-                    {
-                        Clothes.data_items[i].NameHash = h;
-                    }
+                    MetaHash h = ClothNameHashes?.data_items != null && i < ClothNameHashes.data_items.Length
+                        ? ClothNameHashes.data_items[i]
+                        : 0;
+                    if (Clothes.data_items[i] != null) Clothes.data_items[i].NameHash = h;
                 }
-            }
 
 
             //if (Unknown_10h != 0)
             //{ }//no hit
             //if (Unknown_18h != 1)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // write structure data
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h);
-            writer.WriteBlock(this.ClothNameHashes);
-            writer.WriteBlock(this.Clothes);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h);
+            writer.WriteBlock(ClothNameHashes);
+            writer.WriteBlock(Clothes);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
-
             if (Clothes?.data_items != null)
-            {
                 foreach (CharacterCloth c in Clothes.data_items)
                 {
                     YldXml.OpenTag(sb, indent, "Item");
                     c.WriteXml(sb, indent + 1);
                     YldXml.CloseTag(sb, indent, "Item");
                 }
-            }
-
         }
+
         public void ReadXml(XmlNode node)
         {
             List<CharacterCloth> clothes = new List<CharacterCloth>();
@@ -104,7 +100,6 @@ namespace CodeWalker.GameFiles
 
             XmlNodeList inodes = node.SelectNodes("Item");
             if (inodes != null)
-            {
                 foreach (XmlNode inode in inodes)
                 {
                     CharacterCloth c = new CharacterCloth();
@@ -112,7 +107,6 @@ namespace CodeWalker.GameFiles
                     clothes.Add(c);
                     clothhashes.Add(c.NameHash);
                 }
-            }
 
             ClothNameHashes = new ResourceSimpleList64_s<MetaHash>();
             ClothNameHashes.data_items = clothhashes.ToArray();
@@ -120,10 +114,12 @@ namespace CodeWalker.GameFiles
             Clothes.data_items = clothes.ToArray();
             //BuildDict();
         }
-        public static void WriteXmlNode(ClothDictionary d, StringBuilder sb, int indent, string name = "ClothDictionary")
+
+        public static void WriteXmlNode(ClothDictionary d, StringBuilder sb, int indent,
+            string name = "ClothDictionary")
         {
             if (d == null) return;
-            if ((d.Clothes?.data_items == null) || (d.Clothes.data_items.Length == 0))
+            if (d.Clothes?.data_items == null || d.Clothes.data_items.Length == 0)
             {
                 YldXml.SelfClosingTag(sb, indent, name);
             }
@@ -134,6 +130,7 @@ namespace CodeWalker.GameFiles
                 YldXml.CloseTag(sb, indent, name);
             }
         }
+
         public static ClothDictionary ReadXmlNode(XmlNode node)
         {
             if (node == null) return null;
@@ -144,7 +141,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x20, ClothNameHashes),
                 new Tuple<long, IResourceBlock>(0x30, Clothes)
             };
@@ -152,28 +150,31 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ClothController : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ClothController : ResourceSystemBlock
     {
+        public ulong Unknown_38h; // 0x0000000000000000
+        public ulong Unknown_40h; // 0x0000000000000000
+        public ulong Unknown_48h; // 0x0000000000000000
+        public uint Unknown_4h = 1; // 0x00000001
+        public uint Unknown_54h; // 0x00000000
+        public uint Unknown_7Ch; // 0x00000000
+
+        public ulong Unknown_8h; // 0x0000000000000000
+
         // clothController
         public override long BlockLength => 0x80;
 
         // structure data
         public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public ulong BridgeSimGfxPointer { get; set; }
         public ulong MorphControllerPointer { get; set; }
         public ulong VerletCloth1Pointer { get; set; }
         public ulong VerletCloth2Pointer { get; set; }
         public ulong VerletCloth3Pointer { get; set; }
-        public ulong Unknown_38h; // 0x0000000000000000
-        public ulong Unknown_40h; // 0x0000000000000000
-        public ulong Unknown_48h; // 0x0000000000000000
         public uint Type { get; set; }
-        public uint Unknown_54h; // 0x00000000
         public PsoChar32 Name { get; set; }
         public float Unknown_78h { get; set; } // 0.0f, 1.0f
-        public uint Unknown_7Ch; // 0x00000000
 
         // reference data
         public ClothBridgeSimGfx BridgeSimGfx { get; set; }
@@ -185,29 +186,29 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.BridgeSimGfxPointer = reader.ReadUInt64();
-            this.MorphControllerPointer = reader.ReadUInt64();
-            this.VerletCloth1Pointer = reader.ReadUInt64();
-            this.VerletCloth2Pointer = reader.ReadUInt64();
-            this.VerletCloth3Pointer = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
-            this.Unknown_40h = reader.ReadUInt64();
-            this.Unknown_48h = reader.ReadUInt64();
-            this.Type = reader.ReadUInt32();
-            this.Unknown_54h = reader.ReadUInt32();
-            this.Name = reader.ReadStruct<PsoChar32>();
-            this.Unknown_78h = reader.ReadSingle();
-            this.Unknown_7Ch = reader.ReadUInt32();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            BridgeSimGfxPointer = reader.ReadUInt64();
+            MorphControllerPointer = reader.ReadUInt64();
+            VerletCloth1Pointer = reader.ReadUInt64();
+            VerletCloth2Pointer = reader.ReadUInt64();
+            VerletCloth3Pointer = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
+            Unknown_40h = reader.ReadUInt64();
+            Unknown_48h = reader.ReadUInt64();
+            Type = reader.ReadUInt32();
+            Unknown_54h = reader.ReadUInt32();
+            Name = reader.ReadStruct<PsoChar32>();
+            Unknown_78h = reader.ReadSingle();
+            Unknown_7Ch = reader.ReadUInt32();
 
             // read reference data
-            this.BridgeSimGfx = reader.ReadBlockAt<ClothBridgeSimGfx>(this.BridgeSimGfxPointer);
-            this.MorphController = reader.ReadBlockAt<MorphController>(this.MorphControllerPointer);
-            this.VerletCloth1 = reader.ReadBlockAt<VerletCloth>(this.VerletCloth1Pointer);
-            this.VerletCloth2 = reader.ReadBlockAt<VerletCloth>(this.VerletCloth2Pointer);
-            this.VerletCloth3 = reader.ReadBlockAt<VerletCloth>(this.VerletCloth3Pointer);
+            BridgeSimGfx = reader.ReadBlockAt<ClothBridgeSimGfx>(BridgeSimGfxPointer);
+            MorphController = reader.ReadBlockAt<MorphController>(MorphControllerPointer);
+            VerletCloth1 = reader.ReadBlockAt<VerletCloth>(VerletCloth1Pointer);
+            VerletCloth2 = reader.ReadBlockAt<VerletCloth>(VerletCloth2Pointer);
+            VerletCloth3 = reader.ReadBlockAt<VerletCloth>(VerletCloth3Pointer);
 
 
             //if (Unknown_4h != 1)
@@ -226,36 +227,36 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_7Ch != 0)
             //{ }//no hit
-
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.BridgeSimGfxPointer = (ulong)(this.BridgeSimGfx != null ? this.BridgeSimGfx.FilePosition : 0);
-            this.MorphControllerPointer = (ulong)(this.MorphController != null ? this.MorphController.FilePosition : 0);
-            this.VerletCloth1Pointer = (ulong)(this.VerletCloth1 != null ? this.VerletCloth1.FilePosition : 0);
-            this.VerletCloth2Pointer = (ulong)(this.VerletCloth2 != null ? this.VerletCloth2.FilePosition : 0);
-            this.VerletCloth3Pointer = (ulong)(this.VerletCloth3 != null ? this.VerletCloth3.FilePosition : 0);
+            BridgeSimGfxPointer = (ulong)(BridgeSimGfx != null ? BridgeSimGfx.FilePosition : 0);
+            MorphControllerPointer = (ulong)(MorphController != null ? MorphController.FilePosition : 0);
+            VerletCloth1Pointer = (ulong)(VerletCloth1 != null ? VerletCloth1.FilePosition : 0);
+            VerletCloth2Pointer = (ulong)(VerletCloth2 != null ? VerletCloth2.FilePosition : 0);
+            VerletCloth3Pointer = (ulong)(VerletCloth3 != null ? VerletCloth3.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.BridgeSimGfxPointer);
-            writer.Write(this.MorphControllerPointer);
-            writer.Write(this.VerletCloth1Pointer);
-            writer.Write(this.VerletCloth2Pointer);
-            writer.Write(this.VerletCloth3Pointer);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_48h);
-            writer.Write(this.Type);
-            writer.Write(this.Unknown_54h);
-            writer.WriteStruct(this.Name);
-            writer.Write(this.Unknown_78h);
-            writer.Write(this.Unknown_7Ch);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(BridgeSimGfxPointer);
+            writer.Write(MorphControllerPointer);
+            writer.Write(VerletCloth1Pointer);
+            writer.Write(VerletCloth2Pointer);
+            writer.Write(VerletCloth3Pointer);
+            writer.Write(Unknown_38h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_48h);
+            writer.Write(Type);
+            writer.Write(Unknown_54h);
+            writer.WriteStruct(Name);
+            writer.Write(Unknown_78h);
+            writer.Write(Unknown_7Ch);
         }
+
         public virtual void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.StringTag(sb, indent, "Name", YldXml.XmlEscape(Name.ToString()));
@@ -267,24 +268,28 @@ namespace CodeWalker.GameFiles
                 BridgeSimGfx.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "BridgeSimGfx");
             }
+
             if (MorphController != null)
             {
                 YldXml.OpenTag(sb, indent, "MorphController");
                 MorphController.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "MorphController");
             }
+
             if (VerletCloth1 != null)
             {
                 YldXml.OpenTag(sb, indent, "VerletCloth1");
                 VerletCloth1.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "VerletCloth1");
             }
+
             if (VerletCloth2 != null)
             {
                 YldXml.OpenTag(sb, indent, "VerletCloth2");
                 VerletCloth2.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "VerletCloth2");
             }
+
             if (VerletCloth3 != null)
             {
                 YldXml.OpenTag(sb, indent, "VerletCloth3");
@@ -292,35 +297,40 @@ namespace CodeWalker.GameFiles
                 YldXml.CloseTag(sb, indent, "VerletCloth3");
             }
         }
+
         public virtual void ReadXml(XmlNode node)
         {
             Name = new PsoChar32(Xml.GetChildInnerText(node, "Name"));
-            Type = Xml.GetChildUIntAttribute(node, "Type", "value");
-            Unknown_78h = Xml.GetChildFloatAttribute(node, "Unknown78", "value");
+            Type = Xml.GetChildUIntAttribute(node, "Type");
+            Unknown_78h = Xml.GetChildFloatAttribute(node, "Unknown78");
             XmlNode bsnode = node.SelectSingleNode("BridgeSimGfx");
             if (bsnode != null)
             {
                 BridgeSimGfx = new ClothBridgeSimGfx();
                 BridgeSimGfx.ReadXml(bsnode);
             }
+
             XmlNode mcnode = node.SelectSingleNode("MorphController");
             if (mcnode != null)
             {
                 MorphController = new MorphController();
                 MorphController.ReadXml(mcnode);
             }
+
             XmlNode c1node = node.SelectSingleNode("VerletCloth1");
             if (c1node != null)
             {
                 VerletCloth1 = new VerletCloth();
                 VerletCloth1.ReadXml(c1node);
             }
+
             XmlNode c2node = node.SelectSingleNode("VerletCloth2");
             if (c2node != null)
             {
                 VerletCloth2 = new VerletCloth();
                 VerletCloth2.ReadXml(c2node);
             }
+
             XmlNode c3node = node.SelectSingleNode("VerletCloth3");
             if (c3node != null)
             {
@@ -342,77 +352,80 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ClothBridgeSimGfx : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ClothBridgeSimGfx : ResourceSystemBlock
     {
+        public ulong Unknown_110h; // 0x0000000000000000
+        public ulong Unknown_118h; // 0x0000000000000000
+        public ulong Unknown_120h; // 0x0000000000000000
+        public ulong Unknown_138h; // 0x0000000000000000
+        public uint Unknown_1Ch; // 0x00000000
+        public uint Unknown_4h = 1; // 0x00000001
+        public ulong Unknown_50h; // 0x0000000000000000
+        public ulong Unknown_58h; // 0x0000000000000000
+        public ulong Unknown_8h; // 0x0000000000000000
+        public ulong Unknown_90h; // 0x0000000000000000
+        public ulong Unknown_98h; // 0x0000000000000000
+        public ulong Unknown_D0h; // 0x0000000000000000
+
+        public ulong Unknown_D8h; // 0x0000000000000000
+
         // pgBase
         // clothBridgeSimGfx
         public override long BlockLength => 0x140;
 
         // structure data
         public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public uint VertexCount { get; set; }
         public uint Unknown_14h { get; set; }
         public uint Unknown_18h { get; set; }
-        public uint Unknown_1Ch; // 0x00000000
         public ResourceSimpleList64_float Unknown_20h { get; set; }
         public ResourceSimpleList64_float Unknown_30h { get; set; }
         public ResourceSimpleList64_float Unknown_40h { get; set; }
-        public ulong Unknown_50h; // 0x0000000000000000
-        public ulong Unknown_58h; // 0x0000000000000000
         public ResourceSimpleList64_float Unknown_60h { get; set; }
         public ResourceSimpleList64_uint Unknown_70h { get; set; }
         public ResourceSimpleList64_uint Unknown_80h { get; set; }
-        public ulong Unknown_90h; // 0x0000000000000000
-        public ulong Unknown_98h; // 0x0000000000000000
         public ResourceSimpleList64_float Unknown_A0h { get; set; }
         public ResourceSimpleList64_uint Unknown_B0h { get; set; }
         public ResourceSimpleList64_uint Unknown_C0h { get; set; }
-        public ulong Unknown_D0h; // 0x0000000000000000
-        public ulong Unknown_D8h; // 0x0000000000000000
         public ResourceSimpleList64_ushort Unknown_E0h { get; set; }
         public ResourceSimpleList64_ushort Unknown_F0h { get; set; }
         public ResourceSimpleList64_ushort Unknown_100h { get; set; }
-        public ulong Unknown_110h; // 0x0000000000000000
-        public ulong Unknown_118h; // 0x0000000000000000
-        public ulong Unknown_120h; // 0x0000000000000000
         public ResourceSimpleList64_uint Unknown_128h { get; set; }
-        public ulong Unknown_138h; // 0x0000000000000000
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.VertexCount = reader.ReadUInt32();
-            this.Unknown_14h = reader.ReadUInt32();
-            this.Unknown_18h = reader.ReadUInt32();
-            this.Unknown_1Ch = reader.ReadUInt32();
-            this.Unknown_20h = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_30h = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_40h = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_50h = reader.ReadUInt64();
-            this.Unknown_58h = reader.ReadUInt64();
-            this.Unknown_60h = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_70h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_80h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_90h = reader.ReadUInt64();
-            this.Unknown_98h = reader.ReadUInt64();
-            this.Unknown_A0h = reader.ReadBlock<ResourceSimpleList64_float>();
-            this.Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_C0h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_D0h = reader.ReadUInt64();
-            this.Unknown_D8h = reader.ReadUInt64();
-            this.Unknown_E0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_F0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_100h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_110h = reader.ReadUInt64();
-            this.Unknown_118h = reader.ReadUInt64();
-            this.Unknown_120h = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_138h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            VertexCount = reader.ReadUInt32();
+            Unknown_14h = reader.ReadUInt32();
+            Unknown_18h = reader.ReadUInt32();
+            Unknown_1Ch = reader.ReadUInt32();
+            Unknown_20h = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_30h = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_40h = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_50h = reader.ReadUInt64();
+            Unknown_58h = reader.ReadUInt64();
+            Unknown_60h = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_70h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_80h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_90h = reader.ReadUInt64();
+            Unknown_98h = reader.ReadUInt64();
+            Unknown_A0h = reader.ReadBlock<ResourceSimpleList64_float>();
+            Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_C0h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_D0h = reader.ReadUInt64();
+            Unknown_D8h = reader.ReadUInt64();
+            Unknown_E0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_F0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_100h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_110h = reader.ReadUInt64();
+            Unknown_118h = reader.ReadUInt64();
+            Unknown_120h = reader.ReadUInt64();
+            Unknown_128h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_138h = reader.ReadUInt64();
 
 
             //if ((Unknown_20h?.data_items!=null)&&(Unknown_20h?.data_items?.Length != VertexCount))
@@ -494,103 +507,80 @@ namespace CodeWalker.GameFiles
             //if (Unknown_138h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.VertexCount);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_1Ch);
-            writer.WriteBlock(this.Unknown_20h);
-            writer.WriteBlock(this.Unknown_30h);
-            writer.WriteBlock(this.Unknown_40h);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_58h);
-            writer.WriteBlock(this.Unknown_60h);
-            writer.WriteBlock(this.Unknown_70h);
-            writer.WriteBlock(this.Unknown_80h);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_98h);
-            writer.WriteBlock(this.Unknown_A0h);
-            writer.WriteBlock(this.Unknown_B0h);
-            writer.WriteBlock(this.Unknown_C0h);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_D8h);
-            writer.WriteBlock(this.Unknown_E0h);
-            writer.WriteBlock(this.Unknown_F0h);
-            writer.WriteBlock(this.Unknown_100h);
-            writer.Write(this.Unknown_110h);
-            writer.Write(this.Unknown_118h);
-            writer.Write(this.Unknown_120h);
-            writer.WriteBlock(this.Unknown_128h);
-            writer.Write(this.Unknown_138h);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(VertexCount);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_1Ch);
+            writer.WriteBlock(Unknown_20h);
+            writer.WriteBlock(Unknown_30h);
+            writer.WriteBlock(Unknown_40h);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_58h);
+            writer.WriteBlock(Unknown_60h);
+            writer.WriteBlock(Unknown_70h);
+            writer.WriteBlock(Unknown_80h);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_98h);
+            writer.WriteBlock(Unknown_A0h);
+            writer.WriteBlock(Unknown_B0h);
+            writer.WriteBlock(Unknown_C0h);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_D8h);
+            writer.WriteBlock(Unknown_E0h);
+            writer.WriteBlock(Unknown_F0h);
+            writer.WriteBlock(Unknown_100h);
+            writer.Write(Unknown_110h);
+            writer.Write(Unknown_118h);
+            writer.Write(Unknown_120h);
+            writer.WriteBlock(Unknown_128h);
+            writer.Write(Unknown_138h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.ValueTag(sb, indent, "VertexCount", VertexCount.ToString());
             YldXml.ValueTag(sb, indent, "Unknown14", Unknown_14h.ToString());
             YldXml.ValueTag(sb, indent, "Unknown18", Unknown_18h.ToString());
             if (Unknown_20h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_20h.data_items, indent, "Unknown20", "", FloatUtil.ToString);
-            }
             if (Unknown_30h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_30h.data_items, indent, "Unknown30", "", FloatUtil.ToString);
-            }
             if (Unknown_40h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_40h.data_items, indent, "Unknown40", "", FloatUtil.ToString);
-            }
             if (Unknown_60h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_60h.data_items, indent, "Unknown60", "", FloatUtil.ToString);
-            }
             if (Unknown_70h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_70h.data_items, indent, "Unknown70", "");
-            }
             if (Unknown_80h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_80h.data_items, indent, "Unknown80", "");
-            }
             if (Unknown_A0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_A0h.data_items, indent, "UnknownA0", "", FloatUtil.ToString);
-            }
             if (Unknown_B0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_B0h.data_items, indent, "UnknownB0", "");
-            }
             if (Unknown_C0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_C0h.data_items, indent, "UnknownC0", "");
-            }
             if (Unknown_E0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_E0h.data_items, indent, "UnknownE0", "");
-            }
             if (Unknown_F0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_F0h.data_items, indent, "UnknownF0", "");
-            }
             if (Unknown_100h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_100h.data_items, indent, "Unknown100", "");
-            }
             if (Unknown_128h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_128h.data_items, indent, "Unknown128", "");
-            }
         }
+
         public void ReadXml(XmlNode node)
         {
-            VertexCount = Xml.GetChildUIntAttribute(node, "VertexCount", "value");
-            Unknown_14h = Xml.GetChildUIntAttribute(node, "Unknown14", "value");
-            Unknown_18h = Xml.GetChildUIntAttribute(node, "Unknown18", "value");
+            VertexCount = Xml.GetChildUIntAttribute(node, "VertexCount");
+            Unknown_14h = Xml.GetChildUIntAttribute(node, "Unknown14");
+            Unknown_18h = Xml.GetChildUIntAttribute(node, "Unknown18");
             Unknown_20h = new ResourceSimpleList64_float();
             Unknown_20h.data_items = Xml.GetChildRawFloatArrayNullable(node, "Unknown20");
             Unknown_30h = new ResourceSimpleList64_float();
@@ -622,7 +612,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x20, Unknown_20h),
                 new Tuple<long, IResourceBlock>(0x30, Unknown_30h),
                 new Tuple<long, IResourceBlock>(0x40, Unknown_40h),
@@ -641,19 +632,22 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ClothInstanceTuning : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ClothInstanceTuning : ResourceSystemBlock
     {
+        public ulong Unknown_18h; // 0x0000000000000000
+        public uint Unknown_4h = 1; // 0x00000001
+
+        public ulong Unknown_8h; // 0x0000000000000000
+
         // pgBase
         // clothInstanceTuning
         public override long BlockLength => 0x40;
 
         // structure data
         public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public float Unknown_10h { get; set; } // 3.14159274f, 4.7f
         public float Unknown_14h { get; set; } // 0.5235988f, 0.52f
-        public ulong Unknown_18h; // 0x0000000000000000
         public float Unknown_20h { get; set; } // 0.0f, 4.0f
         public float Unknown_24h { get; set; } // 0.0f, 2.0f
         public float Unknown_28h { get; set; } // 0.0f, 2.0f, 8.0f
@@ -666,20 +660,20 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadSingle();
-            this.Unknown_14h = reader.ReadSingle();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadSingle();
-            this.Unknown_24h = reader.ReadSingle();
-            this.Unknown_28h = reader.ReadSingle();
-            this.Unknown_2Ch = reader.ReadSingle();
-            this.Flags = reader.ReadUInt32();
-            this.Unknown_34h = reader.ReadSingle();
-            this.Unknown_38h = reader.ReadSingle();
-            this.Unknown_3Ch = reader.ReadUInt32();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadSingle();
+            Unknown_14h = reader.ReadSingle();
+            Unknown_18h = reader.ReadUInt64();
+            Unknown_20h = reader.ReadSingle();
+            Unknown_24h = reader.ReadSingle();
+            Unknown_28h = reader.ReadSingle();
+            Unknown_2Ch = reader.ReadSingle();
+            Flags = reader.ReadUInt32();
+            Unknown_34h = reader.ReadSingle();
+            Unknown_38h = reader.ReadSingle();
+            Unknown_3Ch = reader.ReadUInt32();
 
             //if (Unknown_4h != 1)
             //{ }//no hit
@@ -789,27 +783,27 @@ namespace CodeWalker.GameFiles
             //    default:
             //        break;
             //}
-
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_14h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_24h);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.Unknown_2Ch);
-            writer.Write(this.Flags);
-            writer.Write(this.Unknown_34h);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Unknown_3Ch);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_14h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_24h);
+            writer.Write(Unknown_28h);
+            writer.Write(Unknown_2Ch);
+            writer.Write(Flags);
+            writer.Write(Unknown_34h);
+            writer.Write(Unknown_38h);
+            writer.Write(Unknown_3Ch);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.ValueTag(sb, indent, "Unknown10", FloatUtil.ToString(Unknown_10h));
@@ -823,53 +817,48 @@ namespace CodeWalker.GameFiles
             YldXml.ValueTag(sb, indent, "Unknown38", FloatUtil.ToString(Unknown_38h));
             YldXml.ValueTag(sb, indent, "Unknown3C", Unknown_3Ch.ToString());
         }
+
         public void ReadXml(XmlNode node)
         {
-            Unknown_10h = Xml.GetChildFloatAttribute(node, "Unknown10", "value");
-            Unknown_14h = Xml.GetChildFloatAttribute(node, "Unknown14", "value");
-            Unknown_20h = Xml.GetChildFloatAttribute(node, "Unknown20", "value");
-            Unknown_24h = Xml.GetChildFloatAttribute(node, "Unknown24", "value");
-            Unknown_28h = Xml.GetChildFloatAttribute(node, "Unknown28", "value");
-            Unknown_2Ch = Xml.GetChildFloatAttribute(node, "Unknown2C", "value");
-            Flags = Xml.GetChildUIntAttribute(node, "Flags", "value");
-            Unknown_34h = Xml.GetChildFloatAttribute(node, "Unknown34", "value");
-            Unknown_38h = Xml.GetChildFloatAttribute(node, "Unknown38", "value");
-            Unknown_3Ch = Xml.GetChildUIntAttribute(node, "Unknown3C", "value");
+            Unknown_10h = Xml.GetChildFloatAttribute(node, "Unknown10");
+            Unknown_14h = Xml.GetChildFloatAttribute(node, "Unknown14");
+            Unknown_20h = Xml.GetChildFloatAttribute(node, "Unknown20");
+            Unknown_24h = Xml.GetChildFloatAttribute(node, "Unknown24");
+            Unknown_28h = Xml.GetChildFloatAttribute(node, "Unknown28");
+            Unknown_2Ch = Xml.GetChildFloatAttribute(node, "Unknown2C");
+            Flags = Xml.GetChildUIntAttribute(node, "Flags");
+            Unknown_34h = Xml.GetChildFloatAttribute(node, "Unknown34");
+            Unknown_38h = Xml.GetChildFloatAttribute(node, "Unknown38");
+            Unknown_3Ch = Xml.GetChildUIntAttribute(node, "Unknown3C");
         }
-
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class VerletCloth : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class VerletCloth : ResourceSystemBlock
     {
-        // pgBase
-        // phVerletCloth
-        public override long BlockLength => 0x180;
-
-        // structure data
-        public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public ulong Unknown_10h; // 0x0000000000000000
-        public ulong BoundPointer { get; set; }
+        public ulong Unknown_120h; // 0x0000000000000000
+        public ulong Unknown_128h; // 0x0000000000000000
+        public ulong Unknown_138h = 0x100000; // 0x0000000000100000
+        public uint Unknown_14Ch; // 0x00000000
+        public ulong Unknown_150h; // 0x0000000000000000
+        public uint Unknown_15Ch; // 0x00000000
+        public ulong Unknown_160h; // 0x0000000000000000
+        public ulong Unknown_168h; // 0x0000000000000000
+        public ulong Unknown_170h; // 0x0000000000000000
+        public ulong Unknown_178h; // 0x0000000000000000
         public ulong Unknown_20h; // 0x00000000
         public ulong Unknown_28h; // 0x00000000
-        public Vector3 BBMin { get; set; }
-        public uint Unknown_3Ch { get; set; }    // 0x00000000, 0x7f7fffff (yft only)
-        public Vector3 BBMax { get; set; }
-        public uint Unknown_4Ch { get; set; }    // 0x00000000, 0xff7fffff (yft only)
-        public float Unknown_50h { get; set; } // 3.5424633f, 3.54442024f, 3.54442787f, 3.54441643f
+        public uint Unknown_4h = 1; // 0x00000001
         public uint Unknown_54h = 1; // 0x00000001
         public ulong Unknown_58h; // 0x0000000000000000
         public ulong Unknown_60h; // 0x0000000000000000
         public ulong Unknown_68h; // 0x0000000000000000
-        public ResourceSimpleList64_s<Vector4> Vertices2 { get; set; } //vertex infos? original positions..?
-        public ResourceSimpleList64_s<Vector4> Vertices { get; set; } //vertex positions  (in bind pose?)
+        public ulong Unknown_8h; // 0x0000000000000000
         public ulong Unknown_90h; // 0x0000000000000000
         public ulong Unknown_98h; // 0x0000000000000000
         public ulong Unknown_A0h; // 0x0000000000000000
-        public float Unknown_A8h { get; set; }      //9999, 100
-        public float Unknown_ACh { get; set; }      //9999, 0
         public ulong Unknown_B0h; // 0x0000000000000000
         public ulong Unknown_B8h; // 0x0000000000000000
         public ulong Unknown_C0h; // 0x0000000000000000
@@ -877,30 +866,38 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_D0h; // 0x0000000000000000
         public ulong Unknown_D8h; // 0x0000000000000000
         public ulong Unknown_E0h; // 0x0000000000000000
-        public uint Unknown_E8h { get; set; }       // ?
-        public uint ConstraintCount { get; set; }       //constraints count 
-        public uint VertexCount { get; set; }       //vertices count
         public uint Unknown_F4h; // 0x00000000
-        public ushort Unknown_F8h = 3;       // 3 
-        public ushort Unknown_FAh { get; set; } // 0, 2 (yft only)
+        public ushort Unknown_F8h = 3; // 3 
+
         public uint Unknown_FCh; // 0x00000000
+
+        // pgBase
+        // phVerletCloth
+        public override long BlockLength => 0x180;
+
+        // structure data
+        public uint VFT { get; set; }
+        public ulong BoundPointer { get; set; }
+        public Vector3 BBMin { get; set; }
+        public uint Unknown_3Ch { get; set; } // 0x00000000, 0x7f7fffff (yft only)
+        public Vector3 BBMax { get; set; }
+        public uint Unknown_4Ch { get; set; } // 0x00000000, 0xff7fffff (yft only)
+        public float Unknown_50h { get; set; } // 3.5424633f, 3.54442024f, 3.54442787f, 3.54441643f
+        public ResourceSimpleList64_s<Vector4> Vertices2 { get; set; } //vertex infos? original positions..?
+        public ResourceSimpleList64_s<Vector4> Vertices { get; set; } //vertex positions  (in bind pose?)
+        public float Unknown_A8h { get; set; } //9999, 100
+        public float Unknown_ACh { get; set; } //9999, 0
+        public uint Unknown_E8h { get; set; } // ?
+        public uint ConstraintCount { get; set; } //constraints count 
+        public uint VertexCount { get; set; } //vertices count
+        public ushort Unknown_FAh { get; set; } // 0, 2 (yft only)
         public ResourceSimpleList64_s<Unknown_C_004> Constraints2 { get; set; }
         public ResourceSimpleList64_s<Unknown_C_004> Constraints { get; set; }
-        public ulong Unknown_120h; // 0x0000000000000000
-        public ulong Unknown_128h; // 0x0000000000000000
         public ulong BehaviorPointer { get; set; }
-        public ulong Unknown_138h = 0x100000; // 0x0000000000100000
         public ulong Unknown_140h_Pointer { get; set; }
-        public ushort Unknown_148h { get; set; }    // ?  min:1, max:31
-        public ushort VertexCount2 { get; set; }    //also vertices count
-        public uint Unknown_14Ch; // 0x00000000
-        public ulong Unknown_150h; // 0x0000000000000000
+        public ushort Unknown_148h { get; set; } // ?  min:1, max:31
+        public ushort VertexCount2 { get; set; } //also vertices count
         public float Unknown_158h { get; set; }
-        public uint Unknown_15Ch; // 0x00000000
-        public ulong Unknown_160h; // 0x0000000000000000
-        public ulong Unknown_168h; // 0x0000000000000000
-        public ulong Unknown_170h; // 0x0000000000000000
-        public ulong Unknown_178h; // 0x0000000000000000
 
         // reference data
         public Bounds Bound { get; set; }
@@ -910,70 +907,67 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.BoundPointer = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
-            this.BBMin = reader.ReadVector3();
-            this.Unknown_3Ch = reader.ReadUInt32();
-            this.BBMax = reader.ReadVector3();
-            this.Unknown_4Ch = reader.ReadUInt32();
-            this.Unknown_50h = reader.ReadSingle();
-            this.Unknown_54h = reader.ReadUInt32();
-            this.Unknown_58h = reader.ReadUInt64();
-            this.Unknown_60h = reader.ReadUInt64();
-            this.Unknown_68h = reader.ReadUInt64();
-            this.Vertices2 = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.Vertices = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.Unknown_90h = reader.ReadUInt64();
-            this.Unknown_98h = reader.ReadUInt64();
-            this.Unknown_A0h = reader.ReadUInt64();
-            this.Unknown_A8h = reader.ReadSingle();
-            this.Unknown_ACh = reader.ReadSingle();
-            this.Unknown_B0h = reader.ReadUInt64();
-            this.Unknown_B8h = reader.ReadUInt64();
-            this.Unknown_C0h = reader.ReadUInt64();
-            this.Unknown_C8h = reader.ReadUInt64();
-            this.Unknown_D0h = reader.ReadUInt64();
-            this.Unknown_D8h = reader.ReadUInt64();
-            this.Unknown_E0h = reader.ReadUInt64();
-            this.Unknown_E8h = reader.ReadUInt32();
-            this.ConstraintCount = reader.ReadUInt32();
-            this.VertexCount = reader.ReadUInt32();
-            this.Unknown_F4h = reader.ReadUInt32();
-            this.Unknown_F8h = reader.ReadUInt16();
-            this.Unknown_FAh = reader.ReadUInt16();
-            this.Unknown_FCh = reader.ReadUInt32();
-            this.Constraints2 = reader.ReadBlock<ResourceSimpleList64_s<Unknown_C_004>>();
-            this.Constraints = reader.ReadBlock<ResourceSimpleList64_s<Unknown_C_004>>();
-            this.Unknown_120h = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadUInt64();
-            this.BehaviorPointer = reader.ReadUInt64();
-            this.Unknown_138h = reader.ReadUInt64();
-            this.Unknown_140h_Pointer = reader.ReadUInt64();
-            this.Unknown_148h = reader.ReadUInt16();
-            this.VertexCount2 = reader.ReadUInt16();
-            this.Unknown_14Ch = reader.ReadUInt32();
-            this.Unknown_150h = reader.ReadUInt64();
-            this.Unknown_158h = reader.ReadSingle();
-            this.Unknown_15Ch = reader.ReadUInt32();
-            this.Unknown_160h = reader.ReadUInt64();
-            this.Unknown_168h = reader.ReadUInt64();
-            this.Unknown_170h = reader.ReadUInt64();
-            this.Unknown_178h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            BoundPointer = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
+            BBMin = reader.ReadVector3();
+            Unknown_3Ch = reader.ReadUInt32();
+            BBMax = reader.ReadVector3();
+            Unknown_4Ch = reader.ReadUInt32();
+            Unknown_50h = reader.ReadSingle();
+            Unknown_54h = reader.ReadUInt32();
+            Unknown_58h = reader.ReadUInt64();
+            Unknown_60h = reader.ReadUInt64();
+            Unknown_68h = reader.ReadUInt64();
+            Vertices2 = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            Vertices = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            Unknown_90h = reader.ReadUInt64();
+            Unknown_98h = reader.ReadUInt64();
+            Unknown_A0h = reader.ReadUInt64();
+            Unknown_A8h = reader.ReadSingle();
+            Unknown_ACh = reader.ReadSingle();
+            Unknown_B0h = reader.ReadUInt64();
+            Unknown_B8h = reader.ReadUInt64();
+            Unknown_C0h = reader.ReadUInt64();
+            Unknown_C8h = reader.ReadUInt64();
+            Unknown_D0h = reader.ReadUInt64();
+            Unknown_D8h = reader.ReadUInt64();
+            Unknown_E0h = reader.ReadUInt64();
+            Unknown_E8h = reader.ReadUInt32();
+            ConstraintCount = reader.ReadUInt32();
+            VertexCount = reader.ReadUInt32();
+            Unknown_F4h = reader.ReadUInt32();
+            Unknown_F8h = reader.ReadUInt16();
+            Unknown_FAh = reader.ReadUInt16();
+            Unknown_FCh = reader.ReadUInt32();
+            Constraints2 = reader.ReadBlock<ResourceSimpleList64_s<Unknown_C_004>>();
+            Constraints = reader.ReadBlock<ResourceSimpleList64_s<Unknown_C_004>>();
+            Unknown_120h = reader.ReadUInt64();
+            Unknown_128h = reader.ReadUInt64();
+            BehaviorPointer = reader.ReadUInt64();
+            Unknown_138h = reader.ReadUInt64();
+            Unknown_140h_Pointer = reader.ReadUInt64();
+            Unknown_148h = reader.ReadUInt16();
+            VertexCount2 = reader.ReadUInt16();
+            Unknown_14Ch = reader.ReadUInt32();
+            Unknown_150h = reader.ReadUInt64();
+            Unknown_158h = reader.ReadSingle();
+            Unknown_15Ch = reader.ReadUInt32();
+            Unknown_160h = reader.ReadUInt64();
+            Unknown_168h = reader.ReadUInt64();
+            Unknown_170h = reader.ReadUInt64();
+            Unknown_178h = reader.ReadUInt64();
 
             // read reference data
-            this.Bound = reader.ReadBlockAt<Bounds>(this.BoundPointer);
-            this.Behavior = reader.ReadBlockAt<EnvClothVerletBehavior>(this.BehaviorPointer);
-            this.Unknown_140h_Data = reader.ReadBlockAt<Unknown_C_007>(this.Unknown_140h_Pointer);
+            Bound = reader.ReadBlockAt<Bounds>(BoundPointer);
+            Behavior = reader.ReadBlockAt<EnvClothVerletBehavior>(BehaviorPointer);
+            Unknown_140h_Data = reader.ReadBlockAt<Unknown_C_007>(Unknown_140h_Pointer);
 
-            if (Bound != null)
-            {
-                Bound.Owner = this;
-            }
+            if (Bound != null) Bound.Owner = this;
 
             //if (BBMin.X > BBMax.X)
             //{ }//no hit
@@ -1183,71 +1177,72 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_178h != 0)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.BoundPointer = (ulong)(this.Bound != null ? this.Bound.FilePosition : 0);
-            this.BehaviorPointer = (ulong)(this.Behavior != null ? this.Behavior.FilePosition : 0);
-            this.Unknown_140h_Pointer = (ulong)(this.Unknown_140h_Data != null ? this.Unknown_140h_Data.FilePosition : 0);
+            BoundPointer = (ulong)(Bound != null ? Bound.FilePosition : 0);
+            BehaviorPointer = (ulong)(Behavior != null ? Behavior.FilePosition : 0);
+            Unknown_140h_Pointer = (ulong)(Unknown_140h_Data != null ? Unknown_140h_Data.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.BoundPointer);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.BBMin);
-            writer.Write(this.Unknown_3Ch);
-            writer.Write(this.BBMax);
-            writer.Write(this.Unknown_4Ch);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_54h);
-            writer.Write(this.Unknown_58h);
-            writer.Write(this.Unknown_60h);
-            writer.Write(this.Unknown_68h);
-            writer.WriteBlock(this.Vertices2);
-            writer.WriteBlock(this.Vertices);
-            writer.Write(this.Unknown_90h);
-            writer.Write(this.Unknown_98h);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_A8h);
-            writer.Write(this.Unknown_ACh);
-            writer.Write(this.Unknown_B0h);
-            writer.Write(this.Unknown_B8h);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_C8h);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_D8h);
-            writer.Write(this.Unknown_E0h);
-            writer.Write(this.Unknown_E8h);
-            writer.Write(this.ConstraintCount);
-            writer.Write(this.VertexCount);
-            writer.Write(this.Unknown_F4h);
-            writer.Write(this.Unknown_F8h);
-            writer.Write(this.Unknown_FAh);
-            writer.Write(this.Unknown_FCh);
-            writer.WriteBlock(this.Constraints2);
-            writer.WriteBlock(this.Constraints);
-            writer.Write(this.Unknown_120h);
-            writer.Write(this.Unknown_128h);
-            writer.Write(this.BehaviorPointer);
-            writer.Write(this.Unknown_138h);
-            writer.Write(this.Unknown_140h_Pointer);
-            writer.Write(this.Unknown_148h);
-            writer.Write(this.VertexCount2);
-            writer.Write(this.Unknown_14Ch);
-            writer.Write(this.Unknown_150h);
-            writer.Write(this.Unknown_158h);
-            writer.Write(this.Unknown_15Ch);
-            writer.Write(this.Unknown_160h);
-            writer.Write(this.Unknown_168h);
-            writer.Write(this.Unknown_170h);
-            writer.Write(this.Unknown_178h);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(Unknown_10h);
+            writer.Write(BoundPointer);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_28h);
+            writer.Write(BBMin);
+            writer.Write(Unknown_3Ch);
+            writer.Write(BBMax);
+            writer.Write(Unknown_4Ch);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_54h);
+            writer.Write(Unknown_58h);
+            writer.Write(Unknown_60h);
+            writer.Write(Unknown_68h);
+            writer.WriteBlock(Vertices2);
+            writer.WriteBlock(Vertices);
+            writer.Write(Unknown_90h);
+            writer.Write(Unknown_98h);
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_A8h);
+            writer.Write(Unknown_ACh);
+            writer.Write(Unknown_B0h);
+            writer.Write(Unknown_B8h);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_C8h);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_D8h);
+            writer.Write(Unknown_E0h);
+            writer.Write(Unknown_E8h);
+            writer.Write(ConstraintCount);
+            writer.Write(VertexCount);
+            writer.Write(Unknown_F4h);
+            writer.Write(Unknown_F8h);
+            writer.Write(Unknown_FAh);
+            writer.Write(Unknown_FCh);
+            writer.WriteBlock(Constraints2);
+            writer.WriteBlock(Constraints);
+            writer.Write(Unknown_120h);
+            writer.Write(Unknown_128h);
+            writer.Write(BehaviorPointer);
+            writer.Write(Unknown_138h);
+            writer.Write(Unknown_140h_Pointer);
+            writer.Write(Unknown_148h);
+            writer.Write(VertexCount2);
+            writer.Write(Unknown_14Ch);
+            writer.Write(Unknown_150h);
+            writer.Write(Unknown_158h);
+            writer.Write(Unknown_15Ch);
+            writer.Write(Unknown_160h);
+            writer.Write(Unknown_168h);
+            writer.Write(Unknown_170h);
+            writer.Write(Unknown_178h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.SelfClosingTag(sb, indent, "BBMin " + FloatUtil.GetVector3XmlString(BBMin));
@@ -1261,48 +1256,34 @@ namespace CodeWalker.GameFiles
             YldXml.ValueTag(sb, indent, "UnknownFA", Unknown_FAh.ToString());
             YldXml.ValueTag(sb, indent, "Unknown148", Unknown_148h.ToString());
             YldXml.ValueTag(sb, indent, "Unknown158", FloatUtil.ToString(Unknown_158h));
-            if (Unknown_140h_Data != null)
-            {
-                YldXml.SelfClosingTag(sb, indent, "Unknown140");
-            }
-            if (Behavior != null)
-            {
-                YldXml.SelfClosingTag(sb, indent, "Behaviour");
-            }
+            if (Unknown_140h_Data != null) YldXml.SelfClosingTag(sb, indent, "Unknown140");
+            if (Behavior != null) YldXml.SelfClosingTag(sb, indent, "Behaviour");
             if (Vertices?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Vertices.data_items, indent, "Vertices", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YldXml.WriteRawArray(sb, Vertices.data_items, indent, "Vertices", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Vertices2?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Vertices2.data_items, indent, "Vertices2", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YldXml.WriteRawArray(sb, Vertices2.data_items, indent, "Vertices2", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Constraints?.data_items != null)
-            {
                 YldXml.WriteItemArray(sb, Constraints.data_items, indent, "Constraints");
-            }
             if (Constraints2?.data_items != null)
-            {
                 YldXml.WriteItemArray(sb, Constraints2.data_items, indent, "Constraints2");
-            }
-            if (Bound != null)
-            {
-                Bounds.WriteXmlNode(Bound, sb, indent);
-            }
+            if (Bound != null) Bounds.WriteXmlNode(Bound, sb, indent);
         }
+
         public void ReadXml(XmlNode node)
         {
             BBMin = Xml.GetChildVector3Attributes(node, "BBMin");
             BBMax = Xml.GetChildVector3Attributes(node, "BBMax");
-            Unknown_3Ch = Xml.GetChildUIntAttribute(node, "Unknown3C", "value");
-            Unknown_4Ch = Xml.GetChildUIntAttribute(node, "Unknown4C", "value");
-            Unknown_50h = Xml.GetChildFloatAttribute(node, "Unknown50", "value");
-            Unknown_A8h = Xml.GetChildFloatAttribute(node, "UnknownA8", "value");
-            Unknown_ACh = Xml.GetChildFloatAttribute(node, "UnknownAC", "value");
-            Unknown_E8h = Xml.GetChildUIntAttribute(node, "UnknownE8", "value");
-            Unknown_FAh = (ushort)Xml.GetChildUIntAttribute(node, "UnknownFA", "value");
-            Unknown_148h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown148", "value");
-            Unknown_158h = Xml.GetChildFloatAttribute(node, "Unknown158", "value");
+            Unknown_3Ch = Xml.GetChildUIntAttribute(node, "Unknown3C");
+            Unknown_4Ch = Xml.GetChildUIntAttribute(node, "Unknown4C");
+            Unknown_50h = Xml.GetChildFloatAttribute(node, "Unknown50");
+            Unknown_A8h = Xml.GetChildFloatAttribute(node, "UnknownA8");
+            Unknown_ACh = Xml.GetChildFloatAttribute(node, "UnknownAC");
+            Unknown_E8h = Xml.GetChildUIntAttribute(node, "UnknownE8");
+            Unknown_FAh = (ushort)Xml.GetChildUIntAttribute(node, "UnknownFA");
+            Unknown_148h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown148");
+            Unknown_158h = Xml.GetChildFloatAttribute(node, "Unknown158");
             Vertices = new ResourceSimpleList64_s<Vector4>();
             Vertices.data_items = Xml.GetChildRawVector4ArrayNullable(node, "Vertices");
             Vertices2 = new ResourceSimpleList64_s<Vector4>();
@@ -1312,20 +1293,11 @@ namespace CodeWalker.GameFiles
             Constraints2 = new ResourceSimpleList64_s<Unknown_C_004>();
             Constraints2.data_items = XmlMeta.ReadItemArray<Unknown_C_004>(node, "Constraints2");
             XmlNode unode = node.SelectSingleNode("Unknown140");
-            if (unode != null)
-            {
-                Unknown_140h_Data = new Unknown_C_007();
-            }
+            if (unode != null) Unknown_140h_Data = new Unknown_C_007();
             XmlNode bhnode = node.SelectSingleNode("Behaviour");
-            if (bhnode != null)
-            {
-                Behavior = new EnvClothVerletBehavior();
-            }
+            if (bhnode != null) Behavior = new EnvClothVerletBehavior();
             XmlNode bnode = node.SelectSingleNode("Bounds");
-            if (bnode != null)
-            {
-                Bound = Bounds.ReadXmlNode(bnode, this);
-            }
+            if (bnode != null) Bound = Bounds.ReadXmlNode(bnode, this);
 
             VertexCount = VertexCount2 = (ushort)(Vertices?.data_items?.Length ?? 0);
             ConstraintCount = (ushort)(Constraints?.data_items.Length ?? 0);
@@ -1342,7 +1314,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x70, Vertices2),
                 new Tuple<long, IResourceBlock>(0x80, Vertices),
                 new Tuple<long, IResourceBlock>(0x100, Constraints2),
@@ -1352,17 +1325,11 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class EnvClothVerletBehavior : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class EnvClothVerletBehavior : ResourceSystemBlock
     {
-        // datBase
-        // phInstBehavior
-        // phClothVerletBehavior
-        // phEnvClothVerletBehavior
-        public override long BlockLength => 0x40;
-
         // structure data
         public ulong Unknown_0h; // 0x0000000000000000
-        public ulong Unknown_8h; // 0x0000000000000000
         public ulong Unknown_10h; // 0x0000000000000000
         public ulong Unknown_18h; // 0x0000000000000000
         public ulong Unknown_20h; // 0x0000000000000000
@@ -1370,17 +1337,25 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_30h; // 0x0000000000000000
         public ulong Unknown_38h; // 0x0000000000000000
 
+        public ulong Unknown_8h; // 0x0000000000000000
+
+        // datBase
+        // phInstBehavior
+        // phClothVerletBehavior
+        // phEnvClothVerletBehavior
+        public override long BlockLength => 0x40;
+
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.Unknown_0h = reader.ReadUInt64();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
+            Unknown_0h = reader.ReadUInt64();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
+            Unknown_30h = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
 
 
             //if (Unknown_0h != 0)
@@ -1399,25 +1374,41 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_38h != 0)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.Unknown_0h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_38h);
+            writer.Write(Unknown_0h);
+            writer.Write(Unknown_8h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_28h);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_38h);
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class EnvironmentCloth : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class EnvironmentCloth : ResourceSystemBlock
     {
+        public ulong Unknown_20h; // 0x0000000000000000
+        public ulong Unknown_30h; // 0x0000000000000000
+        public ulong Unknown_38h; // 0x0000000000000000
+        public ulong Unknown_40h; // 0x0000000000000000
+        public ulong Unknown_48h; // 0x0000000000000000
+        public uint Unknown_4h = 1; // 0x00000001
+        public ulong Unknown_50h; // 0x0000000000000000
+        public ulong Unknown_58h; // 0x0000000000000000
+        public uint Unknown_6Ch; // 0x00000000
+        public ulong Unknown_70h; // 0x0000000000000000
+        public uint Unknown_7Ch; // 0x00000000
+        public ulong Unknown_8h; // 0x0000000000000000
+
+        private ResourceSystemStructBlock<uint> UnknownDataBlock;
+
         // pgBase
         // clothBase (TODO)
         // environmentCloth
@@ -1425,25 +1416,13 @@ namespace CodeWalker.GameFiles
 
         // structure data
         public uint VFT { get; set; } = 1080059352;
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public ulong InstanceTuningPointer { get; set; }
         public ulong DrawablePointer { get; set; }
-        public ulong Unknown_20h; // 0x0000000000000000
         public ulong ControllerPointer { get; set; }
-        public ulong Unknown_30h; // 0x0000000000000000
-        public ulong Unknown_38h; // 0x0000000000000000
-        public ulong Unknown_40h; // 0x0000000000000000
-        public ulong Unknown_48h; // 0x0000000000000000
-        public ulong Unknown_50h; // 0x0000000000000000
-        public ulong Unknown_58h; // 0x0000000000000000
         public ulong UnknownPointer { get; set; }
         public ushort UnknownCount1 { get; set; }
         public ushort UnknownCount2 { get; set; }
-        public uint Unknown_6Ch; // 0x00000000
-        public ulong Unknown_70h; // 0x0000000000000000
         public uint Unknown_78h { get; set; } // 0, 16, 48
-        public uint Unknown_7Ch; // 0x00000000
 
         // reference data
         public ClothInstanceTuning InstanceTuning { get; set; }
@@ -1451,42 +1430,37 @@ namespace CodeWalker.GameFiles
         public ClothController Controller { get; set; }
         public uint[] UnknownData { get; set; }
 
-        private ResourceSystemStructBlock<uint> UnknownDataBlock;
-
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.InstanceTuningPointer = reader.ReadUInt64();
-            this.DrawablePointer = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.ControllerPointer = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
-            this.Unknown_40h = reader.ReadUInt64();
-            this.Unknown_48h = reader.ReadUInt64();
-            this.Unknown_50h = reader.ReadUInt64();
-            this.Unknown_58h = reader.ReadUInt64();
-            this.UnknownPointer = reader.ReadUInt64();
-            this.UnknownCount1 = reader.ReadUInt16();
-            this.UnknownCount2 = reader.ReadUInt16();
-            this.Unknown_6Ch = reader.ReadUInt32();
-            this.Unknown_70h = reader.ReadUInt64();
-            this.Unknown_78h = reader.ReadUInt32();
-            this.Unknown_7Ch = reader.ReadUInt32();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            InstanceTuningPointer = reader.ReadUInt64();
+            DrawablePointer = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            ControllerPointer = reader.ReadUInt64();
+            Unknown_30h = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
+            Unknown_40h = reader.ReadUInt64();
+            Unknown_48h = reader.ReadUInt64();
+            Unknown_50h = reader.ReadUInt64();
+            Unknown_58h = reader.ReadUInt64();
+            UnknownPointer = reader.ReadUInt64();
+            UnknownCount1 = reader.ReadUInt16();
+            UnknownCount2 = reader.ReadUInt16();
+            Unknown_6Ch = reader.ReadUInt32();
+            Unknown_70h = reader.ReadUInt64();
+            Unknown_78h = reader.ReadUInt32();
+            Unknown_7Ch = reader.ReadUInt32();
 
             // read reference data
-            this.InstanceTuning = reader.ReadBlockAt<ClothInstanceTuning>(this.InstanceTuningPointer);
-            this.Drawable = reader.ReadBlockAt<FragDrawable>(this.DrawablePointer);
-            this.Controller = reader.ReadBlockAt<ClothController>(this.ControllerPointer);
-            this.UnknownData = reader.ReadUintsAt(this.UnknownPointer, this.UnknownCount1);
+            InstanceTuning = reader.ReadBlockAt<ClothInstanceTuning>(InstanceTuningPointer);
+            Drawable = reader.ReadBlockAt<FragDrawable>(DrawablePointer);
+            Controller = reader.ReadBlockAt<ClothController>(ControllerPointer);
+            UnknownData = reader.ReadUintsAt(UnknownPointer, UnknownCount1);
 
-            if (this.Drawable != null)
-            {
-                this.Drawable.OwnerCloth = this;
-            }
+            if (Drawable != null) Drawable.OwnerCloth = this;
 
             //if (UnknownCount1 != UnknownCount2)
             //{ }//no hit
@@ -1523,67 +1497,65 @@ namespace CodeWalker.GameFiles
             //    default:
             //        break;//no hit
             //}
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.InstanceTuningPointer = (ulong)(this.InstanceTuning != null ? this.InstanceTuning.FilePosition : 0);
-            this.DrawablePointer = (ulong)(this.Drawable != null ? this.Drawable.FilePosition : 0);
-            this.ControllerPointer = (ulong)(this.Controller != null ? this.Controller.FilePosition : 0);
-            this.UnknownPointer = (ulong)(this.UnknownDataBlock != null ? this.UnknownDataBlock.FilePosition : 0);
-            this.UnknownCount1 = (ushort)(this.UnknownDataBlock != null ? this.UnknownDataBlock.ItemCount : 0);
-            this.UnknownCount2 = this.UnknownCount1;
+            InstanceTuningPointer = (ulong)(InstanceTuning != null ? InstanceTuning.FilePosition : 0);
+            DrawablePointer = (ulong)(Drawable != null ? Drawable.FilePosition : 0);
+            ControllerPointer = (ulong)(Controller != null ? Controller.FilePosition : 0);
+            UnknownPointer = (ulong)(UnknownDataBlock != null ? UnknownDataBlock.FilePosition : 0);
+            UnknownCount1 = (ushort)(UnknownDataBlock != null ? UnknownDataBlock.ItemCount : 0);
+            UnknownCount2 = UnknownCount1;
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.InstanceTuningPointer);
-            writer.Write(this.DrawablePointer);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.ControllerPointer);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_48h);
-            writer.Write(this.Unknown_50h);
-            writer.Write(this.Unknown_58h);
-            writer.Write(this.UnknownPointer);
-            writer.Write(this.UnknownCount1);
-            writer.Write(this.UnknownCount2);
-            writer.Write(this.Unknown_6Ch);
-            writer.Write(this.Unknown_70h);
-            writer.Write(this.Unknown_78h);
-            writer.Write(this.Unknown_7Ch);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(InstanceTuningPointer);
+            writer.Write(DrawablePointer);
+            writer.Write(Unknown_20h);
+            writer.Write(ControllerPointer);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_38h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_48h);
+            writer.Write(Unknown_50h);
+            writer.Write(Unknown_58h);
+            writer.Write(UnknownPointer);
+            writer.Write(UnknownCount1);
+            writer.Write(UnknownCount2);
+            writer.Write(Unknown_6Ch);
+            writer.Write(Unknown_70h);
+            writer.Write(Unknown_78h);
+            writer.Write(Unknown_7Ch);
         }
+
         public void WriteXml(StringBuilder sb, int indent, string ddsfolder)
         {
             YldXml.ValueTag(sb, indent, "Unknown78", Unknown_78h.ToString());
-            if (UnknownData != null)
-            {
-                YldXml.WriteRawArray(sb, UnknownData, indent, "UnknownData", "");
-            }
+            if (UnknownData != null) YldXml.WriteRawArray(sb, UnknownData, indent, "UnknownData", "");
             if (Controller != null)
             {
                 YldXml.OpenTag(sb, indent, "Controller");
                 Controller.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "Controller");
             }
+
             if (InstanceTuning != null)
             {
                 YldXml.OpenTag(sb, indent, "InstanceTuning");
                 InstanceTuning.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "InstanceTuning");
             }
-            if (Drawable != null)
-            {
-                FragDrawable.WriteXmlNode(Drawable, sb, indent, ddsfolder, "Drawable");
-            }
+
+            if (Drawable != null) FragDrawable.WriteXmlNode(Drawable, sb, indent, ddsfolder, "Drawable");
         }
+
         public void ReadXml(XmlNode node, string ddsfolder)
         {
-            Unknown_78h = Xml.GetChildUIntAttribute(node, "Unknown78", "value");
+            Unknown_78h = Xml.GetChildUIntAttribute(node, "Unknown78");
             UnknownData = Xml.GetChildRawUintArrayNullable(node, "UnknownData");
             XmlNode cnode = node.SelectSingleNode("Controller");
             if (cnode != null)
@@ -1591,17 +1563,16 @@ namespace CodeWalker.GameFiles
                 Controller = new ClothController();
                 Controller.ReadXml(cnode);
             }
+
             XmlNode tnode = node.SelectSingleNode("InstanceTuning");
             if (tnode != null)
             {
                 InstanceTuning = new ClothInstanceTuning();
                 InstanceTuning.ReadXml(tnode);
             }
+
             XmlNode dnode = node.SelectSingleNode("Drawable");
-            if (dnode != null)
-            {
-                Drawable = FragDrawable.ReadXmlNode(dnode, ddsfolder);
-            }
+            if (dnode != null) Drawable = FragDrawable.ReadXmlNode(dnode, ddsfolder);
 
             UnknownCount1 = UnknownCount2 = (ushort)(UnknownData?.Length ?? 0);
         }
@@ -1617,14 +1588,27 @@ namespace CodeWalker.GameFiles
                 UnknownDataBlock = new ResourceSystemStructBlock<uint>(UnknownData);
                 list.Add(UnknownDataBlock);
             }
+
             return list.ToArray();
         }
-
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class CharacterCloth : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class CharacterCloth : ResourceSystemBlock
     {
+        public ulong Unknown_40h; // 0x0000000000000000
+        public ulong Unknown_48h; // 0x0000000000000000
+        public uint Unknown_4h = 1; // 0x00000001
+        public ulong Unknown_8h; // 0x0000000000000000
+        public ulong Unknown_A0h; // 0x0000000000000000
+        public ulong Unknown_A8h; // 0x0000000000000000
+        public ulong Unknown_B0h; // 0x0000000000000000
+        public ulong Unknown_B8h; // 0x0000000000000000
+        public ulong Unknown_C0h = 1; // 0x0000000000000001
+
+        public ulong Unknown_C8h; // 0x0000000000000000
+
         // pgBase
         // clothBase (TODO)
         // characterCloth
@@ -1632,22 +1616,12 @@ namespace CodeWalker.GameFiles
 
         // structure data
         public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
         public ResourceSimpleList64_s<Vector4> Unknown_10h { get; set; }
         public ulong ControllerPointer { get; set; }
         public ulong BoundPointer { get; set; }
         public ResourceSimpleList64_uint Unknown_30h { get; set; } //bone ids - maps to items in Bound.Children
-        public ulong Unknown_40h; // 0x0000000000000000
-        public ulong Unknown_48h; // 0x0000000000000000
         public Matrix Transform { get; set; }
         public ResourceSimpleList64_uint Unknown_90h { get; set; }
-        public ulong Unknown_A0h; // 0x0000000000000000
-        public ulong Unknown_A8h; // 0x0000000000000000
-        public ulong Unknown_B0h; // 0x0000000000000000
-        public ulong Unknown_B8h; // 0x0000000000000000
-        public ulong Unknown_C0h = 1; // 0x0000000000000001
-        public ulong Unknown_C8h; // 0x0000000000000000
 
         // reference data
         public CharacterClothController Controller { get; set; }
@@ -1659,32 +1633,29 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.ControllerPointer = reader.ReadUInt64();
-            this.BoundPointer = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_40h = reader.ReadUInt64();
-            this.Unknown_48h = reader.ReadUInt64();
-            this.Transform = reader.ReadMatrix();
-            this.Unknown_90h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.Unknown_A0h = reader.ReadUInt64();
-            this.Unknown_A8h = reader.ReadUInt64();
-            this.Unknown_B0h = reader.ReadUInt64();
-            this.Unknown_B8h = reader.ReadUInt64();
-            this.Unknown_C0h = reader.ReadUInt64();
-            this.Unknown_C8h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            ControllerPointer = reader.ReadUInt64();
+            BoundPointer = reader.ReadUInt64();
+            Unknown_30h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_40h = reader.ReadUInt64();
+            Unknown_48h = reader.ReadUInt64();
+            Transform = reader.ReadMatrix();
+            Unknown_90h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            Unknown_A0h = reader.ReadUInt64();
+            Unknown_A8h = reader.ReadUInt64();
+            Unknown_B0h = reader.ReadUInt64();
+            Unknown_B8h = reader.ReadUInt64();
+            Unknown_C0h = reader.ReadUInt64();
+            Unknown_C8h = reader.ReadUInt64();
 
             // read reference data
-            this.Controller = reader.ReadBlockAt<CharacterClothController>(this.ControllerPointer);
-            this.Bound = reader.ReadBlockAt<Bounds>(this.BoundPointer);
+            Controller = reader.ReadBlockAt<CharacterClothController>(ControllerPointer);
+            Bound = reader.ReadBlockAt<Bounds>(BoundPointer);
 
-            if (Bound != null)
-            {
-                Bound.Owner = this;
-            }
+            if (Bound != null) Bound.Owner = this;
 
             //if (Unknown_4h != 1)
             //{ }//no hit
@@ -1706,61 +1677,55 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_C8h != 0)
             //{ }//no hit
-
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.ControllerPointer = (ulong)(this.Controller != null ? this.Controller.FilePosition : 0);
-            this.BoundPointer = (ulong)(this.Bound != null ? this.Bound.FilePosition : 0);
+            ControllerPointer = (ulong)(Controller != null ? Controller.FilePosition : 0);
+            BoundPointer = (ulong)(Bound != null ? Bound.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.WriteBlock(this.Unknown_10h);
-            writer.Write(this.ControllerPointer);
-            writer.Write(this.BoundPointer);
-            writer.WriteBlock(this.Unknown_30h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_48h);
-            writer.Write(this.Transform);
-            writer.WriteBlock(this.Unknown_90h);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_A8h);
-            writer.Write(this.Unknown_B0h);
-            writer.Write(this.Unknown_B8h);
-            writer.Write(this.Unknown_C0h);
-            writer.Write(this.Unknown_C8h);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.WriteBlock(Unknown_10h);
+            writer.Write(ControllerPointer);
+            writer.Write(BoundPointer);
+            writer.WriteBlock(Unknown_30h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_48h);
+            writer.Write(Transform);
+            writer.WriteBlock(Unknown_90h);
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_A8h);
+            writer.Write(Unknown_B0h);
+            writer.Write(Unknown_B8h);
+            writer.Write(Unknown_C0h);
+            writer.Write(Unknown_C8h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.StringTag(sb, indent, "Name", YldXml.HashString(NameHash));
             YldXml.WriteRawArray(sb, Transform.ToArray(), indent, "Transform", "", FloatUtil.ToString, 4);
             if (Unknown_10h?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Unknown_10h.data_items, indent, "Unknown10", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YldXml.WriteRawArray(sb, Unknown_10h.data_items, indent, "Unknown10", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Unknown_30h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_30h.data_items, indent, "Unknown30", "");
-            }
             if (Unknown_90h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_90h.data_items, indent, "Unknown90", "");
-            }
             if (Controller != null)
             {
                 YldXml.OpenTag(sb, indent, "Controller");
                 Controller.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "Controller");
             }
-            if (Bound != null)
-            {
-                Bounds.WriteXmlNode(Bound, sb, indent);
-            }
+
+            if (Bound != null) Bounds.WriteXmlNode(Bound, sb, indent);
         }
+
         public void ReadXml(XmlNode node)
         {
             NameHash = XmlRel.GetHash(Xml.GetChildInnerText(node, "Name"));
@@ -1777,11 +1742,9 @@ namespace CodeWalker.GameFiles
                 Controller = new CharacterClothController();
                 Controller.ReadXml(cnode);
             }
+
             XmlNode bnode = node.SelectSingleNode("Bounds");
-            if (bnode != null)
-            {
-                Bound = Bounds.ReadXmlNode(bnode, this);
-            }
+            if (bnode != null) Bound = Bounds.ReadXmlNode(bnode, this);
         }
 
         public override IResourceBlock[] GetReferences()
@@ -1794,7 +1757,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x10, Unknown_10h),
                 new Tuple<long, IResourceBlock>(0x30, Unknown_30h),
                 new Tuple<long, IResourceBlock>(0x90, Unknown_90h)
@@ -1803,8 +1767,15 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class CharacterClothController : ClothController
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class CharacterClothController : ClothController
     {
+        public uint Unknown_A4h; // 0x00000000
+        public ulong Unknown_A8h; // 0x0000000000000000
+        public ulong Unknown_D0h; // 0x0000000000000000
+
+        public uint Unknown_D8h; // 0x00000000
+
         // characterClothController
         public override long BlockLength => 0xF0;
 
@@ -1812,12 +1783,11 @@ namespace CodeWalker.GameFiles
         public ResourceSimpleList64_ushort Indices { get; set; }
         public ResourceSimpleList64_s<Vector4> Vertices { get; set; }
         public float Unknown_A0h { get; set; } = 0.04f; // 0x3D23D70A = 0.04f
-        public uint Unknown_A4h; // 0x00000000
-        public ulong Unknown_A8h; // 0x0000000000000000
-        public ResourceSimpleList64_uint Unknown_B0h { get; set; }// related to BridgeSimGfx.Unknown_E0h? same count as boneids...  anchor verts..?
-        public ResourceSimpleList64_s<CharClothBoneWeightsInds> BoneWeightsInds { get; set; }//bone weights / indices
-        public ulong Unknown_D0h; // 0x0000000000000000
-        public uint Unknown_D8h; // 0x00000000
+
+        public ResourceSimpleList64_uint
+            Unknown_B0h { get; set; } // related to BridgeSimGfx.Unknown_E0h? same count as boneids...  anchor verts..?
+
+        public ResourceSimpleList64_s<CharClothBoneWeightsInds> BoneWeightsInds { get; set; } //bone weights / indices
         public float Unknown_DCh { get; set; } = 1.0f; // 0x3F800000 = 1.0f
         public ResourceSimpleList64_uint BoneIds { get; set; }
 
@@ -1826,18 +1796,17 @@ namespace CodeWalker.GameFiles
             base.Read(reader, parameters);
 
             // read structure data         
-            this.Indices = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Vertices = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.Unknown_A0h = reader.ReadSingle();
-            this.Unknown_A4h = reader.ReadUInt32();
-            this.Unknown_A8h = reader.ReadUInt64();
-            this.Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_uint>();
-            this.BoneWeightsInds = reader.ReadBlock<ResourceSimpleList64_s<CharClothBoneWeightsInds>>();
-            this.Unknown_D0h = reader.ReadUInt64();
-            this.Unknown_D8h = reader.ReadUInt32();
-            this.Unknown_DCh = reader.ReadSingle();
-            this.BoneIds = reader.ReadBlock<ResourceSimpleList64_uint>();
-
+            Indices = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Vertices = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            Unknown_A0h = reader.ReadSingle();
+            Unknown_A4h = reader.ReadUInt32();
+            Unknown_A8h = reader.ReadUInt64();
+            Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_uint>();
+            BoneWeightsInds = reader.ReadBlock<ResourceSimpleList64_s<CharClothBoneWeightsInds>>();
+            Unknown_D0h = reader.ReadUInt64();
+            Unknown_D8h = reader.ReadUInt32();
+            Unknown_DCh = reader.ReadSingle();
+            BoneIds = reader.ReadBlock<ResourceSimpleList64_uint>();
 
 
             //if (Unknown_B0h?.data_items?.Length != BoneIds?.data_items?.Length)
@@ -1858,56 +1827,47 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_DCh != 1.0f)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             base.Write(writer, parameters);
 
             // write structure data           
-            writer.WriteBlock(this.Indices);
-            writer.WriteBlock(this.Vertices);
-            writer.Write(this.Unknown_A0h);
-            writer.Write(this.Unknown_A4h);
-            writer.Write(this.Unknown_A8h);
-            writer.WriteBlock(this.Unknown_B0h);
-            writer.WriteBlock(this.BoneWeightsInds);
-            writer.Write(this.Unknown_D0h);
-            writer.Write(this.Unknown_D8h);
-            writer.Write(this.Unknown_DCh);
-            writer.WriteBlock(this.BoneIds);
+            writer.WriteBlock(Indices);
+            writer.WriteBlock(Vertices);
+            writer.Write(Unknown_A0h);
+            writer.Write(Unknown_A4h);
+            writer.Write(Unknown_A8h);
+            writer.WriteBlock(Unknown_B0h);
+            writer.WriteBlock(BoneWeightsInds);
+            writer.Write(Unknown_D0h);
+            writer.Write(Unknown_D8h);
+            writer.Write(Unknown_DCh);
+            writer.WriteBlock(BoneIds);
         }
+
         public override void WriteXml(StringBuilder sb, int indent)
         {
             base.WriteXml(sb, indent);
             YldXml.ValueTag(sb, indent, "UnknownA0", FloatUtil.ToString(Unknown_A0h));
             YldXml.ValueTag(sb, indent, "UnknownDC", FloatUtil.ToString(Unknown_DCh));
             if (Vertices?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Vertices.data_items, indent, "Vertices", "", v => FloatUtil.GetVector4String(v), 1);
-            }
-            if (Indices?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Indices.data_items, indent, "Indices", "");
-            }
+                YldXml.WriteRawArray(sb, Vertices.data_items, indent, "Vertices", "",
+                    v => FloatUtil.GetVector4String(v), 1);
+            if (Indices?.data_items != null) YldXml.WriteRawArray(sb, Indices.data_items, indent, "Indices", "");
             if (Unknown_B0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_B0h.data_items, indent, "UnknownB0", "");
-            }
-            if (BoneIds?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, BoneIds.data_items, indent, "BoneIDs", "");
-            }
+            if (BoneIds?.data_items != null) YldXml.WriteRawArray(sb, BoneIds.data_items, indent, "BoneIDs", "");
             if (BoneWeightsInds?.data_items != null)
-            {
                 YldXml.WriteItemArray(sb, BoneWeightsInds.data_items, indent, "BoneWeightsIndices");
-            }
         }
+
         public override void ReadXml(XmlNode node)
         {
             base.ReadXml(node);
-            Unknown_A0h = Xml.GetChildFloatAttribute(node, "UnknownA0", "value");
-            Unknown_DCh = Xml.GetChildFloatAttribute(node, "UnknownDC", "value");
+            Unknown_A0h = Xml.GetChildFloatAttribute(node, "UnknownA0");
+            Unknown_DCh = Xml.GetChildFloatAttribute(node, "UnknownDC");
             Vertices = new ResourceSimpleList64_s<Vector4>();
             Vertices.data_items = Xml.GetChildRawVector4ArrayNullable(node, "Vertices");
             Indices = new ResourceSimpleList64_ushort();
@@ -1923,7 +1883,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x80, Indices),
                 new Tuple<long, IResourceBlock>(0x90, Vertices),
                 new Tuple<long, IResourceBlock>(0xB0, Unknown_B0h),
@@ -1934,22 +1895,25 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class MorphController : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class MorphController : ResourceSystemBlock
     {
+        public ulong Unknown_10h; // 0x0000000000000000
+        public ulong Unknown_30h; // 0x0000000000000000
+        public ulong Unknown_38h; // 0x0000000000000000
+        public uint Unknown_4h = 1; // 0x00000001
+
+        public ulong Unknown_8h; // 0x0000000000000000
+
         // pgBase
         // phMorphController
         public override long BlockLength => 0x40;
 
         // structure data
         public uint VFT { get; set; }
-        public uint Unknown_4h = 1; // 0x00000001
-        public ulong Unknown_8h; // 0x0000000000000000
-        public ulong Unknown_10h; // 0x0000000000000000
         public ulong Unknown_18h_Pointer { get; set; }
         public ulong Unknown_20h_Pointer { get; set; }
         public ulong Unknown_28h_Pointer { get; set; }
-        public ulong Unknown_30h; // 0x0000000000000000
-        public ulong Unknown_38h; // 0x0000000000000000
 
         // reference data
         public Unknown_C_006 Unknown_18h_Data { get; set; }
@@ -1959,20 +1923,20 @@ namespace CodeWalker.GameFiles
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.VFT = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h_Pointer = reader.ReadUInt64();
-            this.Unknown_20h_Pointer = reader.ReadUInt64();
-            this.Unknown_28h_Pointer = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
+            VFT = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h_Pointer = reader.ReadUInt64();
+            Unknown_20h_Pointer = reader.ReadUInt64();
+            Unknown_28h_Pointer = reader.ReadUInt64();
+            Unknown_30h = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
 
             // read reference data
-            this.Unknown_18h_Data = reader.ReadBlockAt<Unknown_C_006>(this.Unknown_18h_Pointer);
-            this.Unknown_20h_Data = reader.ReadBlockAt<Unknown_C_006>(this.Unknown_20h_Pointer);
-            this.Unknown_28h_Data = reader.ReadBlockAt<Unknown_C_006>(this.Unknown_28h_Pointer);
+            Unknown_18h_Data = reader.ReadBlockAt<Unknown_C_006>(Unknown_18h_Pointer);
+            Unknown_20h_Data = reader.ReadBlockAt<Unknown_C_006>(Unknown_20h_Pointer);
+            Unknown_28h_Data = reader.ReadBlockAt<Unknown_C_006>(Unknown_28h_Pointer);
 
             //if (Unknown_4h != 1)
             //{ }//no hit
@@ -1984,26 +1948,27 @@ namespace CodeWalker.GameFiles
             //{ }//no hit
             //if (Unknown_38h != 0)
             //{ }//no hit
-
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.Unknown_18h_Pointer = (ulong)(this.Unknown_18h_Data != null ? this.Unknown_18h_Data.FilePosition : 0);
-            this.Unknown_20h_Pointer = (ulong)(this.Unknown_20h_Data != null ? this.Unknown_20h_Data.FilePosition : 0);
-            this.Unknown_28h_Pointer = (ulong)(this.Unknown_28h_Data != null ? this.Unknown_28h_Data.FilePosition : 0);
+            Unknown_18h_Pointer = (ulong)(Unknown_18h_Data != null ? Unknown_18h_Data.FilePosition : 0);
+            Unknown_20h_Pointer = (ulong)(Unknown_20h_Data != null ? Unknown_20h_Data.FilePosition : 0);
+            Unknown_28h_Pointer = (ulong)(Unknown_28h_Data != null ? Unknown_28h_Data.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.VFT);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h_Pointer);
-            writer.Write(this.Unknown_20h_Pointer);
-            writer.Write(this.Unknown_28h_Pointer);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_38h);
+            writer.Write(VFT);
+            writer.Write(Unknown_4h);
+            writer.Write(Unknown_8h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h_Pointer);
+            writer.Write(Unknown_20h_Pointer);
+            writer.Write(Unknown_28h_Pointer);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_38h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             if (Unknown_18h_Data != null)
@@ -2012,12 +1977,14 @@ namespace CodeWalker.GameFiles
                 Unknown_18h_Data.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "Unknown18");
             }
+
             if (Unknown_20h_Data != null)
             {
                 YldXml.OpenTag(sb, indent, "Unknown20");
                 Unknown_20h_Data.WriteXml(sb, indent + 1);
                 YldXml.CloseTag(sb, indent, "Unknown20");
             }
+
             if (Unknown_28h_Data != null)
             {
                 YldXml.OpenTag(sb, indent, "Unknown28");
@@ -2025,6 +1992,7 @@ namespace CodeWalker.GameFiles
                 YldXml.CloseTag(sb, indent, "Unknown28");
             }
         }
+
         public void ReadXml(XmlNode node)
         {
             XmlNode u18node = node.SelectSingleNode("Unknown18");
@@ -2033,12 +2001,14 @@ namespace CodeWalker.GameFiles
                 Unknown_18h_Data = new Unknown_C_006();
                 Unknown_18h_Data.ReadXml(u18node);
             }
+
             XmlNode u20node = node.SelectSingleNode("Unknown20");
             if (u20node != null)
             {
                 Unknown_20h_Data = new Unknown_C_006();
                 Unknown_20h_Data.ReadXml(u20node);
             }
+
             XmlNode u28node = node.SelectSingleNode("Unknown28");
             if (u28node != null)
             {
@@ -2058,7 +2028,8 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct CharClothBoneWeightsInds : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct CharClothBoneWeightsInds : IMetaXmlItem
     {
         public Vector4 Weights { get; set; }
         public uint Index0 { get; set; }
@@ -2075,23 +2046,25 @@ namespace CodeWalker.GameFiles
             YldXml.ValueTag(sb, indent, "Index2", Index2.ToString());
             YldXml.ValueTag(sb, indent, "Index3", Index3.ToString());
         }
+
         public void ReadXml(XmlNode node)
         {
             Weights = Xml.GetChildVector4Attributes(node, "Weights");
-            Index0 = Xml.GetChildUIntAttribute(node, "Index0", "value");
-            Index1 = Xml.GetChildUIntAttribute(node, "Index1", "value");
-            Index2 = Xml.GetChildUIntAttribute(node, "Index2", "value");
-            Index3 = Xml.GetChildUIntAttribute(node, "Index3", "value");
+            Index0 = Xml.GetChildUIntAttribute(node, "Index0");
+            Index1 = Xml.GetChildUIntAttribute(node, "Index1");
+            Index2 = Xml.GetChildUIntAttribute(node, "Index2");
+            Index3 = Xml.GetChildUIntAttribute(node, "Index3");
         }
 
         public override string ToString()
         {
-            return Weights.ToString() + "   :   " + Index0.ToString() + ", " + Index1.ToString() + ", " + Index2.ToString() + ", " + Index3.ToString();
+            return Weights + "   :   " + Index0 + ", " + Index1 + ", " + Index2 + ", " + Index3;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public struct Unknown_C_004 : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct Unknown_C_004 : IMetaXmlItem
     {
         public ushort Unknown_0h { get; set; }
         public ushort Unknown_2h { get; set; }
@@ -2108,30 +2081,43 @@ namespace CodeWalker.GameFiles
             YldXml.ValueTag(sb, indent, "Unknown8", FloatUtil.ToString(Unknown_8h));
             YldXml.ValueTag(sb, indent, "UnknownC", FloatUtil.ToString(Unknown_Ch));
         }
+
         public void ReadXml(XmlNode node)
         {
-            Unknown_0h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown0", "value");
-            Unknown_2h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown2", "value");
-            Unknown_4h = Xml.GetChildFloatAttribute(node, "Unknown4", "value");
-            Unknown_8h = Xml.GetChildFloatAttribute(node, "Unknown8", "value");
-            Unknown_Ch = Xml.GetChildFloatAttribute(node, "UnknownC", "value");
+            Unknown_0h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown0");
+            Unknown_2h = (ushort)Xml.GetChildUIntAttribute(node, "Unknown2");
+            Unknown_4h = Xml.GetChildFloatAttribute(node, "Unknown4");
+            Unknown_8h = Xml.GetChildFloatAttribute(node, "Unknown8");
+            Unknown_Ch = Xml.GetChildFloatAttribute(node, "UnknownC");
         }
 
         public override string ToString()
         {
-            return Unknown_0h.ToString() + ", " + Unknown_2h.ToString() + ", " + Unknown_4h.ToString() + ", " + Unknown_8h.ToString() + ", " + Unknown_Ch.ToString();
+            return Unknown_0h + ", " + Unknown_2h + ", " + Unknown_4h + ", " + Unknown_8h + ", " + Unknown_Ch;
         }
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Unknown_C_006 : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Unknown_C_006 : ResourceSystemBlock
     {
-        public override long BlockLength => 0x190;
-
         // structure data
         public ulong Unknown_0h; // 0x0000000000000000
-        public ulong Unknown_8h; // 0x0000000000000000
+        public ulong Unknown_100h; // 0x0000000000000000
+        public ulong Unknown_108h; // 0x0000000000000000
         public ulong Unknown_10h; // 0x0000000000000000
+        public ulong Unknown_110h; // 0x0000000000000000
+        public ulong Unknown_118h; // 0x0000000000000000
+        public ulong Unknown_120h; // 0x0000000000000000
+        public ulong Unknown_128h; // 0x0000000000000000
+        public ulong Unknown_130h; // 0x0000000000000000
+        public ulong Unknown_138h; // 0x0000000000000000
+        public ulong Unknown_140h; // 0x0000000000000000
+        public ulong Unknown_148h; // 0x0000000000000000
+        public ulong Unknown_170h; // 0x0000000000000000
+        public ulong Unknown_178h; // 0x0000000000000000
+        public uint Unknown_184h; // 0x00000000
+        public ulong Unknown_188h; // 0x0000000000000000
         public ulong Unknown_18h; // 0x0000000000000000
         public ulong Unknown_20h; // 0x0000000000000000
         public ulong Unknown_28h; // 0x0000000000000000
@@ -2139,6 +2125,10 @@ namespace CodeWalker.GameFiles
         public ulong Unknown_38h; // 0x0000000000000000
         public ulong Unknown_40h; // 0x0000000000000000
         public ulong Unknown_48h; // 0x0000000000000000
+        public ulong Unknown_8h; // 0x0000000000000000
+        public ulong Unknown_F0h; // 0x0000000000000000
+        public ulong Unknown_F8h; // 0x0000000000000000
+        public override long BlockLength => 0x190;
         public ResourceSimpleList64_s<Vector4> Unknown_50h { get; set; }
         public ResourceSimpleList64_ushort Unknown_60h { get; set; }
         public ResourceSimpleList64_ushort Unknown_70h { get; set; }
@@ -2149,68 +2139,52 @@ namespace CodeWalker.GameFiles
         public ResourceSimpleList64_ushort Unknown_C0h { get; set; }
         public ResourceSimpleList64_ushort Unknown_D0h { get; set; }
         public ResourceSimpleList64_ushort Unknown_E0h { get; set; }
-        public ulong Unknown_F0h; // 0x0000000000000000
-        public ulong Unknown_F8h; // 0x0000000000000000
-        public ulong Unknown_100h; // 0x0000000000000000
-        public ulong Unknown_108h; // 0x0000000000000000
-        public ulong Unknown_110h; // 0x0000000000000000
-        public ulong Unknown_118h; // 0x0000000000000000
-        public ulong Unknown_120h; // 0x0000000000000000
-        public ulong Unknown_128h; // 0x0000000000000000
-        public ulong Unknown_130h; // 0x0000000000000000
-        public ulong Unknown_138h; // 0x0000000000000000
-        public ulong Unknown_140h; // 0x0000000000000000
-        public ulong Unknown_148h; // 0x0000000000000000
         public ResourceSimpleList64_ushort Unknown_150h { get; set; }
         public ResourceSimpleList64_ushort Unknown_160h { get; set; }
-        public ulong Unknown_170h; // 0x0000000000000000
-        public ulong Unknown_178h; // 0x0000000000000000
         public uint Unknown_180h { get; set; }
-        public uint Unknown_184h; // 0x00000000
-        public ulong Unknown_188h; // 0x0000000000000000
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.Unknown_0h = reader.ReadUInt64();
-            this.Unknown_8h = reader.ReadUInt64();
-            this.Unknown_10h = reader.ReadUInt64();
-            this.Unknown_18h = reader.ReadUInt64();
-            this.Unknown_20h = reader.ReadUInt64();
-            this.Unknown_28h = reader.ReadUInt64();
-            this.Unknown_30h = reader.ReadUInt64();
-            this.Unknown_38h = reader.ReadUInt64();
-            this.Unknown_40h = reader.ReadUInt64();
-            this.Unknown_48h = reader.ReadUInt64();
-            this.Unknown_50h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.Unknown_60h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_70h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_80h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_90h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_A0h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
-            this.Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_C0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_D0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_E0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_F0h = reader.ReadUInt64();
-            this.Unknown_F8h = reader.ReadUInt64();
-            this.Unknown_100h = reader.ReadUInt64();
-            this.Unknown_108h = reader.ReadUInt64();
-            this.Unknown_110h = reader.ReadUInt64();
-            this.Unknown_118h = reader.ReadUInt64();
-            this.Unknown_120h = reader.ReadUInt64();
-            this.Unknown_128h = reader.ReadUInt64();
-            this.Unknown_130h = reader.ReadUInt64();
-            this.Unknown_138h = reader.ReadUInt64();
-            this.Unknown_140h = reader.ReadUInt64();
-            this.Unknown_148h = reader.ReadUInt64();
-            this.Unknown_150h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_160h = reader.ReadBlock<ResourceSimpleList64_ushort>();
-            this.Unknown_170h = reader.ReadUInt64();
-            this.Unknown_178h = reader.ReadUInt64();
-            this.Unknown_180h = reader.ReadUInt32();
-            this.Unknown_184h = reader.ReadUInt32();
-            this.Unknown_188h = reader.ReadUInt64();
+            Unknown_0h = reader.ReadUInt64();
+            Unknown_8h = reader.ReadUInt64();
+            Unknown_10h = reader.ReadUInt64();
+            Unknown_18h = reader.ReadUInt64();
+            Unknown_20h = reader.ReadUInt64();
+            Unknown_28h = reader.ReadUInt64();
+            Unknown_30h = reader.ReadUInt64();
+            Unknown_38h = reader.ReadUInt64();
+            Unknown_40h = reader.ReadUInt64();
+            Unknown_48h = reader.ReadUInt64();
+            Unknown_50h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            Unknown_60h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_70h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_80h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_90h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_A0h = reader.ReadBlock<ResourceSimpleList64_s<Vector4>>();
+            Unknown_B0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_C0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_D0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_E0h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_F0h = reader.ReadUInt64();
+            Unknown_F8h = reader.ReadUInt64();
+            Unknown_100h = reader.ReadUInt64();
+            Unknown_108h = reader.ReadUInt64();
+            Unknown_110h = reader.ReadUInt64();
+            Unknown_118h = reader.ReadUInt64();
+            Unknown_120h = reader.ReadUInt64();
+            Unknown_128h = reader.ReadUInt64();
+            Unknown_130h = reader.ReadUInt64();
+            Unknown_138h = reader.ReadUInt64();
+            Unknown_140h = reader.ReadUInt64();
+            Unknown_148h = reader.ReadUInt64();
+            Unknown_150h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_160h = reader.ReadBlock<ResourceSimpleList64_ushort>();
+            Unknown_170h = reader.ReadUInt64();
+            Unknown_178h = reader.ReadUInt64();
+            Unknown_180h = reader.ReadUInt32();
+            Unknown_184h = reader.ReadUInt32();
+            Unknown_188h = reader.ReadUInt64();
 
             //if (Unknown_0h != 0)
             //{ }//no hit
@@ -2289,104 +2263,85 @@ namespace CodeWalker.GameFiles
             //        break;//+more...
             //}
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.Unknown_0h);
-            writer.Write(this.Unknown_8h);
-            writer.Write(this.Unknown_10h);
-            writer.Write(this.Unknown_18h);
-            writer.Write(this.Unknown_20h);
-            writer.Write(this.Unknown_28h);
-            writer.Write(this.Unknown_30h);
-            writer.Write(this.Unknown_38h);
-            writer.Write(this.Unknown_40h);
-            writer.Write(this.Unknown_48h);
-            writer.WriteBlock(this.Unknown_50h);
-            writer.WriteBlock(this.Unknown_60h);
-            writer.WriteBlock(this.Unknown_70h);
-            writer.WriteBlock(this.Unknown_80h);
-            writer.WriteBlock(this.Unknown_90h);
-            writer.WriteBlock(this.Unknown_A0h);
-            writer.WriteBlock(this.Unknown_B0h);
-            writer.WriteBlock(this.Unknown_C0h);
-            writer.WriteBlock(this.Unknown_D0h);
-            writer.WriteBlock(this.Unknown_E0h);
-            writer.Write(this.Unknown_F0h);
-            writer.Write(this.Unknown_F8h);
-            writer.Write(this.Unknown_100h);
-            writer.Write(this.Unknown_108h);
-            writer.Write(this.Unknown_110h);
-            writer.Write(this.Unknown_118h);
-            writer.Write(this.Unknown_120h);
-            writer.Write(this.Unknown_128h);
-            writer.Write(this.Unknown_130h);
-            writer.Write(this.Unknown_138h);
-            writer.Write(this.Unknown_140h);
-            writer.Write(this.Unknown_148h);
-            writer.WriteBlock(this.Unknown_150h);
-            writer.WriteBlock(this.Unknown_160h);
-            writer.Write(this.Unknown_170h);
-            writer.Write(this.Unknown_178h);
-            writer.Write(this.Unknown_180h);
-            writer.Write(this.Unknown_184h);
-            writer.Write(this.Unknown_188h);
+            writer.Write(Unknown_0h);
+            writer.Write(Unknown_8h);
+            writer.Write(Unknown_10h);
+            writer.Write(Unknown_18h);
+            writer.Write(Unknown_20h);
+            writer.Write(Unknown_28h);
+            writer.Write(Unknown_30h);
+            writer.Write(Unknown_38h);
+            writer.Write(Unknown_40h);
+            writer.Write(Unknown_48h);
+            writer.WriteBlock(Unknown_50h);
+            writer.WriteBlock(Unknown_60h);
+            writer.WriteBlock(Unknown_70h);
+            writer.WriteBlock(Unknown_80h);
+            writer.WriteBlock(Unknown_90h);
+            writer.WriteBlock(Unknown_A0h);
+            writer.WriteBlock(Unknown_B0h);
+            writer.WriteBlock(Unknown_C0h);
+            writer.WriteBlock(Unknown_D0h);
+            writer.WriteBlock(Unknown_E0h);
+            writer.Write(Unknown_F0h);
+            writer.Write(Unknown_F8h);
+            writer.Write(Unknown_100h);
+            writer.Write(Unknown_108h);
+            writer.Write(Unknown_110h);
+            writer.Write(Unknown_118h);
+            writer.Write(Unknown_120h);
+            writer.Write(Unknown_128h);
+            writer.Write(Unknown_130h);
+            writer.Write(Unknown_138h);
+            writer.Write(Unknown_140h);
+            writer.Write(Unknown_148h);
+            writer.WriteBlock(Unknown_150h);
+            writer.WriteBlock(Unknown_160h);
+            writer.Write(Unknown_170h);
+            writer.Write(Unknown_178h);
+            writer.Write(Unknown_180h);
+            writer.Write(Unknown_184h);
+            writer.Write(Unknown_188h);
         }
+
         public void WriteXml(StringBuilder sb, int indent)
         {
             YldXml.ValueTag(sb, indent, "Unknown180", FloatUtil.ToString(Unknown_180h));
             if (Unknown_50h?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Unknown_50h.data_items, indent, "Unknown50", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YldXml.WriteRawArray(sb, Unknown_50h.data_items, indent, "Unknown50", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Unknown_60h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_60h.data_items, indent, "Unknown60", "");
-            }
             if (Unknown_70h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_70h.data_items, indent, "Unknown70", "");
-            }
             if (Unknown_80h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_80h.data_items, indent, "Unknown80", "");
-            }
             if (Unknown_90h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_90h.data_items, indent, "Unknown90", "");
-            }
             if (Unknown_A0h?.data_items != null)
-            {
-                YldXml.WriteRawArray(sb, Unknown_A0h.data_items, indent, "UnknownA0", "", v => FloatUtil.GetVector4String(v), 1);
-            }
+                YldXml.WriteRawArray(sb, Unknown_A0h.data_items, indent, "UnknownA0", "",
+                    v => FloatUtil.GetVector4String(v), 1);
             if (Unknown_B0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_B0h.data_items, indent, "UnknownB0", "");
-            }
             if (Unknown_C0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_C0h.data_items, indent, "UnknownC0", "");
-            }
             if (Unknown_D0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_D0h.data_items, indent, "UnknownD0", "");
-            }
             if (Unknown_E0h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_E0h.data_items, indent, "UnknownE0", "");
-            }
             if (Unknown_150h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_150h.data_items, indent, "Unknown150", "");
-            }
             if (Unknown_160h?.data_items != null)
-            {
                 YldXml.WriteRawArray(sb, Unknown_160h.data_items, indent, "Unknown160", "");
-            }
         }
+
         public void ReadXml(XmlNode node)
         {
-            Unknown_180h = Xml.GetChildUIntAttribute(node, "Unknown180", "value");
+            Unknown_180h = Xml.GetChildUIntAttribute(node, "Unknown180");
             Unknown_50h = new ResourceSimpleList64_s<Vector4>();
             Unknown_50h.data_items = Xml.GetChildRawVector4ArrayNullable(node, "Unknown50");
             Unknown_60h = new ResourceSimpleList64_ushort();
@@ -2415,7 +2370,8 @@ namespace CodeWalker.GameFiles
 
         public override Tuple<long, IResourceBlock>[] GetParts()
         {
-            return new Tuple<long, IResourceBlock>[] {
+            return new[]
+            {
                 new Tuple<long, IResourceBlock>(0x50, Unknown_50h),
                 new Tuple<long, IResourceBlock>(0x60, Unknown_60h),
                 new Tuple<long, IResourceBlock>(0x70, Unknown_70h),
@@ -2433,58 +2389,44 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Unknown_C_007 : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Unknown_C_007 : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 16; }
-        }
-
         // structure data
         public ulong Unknown_0h; // 0x0000000000000000
         public ulong Unknown_8h; // 0x0000000000000000
+        public override long BlockLength => 16;
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.Unknown_0h = reader.ReadUInt64();
-            this.Unknown_8h = reader.ReadUInt64();
+            Unknown_0h = reader.ReadUInt64();
+            Unknown_8h = reader.ReadUInt64();
 
             //if (Unknown_0h != 0)
             //{ }//no hit
             //if (Unknown_8h != 0)
             //{ }//no hit
         }
+
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.Unknown_0h);
-            writer.Write(this.Unknown_8h);
+            writer.Write(Unknown_0h);
+            writer.Write(Unknown_8h);
         }
 
 
         public override string ToString()
         {
-            return Unknown_0h.ToString() + ", " + Unknown_8h.ToString();
+            return Unknown_0h + ", " + Unknown_8h;
         }
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     public class ClothInstance
     {
+        private double CurrentTime;
         public CharacterCloth CharCloth { get; set; }
         public EnvironmentCloth EnvCloth { get; set; }
         public ClothController Controller { get; set; }
@@ -2495,9 +2437,6 @@ namespace CodeWalker.GameFiles
 
         public Skeleton Skeleton { get; set; }
 
-
-        double CurrentTime;
-
         public void Init(CharacterCloth c, Skeleton s)
         {
             CharCloth = c;
@@ -2507,17 +2446,9 @@ namespace CodeWalker.GameFiles
             CharacterClothController cc = c.Controller;
             Vector4[] verts = cc?.Vertices?.data_items;
             if (verts != null)
-            {
                 if (verts.Length >= Vertices?.Length)
-                {
                     for (int i = 0; i < Vertices.Length; i++)
-                    {
                         Vertices[i] = verts[i];
-                    }
-                }
-                else
-                { }
-            }
 
             Matrix t = c.Transform;
             t.M44 = 1.0f;
@@ -2525,7 +2456,7 @@ namespace CodeWalker.GameFiles
 
 
             uint[] boneIds = cc.BoneIds?.data_items;
-            if ((boneIds != null) && (Skeleton != null))
+            if (boneIds != null && Skeleton != null)
             {
                 Bones = new Bone[boneIds.Length];
                 for (int i = 0; i < Bones.Length; i++)
@@ -2536,32 +2467,23 @@ namespace CodeWalker.GameFiles
                     Bones[i] = bone;
                 }
             }
-
-
-
         }
+
         public void Init(EnvironmentCloth c, Skeleton s)
         {
             EnvCloth = c;
             Skeleton = s;
             Init(c?.Controller);
         }
+
         private void Init(ClothController cc)
         {
             Controller = cc;
 
             ClothBridgeSimGfx bg = cc?.BridgeSimGfx;
             uint vc = bg?.VertexCount ?? 0;
-            if (vc > 0)
-            {
-                Vertices = new Vector4[vc];
-
-            }
-
-
+            if (vc > 0) Vertices = new Vector4[vc];
         }
-
-
 
 
         public void Update(double t)
@@ -2572,70 +2494,60 @@ namespace CodeWalker.GameFiles
             float elapsed = (float)(t - CurrentTime);
 
             CharacterClothController charCont = CharCloth?.Controller;
-            if (charCont != null)
-            {
-                Update(charCont, elapsed);
-            }
+            if (charCont != null) Update(charCont, elapsed);
 
             CurrentTime = t;
         }
 
         private void Update(CharacterClothController charCont, float elapsed)
         {
-            if (Bones == null)
-            { return; }
+            if (Bones == null) return;
 
             Vector4[] cv = charCont?.Vertices?.data_items;
-            if (Vertices.Length > cv?.Length)
-            { return; }
+            if (Vertices.Length > cv?.Length) return;
 
             BoundComposite bounds = CharCloth.Bound as BoundComposite;
             Bounds[] capsules = bounds?.Children?.data_items;
             uint[] capsuleBoneIds = CharCloth.Unknown_30h?.data_items;
             if (capsules?.Length != capsuleBoneIds?.Length)
-            { }
+            {
+            }
 
             ClothBridgeSimGfx bsg = charCont.BridgeSimGfx;
             VerletCloth vc1 = charCont.VerletCloth1;
-            uint[] unk00 = charCont.Unknown_B0h?.data_items;//anchor verts/constraints..? related to bsg.Unknown_E0h? same count as boneids
-            CharClothBoneWeightsInds[] winds = charCont.BoneWeightsInds?.data_items;//bone weights/indices   - numverts
-            Unknown_C_004[] cons1 = vc1?.Constraints2?.data_items;//constraints? less than numverts
-            Unknown_C_004[] cons2 = vc1?.Constraints?.data_items;//constraints? more than numverts
-            float[] unk0 = bsg?.Unknown_20h?.data_items;// 0-1 weights values for something?
-            float[] unk1 = bsg?.Unknown_60h?.data_items;// cloth thickness?
-            float[] unk2 = bsg?.Unknown_A0h?.data_items;//numverts zeroes?
-            ushort[] unk3 = bsg?.Unknown_E0h?.data_items;//mapping? connections?
-            uint[] unk4 = bsg?.Unknown_128h?.data_items;//(boneids+1?) zeroes? has numverts capacity?
+            uint[]
+                unk00 = charCont.Unknown_B0h
+                    ?.data_items; //anchor verts/constraints..? related to bsg.Unknown_E0h? same count as boneids
+            CharClothBoneWeightsInds[] winds = charCont.BoneWeightsInds?.data_items; //bone weights/indices   - numverts
+            Unknown_C_004[] cons1 = vc1?.Constraints2?.data_items; //constraints? less than numverts
+            Unknown_C_004[] cons2 = vc1?.Constraints?.data_items; //constraints? more than numverts
+            float[] unk0 = bsg?.Unknown_20h?.data_items; // 0-1 weights values for something?
+            float[] unk1 = bsg?.Unknown_60h?.data_items; // cloth thickness?
+            float[] unk2 = bsg?.Unknown_A0h?.data_items; //numverts zeroes?
+            ushort[] unk3 = bsg?.Unknown_E0h?.data_items; //mapping? connections?
+            uint[] unk4 = bsg?.Unknown_128h?.data_items; //(boneids+1?) zeroes? has numverts capacity?
 
 
             for (int v = 0; v < Vertices.Length; v++)
             {
                 //transform the vertices using the bone weights/indices. this should provide positions for anchored verts
                 Vector3 ov = cv[v].XYZ();
-                CharClothBoneWeightsInds wind = (v < winds?.Length) ? winds[v] : new CharClothBoneWeightsInds();
-                Bone b0 = (wind.Index0 < Bones.Length) ? Bones[wind.Index0] : null;
-                Bone b1 = (wind.Index1 < Bones.Length) ? Bones[wind.Index1] : null;
-                Bone b2 = (wind.Index2 < Bones.Length) ? Bones[wind.Index2] : null;
-                Bone b3 = (wind.Index3 < Bones.Length) ? Bones[wind.Index3] : null;
+                CharClothBoneWeightsInds wind = v < winds?.Length ? winds[v] : new CharClothBoneWeightsInds();
+                Bone b0 = wind.Index0 < Bones.Length ? Bones[wind.Index0] : null;
+                Bone b1 = wind.Index1 < Bones.Length ? Bones[wind.Index1] : null;
+                Bone b2 = wind.Index2 < Bones.Length ? Bones[wind.Index2] : null;
+                Bone b3 = wind.Index3 < Bones.Length ? Bones[wind.Index3] : null;
                 float w0 = wind.Weights.X;
                 float w1 = wind.Weights.Y;
                 float w2 = wind.Weights.Z;
                 float w3 = wind.Weights.W;
-                Vector3 v0 = ((w0 > 0) ? b0 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
-                Vector3 v1 = ((w1 > 0) ? b1 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
-                Vector3 v2 = ((w2 > 0) ? b2 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
-                Vector3 v3 = ((w3 > 0) ? b3 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
-                Vector3 nv = v0*w0 + v1*w1 + v2*w2 + v3*w3;
+                Vector3 v0 = (w0 > 0 ? b0 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
+                Vector3 v1 = (w1 > 0 ? b1 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
+                Vector3 v2 = (w2 > 0 ? b2 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
+                Vector3 v3 = (w3 > 0 ? b3 : null)?.SkinTransform.MultiplyW(ov) ?? ov;
+                Vector3 nv = v0 * w0 + v1 * w1 + v2 * w2 + v3 * w3;
                 Vertices[v] = new Vector4(nv, 0);
             }
-
-
         }
-
     }
-
-
-
-
-
 }

@@ -1,17 +1,17 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Xml;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class Water
     {
-        public volatile bool Inited;
-        public GameFileCache GameFileCache;
-        public List<WaterQuad> WaterQuads = new List<WaterQuad>();
         public List<WaterCalmingQuad> CalmingQuads = new List<WaterCalmingQuad>();
+        public GameFileCache GameFileCache;
+        public volatile bool Inited;
+        public List<WaterQuad> WaterQuads = new List<WaterQuad>();
         public List<WaterWaveQuad> WaveQuads = new List<WaterWaveQuad>();
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus)
@@ -24,11 +24,9 @@ namespace CodeWalker.World
             WaveQuads.Clear();
 
             LoadWaterXml("common.rpf\\data\\levels\\gta5\\water.xml");
-            
+
             if (GameFileCache.EnableDlc)
-            {
                 LoadWaterXml("update\\update.rpf\\common\\data\\levels\\gta5\\water_heistisland.xml");
-            }
 
 
             Inited = true;
@@ -64,9 +62,7 @@ namespace CodeWalker.World
                 wavequad.Init(wavequads[i], i);
                 WaveQuads.Add(wavequad);
             }
-
         }
-
 
 
         public List<T> GetVisibleQuads<T>(Camera camera, IEnumerable<T> allQuads) where T : BaseWaterQuad
@@ -79,15 +75,11 @@ namespace CodeWalker.World
             foreach (T quad in allQuads)
             {
                 Vector3 camrel = quad.BSCenter - camera.Position;
-                if (vf.ContainsSphereNoClipNoOpt(ref camrel, quad.BSRadius))
-                {
-                    quads.Add(quad);
-                }
+                if (vf.ContainsSphereNoClipNoOpt(ref camrel, quad.BSRadius)) quads.Add(quad);
             }
 
             return quads;
         }
-
     }
 
     public abstract class BaseWaterQuad
@@ -99,6 +91,9 @@ namespace CodeWalker.World
         public float maxY { get; set; }
         public float? z { get; set; }
 
+        public Vector3 BSCenter { get; private set; }
+        public float BSRadius { get; private set; }
+
         public abstract void Init(XmlNode node, int index);
 
         public void CalcBS()
@@ -106,9 +101,6 @@ namespace CodeWalker.World
             BSCenter = new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, z ?? 0);
             BSRadius = new Vector2(maxX - minX, maxY - minY).Length() * 0.5f;
         }
-        
-        public Vector3 BSCenter { get; private set; }
-        public float BSRadius { get; private set; }
 
         public override string ToString()
         {
@@ -131,19 +123,19 @@ namespace CodeWalker.World
         public override void Init(XmlNode node, int index)
         {
             xmlNodeIndex = index;
-            minX = Xml.GetChildFloatAttribute(node, "minX", "value");
-            maxX = Xml.GetChildFloatAttribute(node, "maxX", "value");
-            minY = Xml.GetChildFloatAttribute(node, "minY", "value");
-            maxY = Xml.GetChildFloatAttribute(node, "maxY", "value");
-            Type = Xml.GetChildIntAttribute(node, "Type", "value");
-            IsInvisible = Xml.GetChildBoolAttribute(node, "IsInvisible", "value");
-            HasLimitedDepth = Xml.GetChildBoolAttribute(node, "HasLimitedDepth", "value");
-            z = Xml.GetChildFloatAttribute(node, "z", "value");
-            a1 = Xml.GetChildFloatAttribute(node, "a1", "value");
-            a2 = Xml.GetChildFloatAttribute(node, "a2", "value");
-            a3 = Xml.GetChildFloatAttribute(node, "a3", "value");
-            a4 = Xml.GetChildFloatAttribute(node, "a4", "value");
-            NoStencil = Xml.GetChildBoolAttribute(node, "NoStencil", "value");
+            minX = Xml.GetChildFloatAttribute(node, "minX");
+            maxX = Xml.GetChildFloatAttribute(node, "maxX");
+            minY = Xml.GetChildFloatAttribute(node, "minY");
+            maxY = Xml.GetChildFloatAttribute(node, "maxY");
+            Type = Xml.GetChildIntAttribute(node, "Type");
+            IsInvisible = Xml.GetChildBoolAttribute(node, "IsInvisible");
+            HasLimitedDepth = Xml.GetChildBoolAttribute(node, "HasLimitedDepth");
+            z = Xml.GetChildFloatAttribute(node, "z");
+            a1 = Xml.GetChildFloatAttribute(node, "a1");
+            a2 = Xml.GetChildFloatAttribute(node, "a2");
+            a3 = Xml.GetChildFloatAttribute(node, "a3");
+            a4 = Xml.GetChildFloatAttribute(node, "a4");
+            NoStencil = Xml.GetChildBoolAttribute(node, "NoStencil");
 
             /*
             <minX value="-1592" />
@@ -172,11 +164,11 @@ namespace CodeWalker.World
         public override void Init(XmlNode node, int index)
         {
             xmlNodeIndex = index;
-            minX = Xml.GetChildFloatAttribute(node, "minX", "value");
-            maxX = Xml.GetChildFloatAttribute(node, "maxX", "value");
-            minY = Xml.GetChildFloatAttribute(node, "minY", "value");
-            maxY = Xml.GetChildFloatAttribute(node, "maxY", "value");
-            fDampening = Xml.GetChildFloatAttribute(node, "fDampening", "value");
+            minX = Xml.GetChildFloatAttribute(node, "minX");
+            maxX = Xml.GetChildFloatAttribute(node, "maxX");
+            minY = Xml.GetChildFloatAttribute(node, "minY");
+            maxY = Xml.GetChildFloatAttribute(node, "maxY");
+            fDampening = Xml.GetChildFloatAttribute(node, "fDampening");
 
             /*
             <minX value="1752" />
@@ -188,7 +180,6 @@ namespace CodeWalker.World
 
             CalcBS();
         }
-
     }
 
     public class WaterWaveQuad : BaseWaterQuad
@@ -202,13 +193,13 @@ namespace CodeWalker.World
         public override void Init(XmlNode node, int index)
         {
             xmlNodeIndex = index;
-            minX = Xml.GetChildFloatAttribute(node, "minX", "value");
-            maxX = Xml.GetChildFloatAttribute(node, "maxX", "value");
-            minY = Xml.GetChildFloatAttribute(node, "minY", "value");
-            maxY = Xml.GetChildFloatAttribute(node, "maxY", "value");
-            Amplitude = Xml.GetChildFloatAttribute(node, "Amplitude", "value");
-            XDirection = Xml.GetChildFloatAttribute(node, "XDirection", "value");
-            YDirection = Xml.GetChildFloatAttribute(node, "YDirection", "value");
+            minX = Xml.GetChildFloatAttribute(node, "minX");
+            maxX = Xml.GetChildFloatAttribute(node, "maxX");
+            minY = Xml.GetChildFloatAttribute(node, "minY");
+            maxY = Xml.GetChildFloatAttribute(node, "maxY");
+            Amplitude = Xml.GetChildFloatAttribute(node, "Amplitude");
+            XDirection = Xml.GetChildFloatAttribute(node, "XDirection");
+            YDirection = Xml.GetChildFloatAttribute(node, "YDirection");
 
             float angl = (float)Math.Atan2(YDirection, XDirection);
             WaveOrientation = Quaternion.RotationYawPitchRoll(0.0f, 0.0f, angl);
@@ -225,9 +216,5 @@ namespace CodeWalker.World
 
             CalcBS();
         }
-
     }
-
-
-
 }

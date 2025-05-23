@@ -10,6 +10,14 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YptFile : GameFile, PackedFile
     {
+        public YptFile() : base(null, GameFileType.Ypt)
+        {
+        }
+
+        public YptFile(RpfFileEntry entry) : base(entry, GameFileType.Ypt)
+        {
+        }
+
         public ParticleEffectsList PtfxList { get; set; }
 
         public Dictionary<uint, DrawableBase> DrawableDict { get; set; }
@@ -22,22 +30,6 @@ namespace CodeWalker.GameFiles
 #if DEBUG
         public ResourceAnalyzer Analyzer { get; set; }
 #endif
-
-        public YptFile() : base(null, GameFileType.Ypt)
-        {
-        }
-        public YptFile(RpfFileEntry entry) : base(entry, GameFileType.Ypt)
-        {
-        }
-
-        public void Load(byte[] data)
-        {
-            //direct load from a raw, compressed ypt file
-
-            RpfFile.LoadResourceFile(this, data, (uint)GetVersion(RpfManager.IsGen9));
-
-            Loaded = true;
-        }
         public void Load(byte[] data, RpfFileEntry entry)
         {
             Name = entry.Name;
@@ -45,15 +37,11 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
             if (rd.IsGen9)
-            {
                 switch (resentry.Version)
                 {
                     case 71:
@@ -61,10 +49,7 @@ namespace CodeWalker.GameFiles
                     case 68:
                         rd.IsGen9 = false;
                         break;
-                    default:
-                        break;
                 }
-            }
 
             //MemoryUsage = 0;
 
@@ -88,7 +73,15 @@ namespace CodeWalker.GameFiles
 #endif
 
             Loaded = true;
+        }
 
+        public void Load(byte[] data)
+        {
+            //direct load from a raw, compressed ypt file
+
+            RpfFile.LoadResourceFile(this, data, (uint)GetVersion(RpfManager.IsGen9));
+
+            Loaded = true;
         }
 
 
@@ -100,12 +93,8 @@ namespace CodeWalker.GameFiles
             {
                 PtfxList?.TextureDictionary?.EnsureGen9();
                 if (drawables != null)
-                {
                     foreach (DrawablePtfx drawable in drawables)
-                    {
                         drawable?.EnsureGen9();
-                    }
-                }
             }
 
             byte[] data = ResourceBuilder.Build(PtfxList, GetVersion(gen9), true, gen9);
@@ -119,18 +108,16 @@ namespace CodeWalker.GameFiles
         }
 
 
-
-
         private void BuildDrawableDict()
         {
             DrawablePtfxDictionary dDict = PtfxList?.DrawableDictionary;
 
-            if ((dDict?.Drawables?.data_items != null) && (dDict?.Hashes != null))
+            if (dDict?.Drawables?.data_items != null && dDict?.Hashes != null)
             {
                 DrawableDict = new Dictionary<uint, DrawableBase>();
                 DrawablePtfx[] drawables = dDict.Drawables.data_items;
                 uint[] hashes = dDict.Hashes;
-                for (int i = 0; (i < drawables.Length) && (i < hashes.Length); i++)
+                for (int i = 0; i < drawables.Length && i < hashes.Length; i++)
                 {
                     DrawablePtfx drawable = drawables[i];
                     uint hash = hashes[i];
@@ -156,7 +143,6 @@ namespace CodeWalker.GameFiles
                 //    }
                 //}
             }
-
         }
 
         private void BuildParticleDict()
@@ -165,7 +151,6 @@ namespace CodeWalker.GameFiles
 
             if (pdict?.EffectRules?.data_items != null)
             {
-
                 EffectDict = new Dictionary<MetaHash, ParticleEffectRule>();
                 List<ParticleEffectRule> elist = new List<ParticleEffectRule>();
 
@@ -177,38 +162,26 @@ namespace CodeWalker.GameFiles
 
                 elist.Sort((a, b) => { return (a.Name?.Value ?? "").CompareTo(b.Name?.Value ?? ""); });
                 AllEffects = elist.ToArray();
-
             }
-
         }
-
     }
-
-
-
 
 
     public class YptXml : MetaXmlBase
     {
-
         public static string GetXml(YptFile ypt, string outputFolder = "")
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(XmlHeader);
 
-            if (ypt?.PtfxList != null)
-            {
-                ParticleEffectsList.WriteXmlNode(ypt.PtfxList, sb, 0, outputFolder);
-            }
+            if (ypt?.PtfxList != null) ParticleEffectsList.WriteXmlNode(ypt.PtfxList, sb, 0, outputFolder);
 
             return sb.ToString();
         }
-
     }
 
     public class XmlYpt
     {
-
         public static YptFile GetYpt(string xml, string inputFolder = "")
         {
             XmlDocument doc = new XmlDocument();
@@ -223,19 +196,11 @@ namespace CodeWalker.GameFiles
             string ddsfolder = inputFolder;
 
             XmlElement node = doc.DocumentElement;
-            if (node != null)
-            {
-                r.PtfxList = ParticleEffectsList.ReadXmlNode(node, ddsfolder);
-            }
+            if (node != null) r.PtfxList = ParticleEffectsList.ReadXmlNode(node, ddsfolder);
 
             r.Name = Path.GetFileName(inputFolder);
 
             return r;
         }
-
     }
-
-
-
-
 }

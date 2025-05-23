@@ -1,16 +1,18 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class Ped
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class Ped
     {
+        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
         public string Name { get; set; } = string.Empty;
-        public MetaHash NameHash { get; set; } = 0;//ped name hash
+        public MetaHash NameHash { get; set; } = 0; //ped name hash
         public CPedModelInfo__InitData InitData { get; set; } //ped init data
         public YddFile Ydd { get; set; } //ped drawables
         public YtdFile Ytd { get; set; } //ped textures
@@ -32,13 +34,14 @@ namespace CodeWalker.World
         public Texture[] Textures { get; set; } = new Texture[12];
         public Expression[] Expressions { get; set; } = new Expression[12];
         public ClothInstance[] Clothes { get; set; } = new ClothInstance[12];
-        public bool EnableRootMotion { get; set; } = false; //used to toggle whether or not to include root motion when playing animations
+
+        public bool EnableRootMotion { get; set; } =
+            false; //used to toggle whether or not to include root motion when playing animations
+
         public Skeleton Skeleton { get; set; }
 
         public Vector3 Position { get; set; } = Vector3.Zero;
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
-
-        public YmapEntityDef RenderEntity = new YmapEntityDef(); //placeholder entity object for rendering
 
 
         public void Init(string name, GameFileCache gfc)
@@ -47,9 +50,9 @@ namespace CodeWalker.World
             Init(hash, gfc);
             Name = name;
         }
+
         public void Init(MetaHash pedhash, GameFileCache gfc)
         {
-
             Name = string.Empty;
             NameHash = 0;
             InitData = null;
@@ -104,38 +107,41 @@ namespace CodeWalker.World
             if (ClothFilesDict?.TryGetValue(pedhash, out clothFile) ?? false)
             {
                 Yld = gfc.GetFileUncached<YldFile>(clothFile);
-                while ((Yld != null) && (!Yld.Loaded))
+                while (Yld != null && !Yld.Loaded)
                 {
-                    Thread.Sleep(1);//kinda hacky
+                    Thread.Sleep(1); //kinda hacky
                     gfc.TryLoadEnqueue(Yld);
                 }
             }
 
 
-
-            while ((Ydd != null) && (!Ydd.Loaded))
+            while (Ydd != null && !Ydd.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Ydd = gfc.GetYdd(pedhash);
             }
-            while ((Ytd != null) && (!Ytd.Loaded))
+
+            while (Ytd != null && !Ytd.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Ytd = gfc.GetYtd(pedhash);
             }
-            while ((Ycd != null) && (!Ycd.Loaded))
+
+            while (Ycd != null && !Ycd.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Ycd = gfc.GetYcd(ycdhash);
             }
-            while ((Yed != null) && (!Yed.Loaded))
+
+            while (Yed != null && !Yed.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Yed = gfc.GetYed(yedhash);
             }
-            while ((Yft != null) && (!Yft.Loaded))
+
+            while (Yft != null && !Yft.Loaded)
             {
-                Thread.Sleep(1);//kinda hacky
+                Thread.Sleep(1); //kinda hacky
                 Yft = gfc.GetYft(pedhash);
             }
 
@@ -157,9 +163,6 @@ namespace CodeWalker.World
         }
 
 
-
-
-
         public void SetComponentDrawable(int index, string name, string tex, GameFileCache gfc)
         {
             if (string.IsNullOrEmpty(name))
@@ -173,74 +176,62 @@ namespace CodeWalker.World
 
             MetaHash namehash = JenkHash.GenHash(name.ToLowerInvariant());
             Drawable d = null;
-            if (Ydd?.Dict != null)
-            {
-                Ydd.Dict.TryGetValue(namehash, out d);
-            }
-            if ((d == null) && (DrawableFilesDict != null))
+            if (Ydd?.Dict != null) Ydd.Dict.TryGetValue(namehash, out d);
+            if (d == null && DrawableFilesDict != null)
             {
                 RpfFileEntry file = null;
                 if (DrawableFilesDict.TryGetValue(namehash, out file))
                 {
                     YddFile ydd = gfc.GetFileUncached<YddFile>(file);
-                    while ((ydd != null) && (!ydd.Loaded))
+                    while (ydd != null && !ydd.Loaded)
                     {
-                        Thread.Sleep(1);//kinda hacky
+                        Thread.Sleep(1); //kinda hacky
                         gfc.TryLoadEnqueue(ydd);
                     }
-                    if (ydd?.Drawables?.Length > 0)
-                    {
-                        d = ydd.Drawables[0];//should only be one in this dict
-                    }
+
+                    if (ydd?.Drawables?.Length > 0) d = ydd.Drawables[0]; //should only be one in this dict
                 }
             }
 
             MetaHash texhash = JenkHash.GenHash(tex.ToLowerInvariant());
             Texture t = null;
-            if (Ytd?.TextureDict?.Dict != null)
-            {
-                Ytd.TextureDict.Dict.TryGetValue(texhash, out t);
-            }
-            if ((t == null) && (TextureFilesDict != null))
+            if (Ytd?.TextureDict?.Dict != null) Ytd.TextureDict.Dict.TryGetValue(texhash, out t);
+            if (t == null && TextureFilesDict != null)
             {
                 RpfFileEntry file = null;
                 if (TextureFilesDict.TryGetValue(texhash, out file))
                 {
                     YtdFile ytd = gfc.GetFileUncached<YtdFile>(file);
-                    while ((ytd != null) && (!ytd.Loaded))
+                    while (ytd != null && !ytd.Loaded)
                     {
-                        Thread.Sleep(1);//kinda hacky
+                        Thread.Sleep(1); //kinda hacky
                         gfc.TryLoadEnqueue(ytd);
                     }
+
                     if (ytd?.TextureDict?.Textures?.data_items.Length > 0)
-                    {
-                        t = ytd.TextureDict.Textures.data_items[0];//should only be one in this dict
-                    }
+                        t = ytd.TextureDict.Textures.data_items[0]; //should only be one in this dict
                 }
             }
 
             CharacterCloth cc = null;
-            if (Yld?.Dict != null)
-            {
-                Yld.Dict.TryGetValue(namehash, out cc);
-            }
-            if ((cc == null) && (ClothFilesDict != null))
+            if (Yld?.Dict != null) Yld.Dict.TryGetValue(namehash, out cc);
+            if (cc == null && ClothFilesDict != null)
             {
                 RpfFileEntry file = null;
                 if (ClothFilesDict.TryGetValue(namehash, out file))
                 {
                     YldFile yld = gfc.GetFileUncached<YldFile>(file);
-                    while ((yld != null) && (!yld.Loaded))
+                    while (yld != null && !yld.Loaded)
                     {
-                        Thread.Sleep(1);//kinda hacky
+                        Thread.Sleep(1); //kinda hacky
                         gfc.TryLoadEnqueue(yld);
                     }
+
                     if (yld?.ClothDictionary?.Clothes?.data_items?.Length > 0)
-                    {
-                        cc = yld.ClothDictionary.Clothes.data_items[0];//should only be one in this dict
-                    }
+                        cc = yld.ClothDictionary.Clothes.data_items[0]; //should only be one in this dict
                 }
             }
+
             ClothInstance c = null;
             if (cc != null)
             {
@@ -249,10 +240,7 @@ namespace CodeWalker.World
             }
 
             Expression e = null;
-            if (Yed?.ExprMap != null)
-            {
-                Yed.ExprMap.TryGetValue(namehash, out e);
-            }
+            if (Yed?.ExprMap != null) Yed.ExprMap.TryGetValue(namehash, out e);
 
 
             if (d != null) Drawables[index] = d.ShallowCopy() as Drawable;
@@ -271,7 +259,7 @@ namespace CodeWalker.World
                 MCPVComponentData compData = vi.GetComponentData(index);
                 if (compData?.DrawblData3 != null)
                 {
-                    MCPVDrawblData item = (drawbl < (compData.DrawblData3?.Length ?? 0)) ? compData.DrawblData3[drawbl] : null;
+                    MCPVDrawblData item = drawbl < (compData.DrawblData3?.Length ?? 0) ? compData.DrawblData3[drawbl] : null;
                     if (item != null)
                     {
                         string name = item?.GetDrawableName(alt);
@@ -284,13 +272,8 @@ namespace CodeWalker.World
 
         public void LoadDefaultComponents(GameFileCache gfc)
         {
-            for (int i = 0; i < 12; i++)
-            {
-                SetComponentDrawable(i, 0, 0, 0, gfc);
-            }
+            for (int i = 0; i < 12; i++) SetComponentDrawable(i, 0, 0, 0, gfc);
         }
-
-
 
 
         public void UpdateEntity()
@@ -298,6 +281,5 @@ namespace CodeWalker.World
             RenderEntity.SetPosition(Position);
             RenderEntity.SetOrientation(Rotation);
         }
-
     }
 }

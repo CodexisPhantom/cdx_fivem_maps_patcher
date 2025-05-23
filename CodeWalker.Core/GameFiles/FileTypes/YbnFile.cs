@@ -9,6 +9,14 @@ namespace CodeWalker.GameFiles
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class YbnFile : GameFile, PackedFile
     {
+        public YbnFile() : base(null, GameFileType.Ybn)
+        {
+        }
+
+        public YbnFile(RpfFileEntry entry) : base(entry, GameFileType.Ybn)
+        {
+        }
+
         public Bounds Bounds { get; set; }
 
 
@@ -19,23 +27,6 @@ namespace CodeWalker.GameFiles
         public ResourceAnalyzer Analyzer { get; set; }
 #endif
 
-
-        public YbnFile() : base(null, GameFileType.Ybn)
-        {
-        }
-        public YbnFile(RpfFileEntry entry) : base(entry, GameFileType.Ybn)
-        {
-        }
-
-        public void Load(byte[] data)
-        {
-            //direct load from a raw, compressed ybn file
-
-            RpfFile.LoadResourceFile(this, data, 43);
-
-            Loaded = true;
-        }
-
         public void Load(byte[] data, RpfFileEntry entry)
         {
             Name = entry.Name;
@@ -43,10 +34,7 @@ namespace CodeWalker.GameFiles
 
 
             RpfResourceFileEntry resentry = entry as RpfResourceFileEntry;
-            if (resentry == null)
-            {
-                throw new Exception("File entry wasn't a resource! (is it binary data?)");
-            }
+            if (resentry == null) throw new Exception("File entry wasn't a resource! (is it binary data?)");
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
 
@@ -63,14 +51,21 @@ namespace CodeWalker.GameFiles
             Loaded = true;
         }
 
+        public void Load(byte[] data)
+        {
+            //direct load from a raw, compressed ybn file
+
+            RpfFile.LoadResourceFile(this, data, 43);
+
+            Loaded = true;
+        }
+
         public byte[] Save()
         {
             byte[] data = ResourceBuilder.Build(Bounds, 43); //ybn is type/version 43...
 
             return data;
         }
-
-
 
 
         public bool RemoveBounds(Bounds b)
@@ -80,8 +75,10 @@ namespace CodeWalker.GameFiles
                 Bounds = null;
                 return true;
             }
+
             return false;
         }
+
         public bool AddBounds(Bounds b)
         {
             if (b == null) return false;
@@ -91,15 +88,11 @@ namespace CodeWalker.GameFiles
             Bounds.OwnerName = Name ?? RpfFileEntry?.Name;
             return true;
         }
-
     }
-
-
 
 
     public class YbnXml : MetaXmlBase
     {
-
         public static string GetXml(YbnFile ybn)
         {
             StringBuilder sb = new StringBuilder();
@@ -108,10 +101,7 @@ namespace CodeWalker.GameFiles
             string name = "BoundsFile";
             OpenTag(sb, 0, name);
 
-            if (ybn?.Bounds != null)
-            {
-                Bounds.WriteXmlNode(ybn.Bounds, sb, 1);
-            }
+            if (ybn?.Bounds != null) Bounds.WriteXmlNode(ybn.Bounds, sb, 1);
 
             CloseTag(sb, 0, name);
 
@@ -121,14 +111,12 @@ namespace CodeWalker.GameFiles
 
         public static string FormatBoundMaterialColour(BoundMaterialColour c) //for use with WriteItemArray
         {
-            return c.R.ToString() + ", " + c.G.ToString() + ", " + c.B.ToString() + ", " + c.A.ToString();
+            return c.R + ", " + c.G + ", " + c.B + ", " + c.A;
         }
-
     }
 
     public class XmlYbn
     {
-
         public static YbnFile GetYbn(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -142,14 +130,10 @@ namespace CodeWalker.GameFiles
 
             XmlElement node = doc.DocumentElement;
             XmlNode bnode = node?.SelectSingleNode("Bounds");
-            if (bnode != null)
-            {
-                r.Bounds = Bounds.ReadXmlNode(bnode, r);
-            }
+            if (bnode != null) r.Bounds = Bounds.ReadXmlNode(bnode, r);
 
             return r;
         }
-
 
 
         public static BoundMaterialColour[] GetRawBoundMaterialColourArray(XmlNode node)
@@ -157,14 +141,17 @@ namespace CodeWalker.GameFiles
             if (node == null) return null;
             byte r, g, b, a;
             List<BoundMaterialColour> items = new List<BoundMaterialColour>();
-            string[] split = node.InnerText.Split('\n');// Regex.Split(node.InnerText, @"[\s\r\n\t]");
+            string[] split = node.InnerText.Split('\n'); // Regex.Split(node.InnerText, @"[\s\r\n\t]");
             for (int i = 0; i < split.Length; i++)
             {
                 string s = split[i]?.Trim();
                 if (string.IsNullOrEmpty(s)) continue;
-                string[] split2 = s.Split(',');// Regex.Split(s, @"[\s\t]");
+                string[] split2 = s.Split(','); // Regex.Split(s, @"[\s\t]");
                 int c = 0;
-                r = 0; g = 0; b = 0; a = 0;
+                r = 0;
+                g = 0;
+                b = 0;
+                a = 0;
                 for (int n = 0; n < split2.Length; n++)
                 {
                     string ts = split2[n]?.Trim();
@@ -178,8 +165,10 @@ namespace CodeWalker.GameFiles
                         case 2: b = v; break;
                         case 3: a = v; break;
                     }
+
                     c++;
                 }
+
                 if (c >= 2)
                 {
                     BoundMaterialColour val = new BoundMaterialColour();
@@ -191,17 +180,13 @@ namespace CodeWalker.GameFiles
                 }
             }
 
-            return (items.Count > 0) ? items.ToArray() : null;
+            return items.Count > 0 ? items.ToArray() : null;
         }
+
         public static BoundMaterialColour[] GetChildRawBoundMaterialColourArray(XmlNode node, string name)
         {
             XmlNode cnode = node.SelectSingleNode(name);
             return GetRawBoundMaterialColourArray(cnode);
         }
-
-
     }
-
-
-
 }

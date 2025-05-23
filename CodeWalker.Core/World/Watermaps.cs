@@ -1,14 +1,17 @@
-﻿using CodeWalker.GameFiles;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using CodeWalker.GameFiles;
+using SharpDX;
 
 namespace CodeWalker.World
 {
     public class Watermaps : BasePathData
     {
-        public volatile bool Inited;
         public GameFileCache GameFileCache;
+        public volatile bool Inited;
+
+        public Vector4[] NodePositions;
+        public EditorVertex[] TriangleVerts;
 
         public List<WatermapFile> WatermapFiles = new List<WatermapFile>();
 
@@ -17,17 +20,16 @@ namespace CodeWalker.World
         {
             return NodePositions;
         }
+
         public EditorVertex[] GetPathVertices()
         {
             return null;
         }
+
         public EditorVertex[] GetTriangleVertices()
         {
             return TriangleVerts;
         }
-
-        public Vector4[] NodePositions;
-        public EditorVertex[] TriangleVerts;
 
 
         public void Init(GameFileCache gameFileCache, Action<string> updateStatus)
@@ -43,7 +45,6 @@ namespace CodeWalker.World
             LoadWatermap("common.rpf\\data\\levels\\gta5\\waterheight.dat");
 
 
-
             BuildVertices();
 
             Inited = true;
@@ -56,36 +57,23 @@ namespace CodeWalker.World
         }
 
 
-
         public void BuildVertices()
         {
-
             List<EditorVertex> vlist = new List<EditorVertex>();
             List<Vector4> nlist = new List<Vector4>();
 
-            foreach (WatermapFile wmf in WatermapFiles)
-            {
-                BuildWatermapVertices(wmf, vlist, nlist);
-            }
+            foreach (WatermapFile wmf in WatermapFiles) BuildWatermapVertices(wmf, vlist, nlist);
 
             if (vlist.Count > 0)
-            {
                 TriangleVerts = vlist.ToArray();
-            }
             else
-            {
                 TriangleVerts = null;
-            }
             if (nlist.Count > 0)
-            {
                 NodePositions = nlist.ToArray();
-            }
             else
-            {
                 NodePositions = null;
-            }
-
         }
+
         private void BuildWatermapVertices(WatermapFile wmf, List<EditorVertex> vl, List<Vector4> nl)
         {
             EditorVertex v1 = new EditorVertex();
@@ -103,20 +91,16 @@ namespace CodeWalker.World
                 if (harr.Length == 0) return 0;
                 WatermapFile.WaterItemRef h0 = harr[0];
                 WatermapFile.WaterItem i0 = h0.Item;
-                if (h0.Type == WatermapFile.WaterItemType.River)
-                {
-                    return h0.Vector.Z;
-                }
+                if (h0.Type == WatermapFile.WaterItemType.River) return h0.Vector.Z;
                 if (h0.Type == WatermapFile.WaterItemType.Lake)
-                {
-                    if (i0 != null) return i0.Position.Z;
-                }
+                    if (i0 != null)
+                        return i0.Position.Z;
                 if (h0.Type == WatermapFile.WaterItemType.Pool)
-                {
-                    if (i0 != null) return i0.Position.Z;
-                }
+                    if (i0 != null)
+                        return i0.Position.Z;
                 return h0.Vector.Z;
             }
+
             uint getColour(int o)
             {
                 WatermapFile.WaterItemRef[] harr = wmf.GridWatermapRefs[o];
@@ -128,6 +112,7 @@ namespace CodeWalker.World
                 c.A = 128;
                 return (uint)c.ToRgba();
             }
+
             ushort w = wmf.Width;
             ushort h = wmf.Height;
             Vector3 min = new Vector3(wmf.CornerX, wmf.CornerY, 0.0f);
@@ -171,25 +156,33 @@ namespace CodeWalker.World
                 v2.Position = q.P2;
                 v3.Position = q.P3;
                 v4.Position = q.P4;
-                vl.Add(v1); vl.Add(v2); vl.Add(v3);
-                vl.Add(v3); vl.Add(v2); vl.Add(v4);
+                vl.Add(v1);
+                vl.Add(v2);
+                vl.Add(v3);
+                vl.Add(v3);
+                vl.Add(v2);
+                vl.Add(v4);
             }
+
             void addRivEnd(Vector3 p, Vector3 s, Vector3 d, float r)
             {
                 v1.Position = p;
                 v2.Position = p + s * r;
                 v3.Position = p + d * r;
                 v4.Position = p - s * r;
-                vl.Add(v1); vl.Add(v2); vl.Add(v3);
-                vl.Add(v1); vl.Add(v3); vl.Add(v4);
+                vl.Add(v1);
+                vl.Add(v2);
+                vl.Add(v3);
+                vl.Add(v1);
+                vl.Add(v3);
+                vl.Add(v4);
             }
+
             WatermapFile.WaterFlow[] rivers = wmf.Rivers;
             if (rivers != null)
-            {
                 foreach (WatermapFile.WaterFlow river in rivers)
                 {
-                    if ((river.Vectors == null) || (river.VectorCount <= 1))
-                    { continue; }
+                    if (river.Vectors == null || river.VectorCount <= 1) continue;
 
                     float rwid = 20.0f;
                     Color rc = river.Colour;
@@ -210,32 +203,30 @@ namespace CodeWalker.World
                             dir = Vector3.UnitY;
                             sid = Vector3.UnitX;
                         }
-                        quads[o].P1 = vo.XYZ() - sid*rwid;
-                        quads[o].P2 = vo.XYZ() + sid*rwid;
-                        quads[o].P3 = vi.XYZ() - sid*rwid;
-                        quads[o].P4 = vi.XYZ() + sid*rwid;
+
+                        quads[o].P1 = vo.XYZ() - sid * rwid;
+                        quads[o].P2 = vo.XYZ() + sid * rwid;
+                        quads[o].P3 = vi.XYZ() - sid * rwid;
+                        quads[o].P4 = vi.XYZ() + sid * rwid;
                         if (i == 1) addRivEnd(vo.XYZ(), -sid, -dir, rwid);
                         if (i == li) addRivEnd(vi.XYZ(), sid, dir, rwid);
                     }
+
                     for (int i = 1; i < quads.Length; i++)
                     {
                         int o = i - 1;
                         quads[o].P3 = quads[i].P1 = (quads[o].P3 + quads[i].P1) * 0.5f;
                         quads[o].P4 = quads[i].P2 = (quads[o].P4 + quads[i].P2) * 0.5f;
                     }
-                    for (int i = 0; i < quads.Length; i++)
-                    {
-                        addQuad(quads[i]);
-                    }
+
+                    for (int i = 0; i < quads.Length; i++) addQuad(quads[i]);
                 }
-            }
+
             WatermapFile.WaterFlow[] lakes = wmf.Lakes;
             if (lakes != null)
-            {
                 foreach (WatermapFile.WaterFlow lake in lakes)
                 {
-                    if ((lake.Vectors == null) || (lake.VectorCount == 0))
-                    { continue; }
+                    if (lake.Vectors == null || lake.VectorCount == 0) continue;
 
                     Vector3 lp = lake.Position;
                     Color lc = lake.Colour;
@@ -253,10 +244,9 @@ namespace CodeWalker.World
                         addQuad(q);
                     }
                 }
-            }
+
             WatermapFile.WaterPool[] pools = wmf.Pools;
             if (pools != null)
-            {
                 foreach (WatermapFile.WaterPool pool in pools)
                 {
                     Vector3 pp = pool.Position;
@@ -271,14 +261,10 @@ namespace CodeWalker.World
                     q.P4 = pp + new Vector3(-ps.X, ps.Y, 0);
                     addQuad(q);
                 }
-            }
-
-
         }
 
 
-
-        struct Quad
+        private struct Quad
         {
             public Vector3 P1;
             public Vector3 P2;

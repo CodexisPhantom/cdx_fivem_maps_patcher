@@ -1,10 +1,10 @@
-﻿using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Xml;
+using SharpDX;
 
 namespace CodeWalker.GameFiles
 {
@@ -16,7 +16,9 @@ namespace CodeWalker.GameFiles
         public CacheFileDate[] FileDates { get; set; }
 
         public Dictionary<uint, MapDataStoreNode> MapNodeDict { get; set; }
+
         public MapDataStoreNode[] RootMapNodes { get; set; }
+
         //public Dictionary<MetaHash, CInteriorProxy> InteriorProxyDict { get; set; }
         public Dictionary<MetaHash, BoundsStoreItem> BoundsStoreDict { get; set; }
 
@@ -32,13 +34,14 @@ namespace CodeWalker.GameFiles
             BinaryReader br = new BinaryReader(ms);
 
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; (i < 100) && (i < data.Length); i++)
+            for (int i = 0; i < 100 && i < data.Length; i++)
             {
                 //read version string.
                 byte b = data[i];
                 if (b == 0) break;
                 sb.Append((char)b);
             }
+
             Version = sb.ToString().Replace("[VERSION]", "").Replace("\r", "").Replace("\n", "");
             sb.Clear();
             int lastn = 0;
@@ -78,10 +81,7 @@ namespace CodeWalker.GameFiles
                             modlen = br.ReadUInt32();
                             structcount = modlen / 64;
                             lspos = i + (int)modlen + 5;
-                            while (ms.Position<lspos)
-                            {
-                                allMapNodes.Add(new MapDataStoreNode(br));
-                            }
+                            while (ms.Position < lspos) allMapNodes.Add(new MapDataStoreNode(br));
                             //if (allMapNodes.Count != structcount)
                             //{ }//test fail due to variable length struct
                             i += (int)(modlen + 4);
@@ -91,12 +91,11 @@ namespace CodeWalker.GameFiles
                             modlen = br.ReadUInt32();
                             structcount = modlen / 104;
                             lspos = i + (int)modlen + 5;
-                            while (ms.Position < lspos)
-                            {
-                                allCInteriorProxies.Add(new CInteriorProxy(br));
-                            }
+                            while (ms.Position < lspos) allCInteriorProxies.Add(new CInteriorProxy(br));
                             if (allCInteriorProxies.Count != structcount)
-                            { }//all pass here
+                            {
+                            } //all pass here
+
                             i += (int)(modlen + 4);
                             break;
                         case "BoundsStore":
@@ -104,21 +103,23 @@ namespace CodeWalker.GameFiles
                             modlen = br.ReadUInt32();
                             structcount = modlen / 32;
                             lspos = i + (int)modlen + 5;
-                            while (ms.Position < lspos)
-                            {
-                                allBoundsStoreItems.Add(new BoundsStoreItem(br));
-                            }
+                            while (ms.Position < lspos) allBoundsStoreItems.Add(new BoundsStoreItem(br));
                             if (allBoundsStoreItems.Count != structcount)
-                            { }//all pass here
+                            {
+                            } //all pass here
+
                             i += (int)(modlen + 4);
                             break;
                         default:
                             if (!indates)
-                            { } //just testing
+                            {
+                            } //just testing
                             else
                             {
-                                dates.Add(new CacheFileDate(line));//eg: 2740459947 (hash of: platform:/data/cdimages/scaleform_frontend.rpf) 130680580712018938 8944
+                                dates.Add(new CacheFileDate(
+                                    line)); //eg: 2740459947 (hash of: platform:/data/cdimages/scaleform_frontend.rpf) 130680580712018938 8944
                             }
+
                             break;
                     }
 
@@ -129,6 +130,7 @@ namespace CodeWalker.GameFiles
                     sb.Append((char)b);
                 }
             }
+
             FileDates = dates.ToArray();
             AllMapNodes = allMapNodes.ToArray();
             AllCInteriorProxies = allCInteriorProxies.ToArray();
@@ -139,13 +141,12 @@ namespace CodeWalker.GameFiles
             foreach (MapDataStoreNode mapnode in AllMapNodes)
             {
                 MapNodeDict[mapnode.Name] = mapnode;
-                if (mapnode.ParentName == 0)
-                {
-                    rootMapNodes.Add(mapnode);
-                }
+                if (mapnode.ParentName == 0) rootMapNodes.Add(mapnode);
                 if (mapnode.UnkExtra != null)
-                { }//notsure what to do with this
+                {
+                } //notsure what to do with this
             }
+
             foreach (MapDataStoreNode mapnode in AllMapNodes)
             {
                 MapDataStoreNode pnode;
@@ -153,15 +154,13 @@ namespace CodeWalker.GameFiles
                 {
                     pnode.AddChildToList(mapnode);
                 }
-                else if ((mapnode.ParentName != 0))
-                { }
+                else if (mapnode.ParentName != 0)
+                {
+                }
             }
-            foreach (MapDataStoreNode mapnode in AllMapNodes)
-            {
-                mapnode.ChildrenListToArray();
-            }
-            RootMapNodes = rootMapNodes.ToArray();
 
+            foreach (MapDataStoreNode mapnode in AllMapNodes) mapnode.ChildrenListToArray();
+            RootMapNodes = rootMapNodes.ToArray();
 
 
             BoundsStoreDict = new Dictionary<MetaHash, BoundsStoreItem>();
@@ -169,7 +168,9 @@ namespace CodeWalker.GameFiles
             {
                 BoundsStoreItem mbsi = null;
                 if (BoundsStoreDict.TryGetValue(item.Name, out mbsi))
-                { }
+                {
+                }
+
                 BoundsStoreDict[item.Name] = item;
             }
 
@@ -183,41 +184,32 @@ namespace CodeWalker.GameFiles
 
 
                 MapDataStoreNode mnode = null;
-                if (MapNodeDict.TryGetValue(prx.Parent, out mnode))
-                {
-                    mnode.AddInteriorToList(prx);
-                }
-                else
-                { }
+                if (MapNodeDict.TryGetValue(prx.Parent, out mnode)) mnode.AddInteriorToList(prx);
             }
-            foreach (MapDataStoreNode mapnode in AllMapNodes)
-            {
-                mapnode.InteriorProxyListToArray();
-            }
+
+            foreach (MapDataStoreNode mapnode in AllMapNodes) mapnode.InteriorProxyListToArray();
 
 
             br.Dispose();
             ms.Dispose();
-
         }
 
         public byte[] Save()
         {
             MemoryStream s = new MemoryStream();
-            DataWriter w = new DataWriter(s, Endianess.LittleEndian);
+            DataWriter w = new DataWriter(s);
 
             w.Write("[VERSION]\n" + Version + "\n");
             while (w.Position < 100) w.Write((byte)0);
 
             WriteString(w, "<fileDates>\n");
             if (FileDates != null)
-            {
                 foreach (CacheFileDate d in FileDates)
                 {
                     WriteString(w, d.ToCacheFileString());
                     WriteString(w, "\n");
                 }
-            }
+
             WriteString(w, "</fileDates>\n");
             WriteString(w, "<module>\nfwMapDataStore\n");
             int modlen = (AllMapNodes?.Length ?? 0) * 64;
@@ -233,32 +225,23 @@ namespace CodeWalker.GameFiles
             //}
             w.Write(modlen);
             if (AllMapNodes != null)
-            {
                 foreach (MapDataStoreNode n in AllMapNodes)
-                {
                     n.Write(w);
-                }
-            }
+
             WriteString(w, "</module>\n");
             WriteString(w, "<module>\nCInteriorProxy\n");
             w.Write((AllCInteriorProxies?.Length ?? 0) * 104);
             if (AllCInteriorProxies != null)
-            {
                 foreach (CInteriorProxy p in AllCInteriorProxies)
-                {
                     p.Write(w);
-                }
-            }
+
             WriteString(w, "</module>\n");
             WriteString(w, "<module>\nBoundsStore\n");
             w.Write((AllBoundsStoreItems?.Length ?? 0) * 32);
             if (AllBoundsStoreItems != null)
-            {
                 foreach (BoundsStoreItem b in AllBoundsStoreItems)
-                {
                     b.Write(w);
-                }
-            }
+
             WriteString(w, "</module>\n");
 
 
@@ -270,10 +253,7 @@ namespace CodeWalker.GameFiles
 
         private void WriteString(DataWriter w, string s)
         {
-            for (int i = 0; i < s.Length; i++)
-            {
-                w.Write((byte)s[i]);
-            }
+            for (int i = 0; i < s.Length; i++) w.Write((byte)s[i]);
         }
 
 
@@ -285,6 +265,7 @@ namespace CodeWalker.GameFiles
             CacheDatXml.WriteItemArray(sb, AllCInteriorProxies, indent, "InteriorProxies");
             CacheDatXml.WriteItemArray(sb, AllBoundsStoreItems, indent, "BoundsStore");
         }
+
         public void ReadXml(XmlNode node)
         {
             Version = Xml.GetChildStringAttribute(node, "Version");
@@ -295,7 +276,6 @@ namespace CodeWalker.GameFiles
         }
 
 
-
         public string GetXmlOLD()
         {
             StringBuilder sb = new StringBuilder();
@@ -303,52 +283,56 @@ namespace CodeWalker.GameFiles
             sb.AppendLine(string.Format("<CacheDatFile version=\"{0}\">", Version));
             sb.AppendLine(" <fileDates>");
             if (FileDates != null)
-            {
                 foreach (CacheFileDate date in FileDates)
-                {
                     sb.AppendLine(string.Format("  <fileDate>{0}</fileDate>", date.ToCacheFileString()));
-                }
-            }
+
             sb.AppendLine(" </fileDates>");
             sb.AppendLine(" <module type=\"fwMapDataStore\">");
             if (AllMapNodes != null)
-            {
                 foreach (MapDataStoreNode mapnode in AllMapNodes)
                 {
                     sb.AppendLine("  <Item>");
                     sb.AppendLine(string.Format("   <name>{0}</name>", mapnode.Name.ToCleanString()));
                     sb.AppendLine(string.Format("   <parent>{0}</parent>", mapnode.ParentName.ToCleanString()));
                     sb.AppendLine(string.Format("   <contentFlags value=\"{0}\" />", mapnode.ContentFlags.ToString()));
-                    sb.AppendLine(string.Format("   <streamingExtentsMin {0} />", FloatUtil.GetVector3XmlString(mapnode.streamingExtentsMin)));
-                    sb.AppendLine(string.Format("   <streamingExtentsMax {0} />", FloatUtil.GetVector3XmlString(mapnode.streamingExtentsMax)));
-                    sb.AppendLine(string.Format("   <entitiesExtentsMin {0} />", FloatUtil.GetVector3XmlString(mapnode.entitiesExtentsMin)));
-                    sb.AppendLine(string.Format("   <entitiesExtentsMax {0} />", FloatUtil.GetVector3XmlString(mapnode.entitiesExtentsMax)));
-                    sb.AppendLine(string.Format("   <flags unk1=\"{0}\" unk2=\"{1}\" unk3=\"{2}\" />", mapnode.Unk1, mapnode.Unk2, mapnode.Unk3));
+                    sb.AppendLine(string.Format("   <streamingExtentsMin {0} />",
+                        FloatUtil.GetVector3XmlString(mapnode.streamingExtentsMin)));
+                    sb.AppendLine(string.Format("   <streamingExtentsMax {0} />",
+                        FloatUtil.GetVector3XmlString(mapnode.streamingExtentsMax)));
+                    sb.AppendLine(string.Format("   <entitiesExtentsMin {0} />",
+                        FloatUtil.GetVector3XmlString(mapnode.entitiesExtentsMin)));
+                    sb.AppendLine(string.Format("   <entitiesExtentsMax {0} />",
+                        FloatUtil.GetVector3XmlString(mapnode.entitiesExtentsMax)));
+                    sb.AppendLine(string.Format("   <flags unk1=\"{0}\" unk2=\"{1}\" unk3=\"{2}\" />", mapnode.Unk1,
+                        mapnode.Unk2, mapnode.Unk3));
                     sb.AppendLine("  </Item>");
                 }
-            }
+
             sb.AppendLine(" </module>");
             sb.AppendLine(" <module type=\"CInteriorProxy\">");
             if (AllCInteriorProxies != null)
-            {
                 foreach (CInteriorProxy intprox in AllCInteriorProxies)
                 {
                     sb.AppendLine("  <Item>");
                     sb.AppendLine(string.Format("   <name>{0}</name>", intprox.Name.ToCleanString()));
                     sb.AppendLine(string.Format("   <parent>{0}</parent>", intprox.Parent.ToCleanString()));
-                    sb.AppendLine(string.Format("   <position {0} />", FloatUtil.GetVector3XmlString(intprox.Position)));
-                    sb.AppendLine(string.Format("   <rotation {0} />", FloatUtil.GetQuaternionXmlString(intprox.Orientation)));
+                    sb.AppendLine(string.Format("   <position {0} />",
+                        FloatUtil.GetVector3XmlString(intprox.Position)));
+                    sb.AppendLine(string.Format("   <rotation {0} />",
+                        FloatUtil.GetQuaternionXmlString(intprox.Orientation)));
                     sb.AppendLine(string.Format("   <aabbMin {0} />", FloatUtil.GetVector3XmlString(intprox.BBMin)));
                     sb.AppendLine(string.Format("   <aabbMax {0} />", FloatUtil.GetVector3XmlString(intprox.BBMax)));
-                    sb.AppendLine(string.Format("   <unknowns1 unk01=\"{0}\" unk03=\"{1}\" />", intprox.Unk01, intprox.Unk03));
-                    sb.AppendLine(string.Format("   <unknowns2 unk11=\"{0}\" unk12=\"{1}\" unk13=\"{2}\" unk14=\"{3}\" />", intprox.Unk11, intprox.Unk12, intprox.Unk13, intprox.Unk14));
+                    sb.AppendLine(string.Format("   <unknowns1 unk01=\"{0}\" unk03=\"{1}\" />", intprox.Unk01,
+                        intprox.Unk03));
+                    sb.AppendLine(string.Format(
+                        "   <unknowns2 unk11=\"{0}\" unk12=\"{1}\" unk13=\"{2}\" unk14=\"{3}\" />", intprox.Unk11,
+                        intprox.Unk12, intprox.Unk13, intprox.Unk14));
                     sb.AppendLine("  </Item>");
                 }
-            }
+
             sb.AppendLine(" </module>");
             sb.AppendLine(" <module type=\"BoundsStore\">");
             if (AllBoundsStoreItems != null)
-            {
                 foreach (BoundsStoreItem bndstore in AllBoundsStoreItems)
                 {
                     sb.AppendLine("  <Item>");
@@ -358,7 +342,7 @@ namespace CodeWalker.GameFiles
                     sb.AppendLine(string.Format("   <layer value=\"{0}\" />", bndstore.Layer));
                     sb.AppendLine("  </Item>");
                 }
-            }
+
             sb.AppendLine(" </module>");
             sb.AppendLine("</CacheDatFile>");
             return sb.ToString();
@@ -367,24 +351,18 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            if (FileEntry != null)
-            {
-                return FileEntry.ToString();
-            }
+            if (FileEntry != null) return FileEntry.ToString();
             return base.ToString();
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class CacheFileDate : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class CacheFileDate : IMetaXmlItem
     {
-        public MetaHash FileName { get; set; } //"resource_surrogate:/%s.rpf"
-        public long TimeStamp { get; set; }
-        public uint FileID { get; set; }
-
-        public DateTime TimeStampUTC => DateTime.FromFileTimeUtc(TimeStamp);
-
         public CacheFileDate()
-        { }
+        {
+        }
+
         public CacheFileDate(string line)
         {
             string[] p = line.Split(' ');
@@ -393,11 +371,11 @@ namespace CodeWalker.GameFiles
             if (p.Length > 2) FileID = uint.Parse(p[2]);
         }
 
-        public string ToCacheFileString()
-        {
-            if (FileID == 0) return $"{FileName.Hash} {TimeStamp}";
-            else return $"{FileName.Hash} {TimeStamp} {FileID}";
-        }
+        public MetaHash FileName { get; set; } //"resource_surrogate:/%s.rpf"
+        public long TimeStamp { get; set; }
+        public uint FileID { get; set; }
+
+        public DateTime TimeStampUTC => DateTime.FromFileTimeUtc(TimeStamp);
 
         public void WriteXml(StringBuilder sb, int indent)
         {
@@ -405,6 +383,7 @@ namespace CodeWalker.GameFiles
             CacheDatXml.ValueTag(sb, indent, "timeStamp", ((ulong)TimeStamp).ToString());
             CacheDatXml.ValueTag(sb, indent, "fileID", FileID.ToString());
         }
+
         public void ReadXml(XmlNode node)
         {
             FileName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "fileName"));
@@ -412,21 +391,25 @@ namespace CodeWalker.GameFiles
             FileID = Xml.GetChildUIntAttribute(node, "fileID");
         }
 
+        public string ToCacheFileString()
+        {
+            if (FileID == 0) return $"{FileName.Hash} {TimeStamp}";
+            return $"{FileName.Hash} {TimeStamp} {FileID}";
+        }
+
         public override string ToString()
         {
-            return FileName.ToString() + ", " + TimeStamp.ToString() + ", " + FileID.ToString();
+            return FileName + ", " + TimeStamp + ", " + FileID;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class BoundsStoreItem : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class BoundsStoreItem : IMetaXmlItem
     {
-        public MetaHash Name { get; set; }
-        public Vector3 Min { get; set; }
-        public Vector3 Max { get; set; }
-        public uint Layer { get; set; }
-
         public BoundsStoreItem()
-        { }
+        {
+        }
+
         public BoundsStoreItem(Bounds b)
         {
             Name = 0;
@@ -434,12 +417,34 @@ namespace CodeWalker.GameFiles
             Max = b.BoxMax;
             Layer = 0;
         }
+
         public BoundsStoreItem(BinaryReader br)
         {
             Name = new MetaHash(br.ReadUInt32());
             Min = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
             Max = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
             Layer = br.ReadUInt32();
+        }
+
+        public MetaHash Name { get; set; }
+        public Vector3 Min { get; set; }
+        public Vector3 Max { get; set; }
+        public uint Layer { get; set; }
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
+            CacheDatXml.SelfClosingTag(sb, indent, "bbMin " + FloatUtil.GetVector3XmlString(Min));
+            CacheDatXml.SelfClosingTag(sb, indent, "bbMax " + FloatUtil.GetVector3XmlString(Max));
+            CacheDatXml.ValueTag(sb, indent, "layer", Layer.ToString());
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
+            Min = Xml.GetChildVector3Attributes(node, "bbMin");
+            Max = Xml.GetChildVector3Attributes(node, "bbMax");
+            Layer = Xml.GetChildUIntAttribute(node, "layer");
         }
 
         public void Write(DataWriter w)
@@ -450,48 +455,22 @@ namespace CodeWalker.GameFiles
             w.Write(Layer);
         }
 
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
-            CacheDatXml.SelfClosingTag(sb, indent, "bbMin " + FloatUtil.GetVector3XmlString(Min));
-            CacheDatXml.SelfClosingTag(sb, indent, "bbMax " + FloatUtil.GetVector3XmlString(Max));
-            CacheDatXml.ValueTag(sb, indent, "layer", Layer.ToString());
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
-            Min = Xml.GetChildVector3Attributes(node, "bbMin");
-            Max = Xml.GetChildVector3Attributes(node, "bbMax");
-            Layer = Xml.GetChildUIntAttribute(node, "layer");
-        }
-
         public override string ToString()
         {
-            return Name.ToString() + ", " +
-                   Min.ToString() + ", " +
-                   Max.ToString() + ", " +
-                   Layer.ToString();
+            return Name + ", " +
+                   Min + ", " +
+                   Max + ", " +
+                   Layer;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class CInteriorProxy : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class CInteriorProxy : IMetaXmlItem
     {
-        public uint Unk01 { get; set; }
-        public uint Unk02 { get; set; }
-        public uint Unk03 { get; set; }
-        public MetaHash Name { get; set; }
-        public MetaHash Parent { get; set; }
-        public Vector3 Position { get; set; }
-        public Quaternion Orientation { get; set; }
-        public Vector3 BBMin { get; set; }
-        public Vector3 BBMax { get; set; }
-        public ulong Unk11 { get; set; }//possibly file offsets..?
-        public ulong Unk12 { get; set; }//possibly file offsets..?
-        public ulong Unk13 { get; set; }//possibly file offsets..?
-        public ulong Unk14 { get; set; }//possibly file offsets..?
-
         public CInteriorProxy()
-        { }
+        {
+        }
+
         public CInteriorProxy(BinaryReader br)
         {
             Unk01 = br.ReadUInt32();
@@ -539,12 +518,11 @@ namespace CodeWalker.GameFiles
                 case 120:
                 case 119:
                     break;
-                default:
-                    break;
             }
 
             if (Unk02 != 0)
-            { }
+            {
+            }
 
             switch (Unk03)
             {
@@ -572,8 +550,6 @@ namespace CodeWalker.GameFiles
                 case 48: //apa_mpapa_yacht
                 case 43:
                     break;
-                default:
-                    break;
             }
 
             switch (Unk11)
@@ -596,9 +572,8 @@ namespace CodeWalker.GameFiles
                 case 0:
                 case 5836226042334228:
                     break;
-                default:
-                    break;
             }
+
             switch (Unk12)
             {
                 case 5394258664:
@@ -659,9 +634,8 @@ namespace CodeWalker.GameFiles
                 case 2067312412743:
                 case 2240565805648:
                     break;
-                default:
-                    break;
             }
+
             switch (Unk13)
             {
                 case 5416947112:
@@ -682,9 +656,8 @@ namespace CodeWalker.GameFiles
                 case 140701892506988:
                 case 140701188531008:
                     break;
-                default:
-                    break;
             }
+
             switch (Unk14)
             {
                 case 9:
@@ -705,10 +678,56 @@ namespace CodeWalker.GameFiles
                 case 140701898076100:
                 case 140701194017116:
                     break;
-                default:
-                    break;
             }
+        }
 
+        public uint Unk01 { get; set; }
+        public uint Unk02 { get; set; }
+        public uint Unk03 { get; set; }
+        public MetaHash Name { get; set; }
+        public MetaHash Parent { get; set; }
+        public Vector3 Position { get; set; }
+        public Quaternion Orientation { get; set; }
+        public Vector3 BBMin { get; set; }
+        public Vector3 BBMax { get; set; }
+        public ulong Unk11 { get; set; } //possibly file offsets..?
+        public ulong Unk12 { get; set; } //possibly file offsets..?
+        public ulong Unk13 { get; set; } //possibly file offsets..?
+        public ulong Unk14 { get; set; } //possibly file offsets..?
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
+            CacheDatXml.StringTag(sb, indent, "parent", CacheDatXml.HashString(Parent));
+            CacheDatXml.SelfClosingTag(sb, indent, "position " + FloatUtil.GetVector3XmlString(Position));
+            CacheDatXml.SelfClosingTag(sb, indent,
+                "rotation " + FloatUtil.GetVector4XmlString(Orientation.ToVector4()));
+            CacheDatXml.SelfClosingTag(sb, indent, "bbMin " + FloatUtil.GetVector3XmlString(BBMin));
+            CacheDatXml.SelfClosingTag(sb, indent, "bbMax " + FloatUtil.GetVector3XmlString(BBMax));
+            CacheDatXml.ValueTag(sb, indent, "unk01", Unk01.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk02", Unk02.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk03", Unk03.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk11", Unk11.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk12", Unk12.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk13", Unk13.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk14", Unk14.ToString());
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
+            Parent = XmlMeta.GetHash(Xml.GetChildInnerText(node, "parent"));
+            Position = Xml.GetChildVector3Attributes(node, "position");
+            Orientation = Xml.GetChildVector4Attributes(node, "rotation").ToQuaternion();
+            BBMin = Xml.GetChildVector3Attributes(node, "bbMin");
+            BBMax = Xml.GetChildVector3Attributes(node, "bbMax");
+            Unk01 = Xml.GetChildUIntAttribute(node, "unk01");
+            Unk02 = Xml.GetChildUIntAttribute(node, "unk02");
+            Unk03 = Xml.GetChildUIntAttribute(node, "unk03");
+            Unk11 = Xml.GetChildULongAttribute(node, "unk11");
+            Unk12 = Xml.GetChildULongAttribute(node, "unk12");
+            Unk13 = Xml.GetChildULongAttribute(node, "unk13");
+            Unk14 = Xml.GetChildULongAttribute(node, "unk14");
         }
 
         public void Write(DataWriter w)
@@ -728,82 +747,35 @@ namespace CodeWalker.GameFiles
             w.Write(Unk14);
         }
 
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
-            CacheDatXml.StringTag(sb, indent, "parent", CacheDatXml.HashString(Parent));
-            CacheDatXml.SelfClosingTag(sb, indent, "position " + FloatUtil.GetVector3XmlString(Position));
-            CacheDatXml.SelfClosingTag(sb, indent, "rotation " + FloatUtil.GetVector4XmlString(Orientation.ToVector4()));
-            CacheDatXml.SelfClosingTag(sb, indent, "bbMin " + FloatUtil.GetVector3XmlString(BBMin));
-            CacheDatXml.SelfClosingTag(sb, indent, "bbMax " + FloatUtil.GetVector3XmlString(BBMax));
-            CacheDatXml.ValueTag(sb, indent, "unk01", Unk01.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk02", Unk02.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk03", Unk03.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk11", Unk11.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk12", Unk12.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk13", Unk13.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk14", Unk14.ToString());
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
-            Parent = XmlMeta.GetHash(Xml.GetChildInnerText(node, "parent"));
-            Position = Xml.GetChildVector3Attributes(node, "position");
-            Orientation = Xml.GetChildVector4Attributes(node, "rotation").ToQuaternion();
-            BBMin = Xml.GetChildVector3Attributes(node, "bbMin");
-            BBMax = Xml.GetChildVector3Attributes(node, "bbMax");
-            Unk01 = Xml.GetChildUIntAttribute(node, "unk01");
-            Unk02 = Xml.GetChildUIntAttribute(node, "unk02");
-            Unk03 = Xml.GetChildUIntAttribute(node, "unk03");
-            Unk11 = Xml.GetChildULongAttribute(node, "unk11");
-            Unk12 = Xml.GetChildULongAttribute(node, "unk12");
-            Unk13 = Xml.GetChildULongAttribute(node, "unk13");
-            Unk14 = Xml.GetChildULongAttribute(node, "unk14");
-        }
-
 
         public override string ToString()
         {
-            return Unk01.ToString() + ", " +
-                   Unk02.ToString() + ", " +
-                   Unk03.ToString() + ", " +
-                   Name.ToString() + ", " +
-                   Parent.ToString() + ", " +
-                   Position.ToString() + ", " +
-                   Orientation.ToString() + ", " +
-                   BBMin.ToString() + ", " +
-                   BBMax.ToString() + ", " +
-                   Unk11.ToString() + ", " +
-                   Unk12.ToString() + ", " +
-                   Unk13.ToString() + ", " +
-                   Unk14.ToString();
+            return Unk01 + ", " +
+                   Unk02 + ", " +
+                   Unk03 + ", " +
+                   Name + ", " +
+                   Parent + ", " +
+                   Position + ", " +
+                   Orientation + ", " +
+                   BBMin + ", " +
+                   BBMax + ", " +
+                   Unk11 + ", " +
+                   Unk12 + ", " +
+                   Unk13 + ", " +
+                   Unk14;
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class MapDataStoreNode : IMetaXmlItem
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class MapDataStoreNode : IMetaXmlItem
     {
-        public MetaHash Name { get; set; }
-        public MetaHash ParentName { get; set; }
-        public uint ContentFlags { get; set; }
-        public Vector3 streamingExtentsMin { get; set; }
-        public Vector3 streamingExtentsMax { get; set; }
-        public Vector3 entitiesExtentsMin { get; set; }
-        public Vector3 entitiesExtentsMax { get; set; }
-        public byte Unk1 { get; set; }
-        public byte Unk2 { get; set; }
-        public byte Unk3 { get; set; }
-        public byte Unk4 { get; set; }
-
-        public MapDataStoreNodeExtra UnkExtra { get; set; }
-
-        public MapDataStoreNode[] Children { get; set; }
         private List<MapDataStoreNode> ChildrenList; //used when building the array
-
-        public CInteriorProxy[] InteriorProxies { get; set; }
         private List<CInteriorProxy> InteriorProxyList;
 
         public MapDataStoreNode()
-        { }
+        {
+        }
+
         public MapDataStoreNode(YmapFile ymap)
         {
             Name = ymap._CMapData.name;
@@ -814,6 +786,7 @@ namespace CodeWalker.GameFiles
             entitiesExtentsMin = ymap._CMapData.entitiesExtentsMin;
             entitiesExtentsMax = ymap._CMapData.entitiesExtentsMax;
         }
+
         public MapDataStoreNode(BinaryReader br)
         {
             Name = new MetaHash(br.ReadUInt32());
@@ -829,19 +802,79 @@ namespace CodeWalker.GameFiles
             Unk4 = br.ReadByte();
 
             if (Unk1 != 0)
-            { }
+            {
+            }
+
             if (Unk2 != 0)
-            { }
+            {
+            }
+
             if (Unk3 != 0)
-            { }
+            {
+            }
+
             if (Unk4 != 0)
-            { } //no hits here now..
+            {
+            } //no hits here now..
 
             //if (Unk4 == 0xFE)
             //{
             //    //this seems to never be hit anymore...
             //    UnkExtra = new MapDataStoreNodeExtra(br);
             //}
+        }
+
+        public MetaHash Name { get; set; }
+        public MetaHash ParentName { get; set; }
+        public uint ContentFlags { get; set; }
+        public Vector3 streamingExtentsMin { get; set; }
+        public Vector3 streamingExtentsMax { get; set; }
+        public Vector3 entitiesExtentsMin { get; set; }
+        public Vector3 entitiesExtentsMax { get; set; }
+        public byte Unk1 { get; set; }
+        public byte Unk2 { get; set; }
+        public byte Unk3 { get; set; }
+        public byte Unk4 { get; set; }
+
+        public MapDataStoreNodeExtra UnkExtra { get; set; }
+
+        public MapDataStoreNode[] Children { get; set; }
+
+        public CInteriorProxy[] InteriorProxies { get; set; }
+
+
+        public void WriteXml(StringBuilder sb, int indent)
+        {
+            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
+            CacheDatXml.StringTag(sb, indent, "parent", CacheDatXml.HashString(ParentName));
+            CacheDatXml.ValueTag(sb, indent, "contentFlags", ContentFlags.ToString());
+            CacheDatXml.SelfClosingTag(sb, indent,
+                "streamingExtentsMin " + FloatUtil.GetVector3XmlString(streamingExtentsMin));
+            CacheDatXml.SelfClosingTag(sb, indent,
+                "streamingExtentsMax " + FloatUtil.GetVector3XmlString(streamingExtentsMax));
+            CacheDatXml.SelfClosingTag(sb, indent,
+                "entitiesExtentsMin " + FloatUtil.GetVector3XmlString(entitiesExtentsMin));
+            CacheDatXml.SelfClosingTag(sb, indent,
+                "entitiesExtentsMax " + FloatUtil.GetVector3XmlString(entitiesExtentsMax));
+            CacheDatXml.ValueTag(sb, indent, "unk1", Unk1.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk2", Unk2.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk3", Unk3.ToString());
+            CacheDatXml.ValueTag(sb, indent, "unk4", Unk4.ToString());
+        }
+
+        public void ReadXml(XmlNode node)
+        {
+            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
+            ParentName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "parent"));
+            ContentFlags = Xml.GetChildUIntAttribute(node, "contentFlags");
+            streamingExtentsMin = Xml.GetChildVector3Attributes(node, "streamingExtentsMin");
+            streamingExtentsMax = Xml.GetChildVector3Attributes(node, "streamingExtentsMax");
+            entitiesExtentsMin = Xml.GetChildVector3Attributes(node, "entitiesExtentsMin");
+            entitiesExtentsMax = Xml.GetChildVector3Attributes(node, "entitiesExtentsMax");
+            Unk1 = (byte)Xml.GetChildUIntAttribute(node, "unk1");
+            Unk2 = (byte)Xml.GetChildUIntAttribute(node, "unk2");
+            Unk3 = (byte)Xml.GetChildUIntAttribute(node, "unk3");
+            Unk4 = (byte)Xml.GetChildUIntAttribute(node, "unk4");
         }
 
         public void Write(DataWriter w)
@@ -869,44 +902,12 @@ namespace CodeWalker.GameFiles
         }
 
 
-        public void WriteXml(StringBuilder sb, int indent)
-        {
-            CacheDatXml.StringTag(sb, indent, "name", CacheDatXml.HashString(Name));
-            CacheDatXml.StringTag(sb, indent, "parent", CacheDatXml.HashString(ParentName));
-            CacheDatXml.ValueTag(sb, indent, "contentFlags", ContentFlags.ToString());
-            CacheDatXml.SelfClosingTag(sb, indent, "streamingExtentsMin " + FloatUtil.GetVector3XmlString(streamingExtentsMin));
-            CacheDatXml.SelfClosingTag(sb, indent, "streamingExtentsMax " + FloatUtil.GetVector3XmlString(streamingExtentsMax));
-            CacheDatXml.SelfClosingTag(sb, indent, "entitiesExtentsMin " + FloatUtil.GetVector3XmlString(entitiesExtentsMin));
-            CacheDatXml.SelfClosingTag(sb, indent, "entitiesExtentsMax " + FloatUtil.GetVector3XmlString(entitiesExtentsMax));
-            CacheDatXml.ValueTag(sb, indent, "unk1", Unk1.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk2", Unk2.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk3", Unk3.ToString());
-            CacheDatXml.ValueTag(sb, indent, "unk4", Unk4.ToString());
-        }
-        public void ReadXml(XmlNode node)
-        {
-            Name = XmlMeta.GetHash(Xml.GetChildInnerText(node, "name"));
-            ParentName = XmlMeta.GetHash(Xml.GetChildInnerText(node, "parent"));
-            ContentFlags = Xml.GetChildUIntAttribute(node, "contentFlags");
-            streamingExtentsMin = Xml.GetChildVector3Attributes(node, "streamingExtentsMin");
-            streamingExtentsMax = Xml.GetChildVector3Attributes(node, "streamingExtentsMax");
-            entitiesExtentsMin = Xml.GetChildVector3Attributes(node, "entitiesExtentsMin");
-            entitiesExtentsMax = Xml.GetChildVector3Attributes(node, "entitiesExtentsMax");
-            Unk1 = (byte)Xml.GetChildUIntAttribute(node, "unk1");
-            Unk2 = (byte)Xml.GetChildUIntAttribute(node, "unk2");
-            Unk3 = (byte)Xml.GetChildUIntAttribute(node, "unk3");
-            Unk4 = (byte)Xml.GetChildUIntAttribute(node, "unk4");
-        }
-
-
         public void AddChildToList(MapDataStoreNode child)
         {
-            if (ChildrenList == null)
-            {
-                ChildrenList = new List<MapDataStoreNode>();
-            }
+            if (ChildrenList == null) ChildrenList = new List<MapDataStoreNode>();
             ChildrenList.Add(child);
         }
+
         public void ChildrenListToArray()
         {
             if (ChildrenList != null)
@@ -915,14 +916,13 @@ namespace CodeWalker.GameFiles
                 ChildrenList = null; //plz get this GC
             }
         }
+
         public void AddInteriorToList(CInteriorProxy iprx)
         {
-            if (InteriorProxyList == null)
-            {
-                InteriorProxyList = new List<CInteriorProxy>();
-            }
+            if (InteriorProxyList == null) InteriorProxyList = new List<CInteriorProxy>();
             InteriorProxyList.Add(iprx);
         }
+
         public void InteriorProxyListToArray()
         {
             if (InteriorProxyList != null)
@@ -934,21 +934,22 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return Name.ToString() + ", " +
-                   ParentName.ToString() + ", " +
-                   ContentFlags.ToString() + ", " +
-                   streamingExtentsMin.ToString() + ", " +
-                   streamingExtentsMax.ToString() + ", " +
-                   entitiesExtentsMin.ToString() + ", " +
-                   entitiesExtentsMax.ToString();// + ", " +
+            return Name + ", " +
+                   ParentName + ", " +
+                   ContentFlags + ", " +
+                   streamingExtentsMin + ", " +
+                   streamingExtentsMax + ", " +
+                   entitiesExtentsMin + ", " +
+                   entitiesExtentsMax; // + ", " +
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class MapDataStoreNodeExtra
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class MapDataStoreNodeExtra
     {
         public uint Unk01; //0
         public byte[] Unk02; //1 - 16  (60 bytes)
-        public uint Unk03;//16
+        public uint Unk03; //16
         public uint Unk04;
         public uint Unk05;
         public uint Unk06;
@@ -957,34 +958,16 @@ namespace CodeWalker.GameFiles
         public uint Unk09;
         public uint Unk10;
 
-        public string Unk02str
+        public MapDataStoreNodeExtra()
         {
-            get
-            {
-                StringBuilder sb = new StringBuilder();
-                if (Unk02 != null)
-                {
-                    for (int i = 0; i < Unk02.Length; i++)
-                    {
-                        if (Unk02[i] == 0) break;
-                        sb.Append((char)Unk02[i]);
-                    }
-                }
-                return sb.ToString();
-            }
         }
 
-        public MapDataStoreNodeExtra() 
-        { }
         public MapDataStoreNodeExtra(BinaryReader br)
         {
             Unk01 = br.ReadUInt32();
 
             Unk02 = new byte[60];
-            for (int i = 0; i < 60; i++)
-            {
-                Unk02[i] = br.ReadByte();
-            }
+            for (int i = 0; i < 60; i++) Unk02[i] = br.ReadByte();
             Unk03 = br.ReadUInt32();
             Unk04 = br.ReadUInt32();
             Unk05 = br.ReadUInt32();
@@ -993,17 +976,29 @@ namespace CodeWalker.GameFiles
             Unk08 = br.ReadUInt32();
             Unk09 = br.ReadUInt32();
             Unk10 = br.ReadUInt32();
+        }
 
+        public string Unk02str
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                if (Unk02 != null)
+                    for (int i = 0; i < Unk02.Length; i++)
+                    {
+                        if (Unk02[i] == 0) break;
+                        sb.Append((char)Unk02[i]);
+                    }
+
+                return sb.ToString();
+            }
         }
 
         public void Write(DataWriter w)
         {
             w.Write(Unk01);
             int alen = Unk02?.Length ?? 0;
-            for (int i = 0; i < 60; i++)
-            {
-                w.Write((i < alen) ? Unk02[i] : (byte)0);
-            }
+            for (int i = 0; i < 60; i++) w.Write(i < alen ? Unk02[i] : (byte)0);
             w.Write(Unk03);
             w.Write(Unk04);
             w.Write(Unk05);
@@ -1016,15 +1011,13 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return Unk01.ToString() + ", " + Unk02str;
+            return Unk01 + ", " + Unk02str;
         }
     }
 
 
-
     public class CacheDatXml : MetaXmlBase
     {
-
         public static string GetXml(CacheDatFile cdf)
         {
             StringBuilder sb = new StringBuilder();
@@ -1043,14 +1036,11 @@ namespace CodeWalker.GameFiles
 
             return sb.ToString();
         }
-
-
     }
 
 
     public class XmlCacheDat
     {
-
         public static CacheDatFile GetCacheDat(string xml)
         {
             XmlDocument doc = new XmlDocument();
@@ -1064,8 +1054,5 @@ namespace CodeWalker.GameFiles
             cdf.ReadXml(doc.DocumentElement);
             return cdf;
         }
-
-
     }
-
 }

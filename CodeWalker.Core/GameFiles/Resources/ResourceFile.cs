@@ -28,13 +28,10 @@ using System.ComponentModel;
 
 namespace CodeWalker.GameFiles
 {
-
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ResourceFileBase : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ResourceFileBase : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 16; }
-        }
+        public override long BlockLength => 16;
 
         // structure data
         public uint FileVFT { get; set; }
@@ -45,37 +42,37 @@ namespace CodeWalker.GameFiles
         public ResourcePagesInfo FilePagesInfo { get; set; }
 
         /// <summary>
-        /// Reads the data-block from a stream.
+        ///     Reads the data-block from a stream.
         /// </summary>
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.FileVFT = reader.ReadUInt32();
-            this.FileUnknown = reader.ReadUInt32();
-            this.FilePagesInfoPointer = reader.ReadUInt64();
+            FileVFT = reader.ReadUInt32();
+            FileUnknown = reader.ReadUInt32();
+            FilePagesInfoPointer = reader.ReadUInt64();
 
             // read reference data
-            this.FilePagesInfo = reader.ReadBlockAt<ResourcePagesInfo>(
-                this.FilePagesInfoPointer // offset
+            FilePagesInfo = reader.ReadBlockAt<ResourcePagesInfo>(
+                FilePagesInfoPointer // offset
             );
         }
 
         /// <summary>
-        /// Writes the data-block to a stream.
+        ///     Writes the data-block to a stream.
         /// </summary>
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // update structure data
-            this.FilePagesInfoPointer = (ulong)(this.FilePagesInfo != null ? this.FilePagesInfo.FilePosition : 0);
+            FilePagesInfoPointer = (ulong)(FilePagesInfo != null ? FilePagesInfo.FilePosition : 0);
 
             // write structure data
-            writer.Write(this.FileVFT);
-            writer.Write(this.FileUnknown);
-            writer.Write(this.FilePagesInfoPointer);
+            writer.Write(FileVFT);
+            writer.Write(FileUnknown);
+            writer.Write(FilePagesInfoPointer);
         }
 
         /// <summary>
-        /// Returns a list of data blocks which are referenced by this block.
+        ///     Returns a list of data blocks which are referenced by this block.
         /// </summary>
         public override IResourceBlock[] GetReferences()
         {
@@ -86,48 +83,49 @@ namespace CodeWalker.GameFiles
     }
 
 
-    [TypeConverter(typeof(ExpandableObjectConverter))] public class ResourcePagesInfo : ResourceSystemBlock
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ResourcePagesInfo : ResourceSystemBlock
     {
-        public override long BlockLength
-        {
-            get { return 16 + (8 * (SystemPagesCount + GraphicsPagesCount)); }
-        }
+        public override long BlockLength => 16 + 8 * (SystemPagesCount + GraphicsPagesCount);
 
         // structure data
         public uint Unknown_0h { get; set; }
         public uint Unknown_4h { get; set; }
-        public byte SystemPagesCount { get; set; } = 128;//default sizing to ensure there is enough space allocated when writing files
+
+        public byte SystemPagesCount { get; set; } =
+            128; //default sizing to ensure there is enough space allocated when writing files
+
         public byte GraphicsPagesCount { get; set; }
         public ushort Unknown_Ah { get; set; }
         public uint Unknown_Ch { get; set; }
 
         /// <summary>
-        /// Reads the data-block from a stream.
+        ///     Reads the data-block from a stream.
         /// </summary>
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
             // read structure data
-            this.Unknown_0h = reader.ReadUInt32();
-            this.Unknown_4h = reader.ReadUInt32();
-            this.SystemPagesCount = reader.ReadByte();
-            this.GraphicsPagesCount = reader.ReadByte();
-            this.Unknown_Ah = reader.ReadUInt16();
-            this.Unknown_Ch = reader.ReadUInt32();
+            Unknown_0h = reader.ReadUInt32();
+            Unknown_4h = reader.ReadUInt32();
+            SystemPagesCount = reader.ReadByte();
+            GraphicsPagesCount = reader.ReadByte();
+            Unknown_Ah = reader.ReadUInt16();
+            Unknown_Ch = reader.ReadUInt32();
             reader.Position += 8 * (SystemPagesCount + GraphicsPagesCount);
         }
 
         /// <summary>
-        /// Writes the data-block to a stream.
+        ///     Writes the data-block to a stream.
         /// </summary>
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
             // write structure data
-            writer.Write(this.Unknown_0h);
-            writer.Write(this.Unknown_4h);
-            writer.Write(this.SystemPagesCount);
-            writer.Write(this.GraphicsPagesCount);
-            writer.Write(this.Unknown_Ah);
-            writer.Write(this.Unknown_Ch);
+            writer.Write(Unknown_0h);
+            writer.Write(Unknown_4h);
+            writer.Write(SystemPagesCount);
+            writer.Write(GraphicsPagesCount);
+            writer.Write(Unknown_Ah);
+            writer.Write(Unknown_Ch);
 
             int pad = 8 * (SystemPagesCount + GraphicsPagesCount);
             writer.Write(new byte[pad]);
@@ -135,9 +133,7 @@ namespace CodeWalker.GameFiles
 
         public override string ToString()
         {
-            return SystemPagesCount.ToString() + ", " + GraphicsPagesCount.ToString();
+            return SystemPagesCount + ", " + GraphicsPagesCount;
         }
     }
-
-
 }

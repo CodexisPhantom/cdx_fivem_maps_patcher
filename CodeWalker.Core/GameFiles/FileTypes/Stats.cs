@@ -2,12 +2,10 @@
 
 namespace CodeWalker.GameFiles
 {
-
-
     public static class StatsNames
     {
         public static Dictionary<uint, string> Index = new Dictionary<uint, string>();
-        private static object syncRoot = new object();
+        private static readonly object syncRoot = new object();
 
         public static volatile bool FullIndexBuilt = false;
 
@@ -31,6 +29,7 @@ namespace CodeWalker.GameFiles
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -45,6 +44,7 @@ namespace CodeWalker.GameFiles
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -53,28 +53,21 @@ namespace CodeWalker.GameFiles
             string res;
             lock (syncRoot)
             {
-                if (!Index.TryGetValue(hash, out res))
-                {
-                    res = hash.ToString();
-                }
+                if (!Index.TryGetValue(hash, out res)) res = hash.ToString();
             }
+
             return res;
         }
+
         public static string TryGetString(uint hash)
         {
             string res;
             lock (syncRoot)
             {
-                if (!Index.TryGetValue(hash, out res))
-                {
-                    res = string.Empty;
-                }
+                if (!Index.TryGetValue(hash, out res)) res = string.Empty;
             }
+
             return res;
         }
-
     }
-
-
-
 }
