@@ -1,8 +1,9 @@
 ﻿using cdx_fivem_maps_patcher.Classes;
+using CodeWalker.GameFiles;
 
 namespace cdx_fivem_maps_patcher.Pages;
 
-public class Backups(string path):Page
+public class Backups(string path) : Page
 {
     public void Show()
     {
@@ -20,6 +21,9 @@ public class Backups(string path):Page
                     RemoveBackupMenu();
                     break;
                 case "3":
+                    RemoveAllBackupMenu();
+                    break;
+                case "4":
                     return;
                 default:
                     Console.WriteLine(Messages.Get("invalid_entry"));
@@ -28,11 +32,34 @@ public class Backups(string path):Page
         }
     }
 
+    public static void SaveYmap(string path, YmapFile ymap)
+    {
+        string resource = Path.Combine(path, "cdx_fivem_maps_patcher");
+        if (!Directory.Exists(resource))
+            Directory.CreateDirectory(resource);
+
+        string stream = Path.Combine(resource, "stream");
+        if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
+
+        string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
+        if (File.Exists(fxmanifestPath))
+            File.Copy(fxmanifestPath, resource + Path.DirectorySeparatorChar + "fxmanifest.lua", true);
+
+        byte[]? data = ymap.Save();
+        string fileName = Path.Combine(stream, ymap.Name);
+
+        if (File.Exists(fileName)) File.Delete(fileName);
+
+        File.Create(fileName).Close();
+        if (data != null) File.WriteAllBytes(fileName, data);
+    }
+
     private static void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));
         Console.WriteLine(Messages.Get("backups_menu_list"));
         Console.WriteLine(Messages.Get("backups_menu_remove"));
+        Console.WriteLine(Messages.Get("backups_menu_remove_all"));
         Console.WriteLine(Messages.Get("backups_menu_return"));
     }
 
@@ -95,6 +122,35 @@ public class Backups(string path):Page
             }
         else
             Console.WriteLine(Messages.Get("delete_cancelled"));
+    }
+
+    private void RemoveAllBackupMenu()
+    {
+        List<string> backups = GetAllBackups();
+        if (backups.Count == 0)
+        {
+            Console.WriteLine(Messages.Get("no_backups_to_remove"));
+            return;
+        }
+
+        Console.WriteLine(Messages.Get("confirm_delete_all"));
+        string? confirmation = Console.ReadLine();
+        if ((Messages.Lang == "fr" && confirmation?.Trim().ToLower() == "o") ||
+            (Messages.Lang == "en" && confirmation?.Trim().ToLower() == "y"))
+        {
+            foreach (string backup in backups)
+            {
+                string originalFile = backup.EndsWith(".backup") ? backup[..^7] : backup;
+                if (File.Exists(originalFile)) File.Delete(originalFile);
+                File.Move(backup, originalFile);
+            }
+
+            Console.WriteLine(Messages.Get("all_backups_deleted"));
+        }
+        else
+        {
+            Console.WriteLine(Messages.Get("delete_cancelled"));
+        }
     }
 
     private List<string> GetDistinctBackups()

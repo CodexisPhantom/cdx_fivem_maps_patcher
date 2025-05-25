@@ -1220,7 +1220,7 @@ namespace CodeWalker.GameFiles
 
 
     [TC(typeof(EXP))]
-    public struct MetaHash
+    public struct MetaHash : IEquatable<MetaHash>
     {
         public uint Hash { get; set; }
 
@@ -1260,6 +1260,21 @@ namespace CodeWalker.GameFiles
         public static implicit operator MetaHash(uint v)
         {
             return new MetaHash(v);
+        }
+
+        public bool Equals(MetaHash other)
+        {
+            return Hash == other.Hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MetaHash other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)Hash;
         }
     }
 

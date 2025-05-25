@@ -3,7 +3,7 @@ using CodeWalker.GameFiles;
 
 namespace cdx_fivem_maps_patcher.Patcher;
 
-public abstract class Patcher(GameFileCache gameFileCache, string serverPath):Page
+public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : Page
 {
     internal readonly GameFileCache GameFileCache = gameFileCache;
     internal readonly RpfManager RpfManager = new();

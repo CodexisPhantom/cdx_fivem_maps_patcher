@@ -11,4 +11,10 @@
         <ProjectReference Include="..\CodeWalker.Core\CodeWalker.Core.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="Resources\fxmanifest.lua">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>
