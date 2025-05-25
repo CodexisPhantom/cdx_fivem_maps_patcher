@@ -8,13 +8,6 @@ namespace cdx_fivem_maps_patcher.Patcher;
 
 public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patcher(gameFileCache, serverPath)
 {
-    protected override void PrintMenu()
-    {
-        Console.WriteLine(Messages.Get("main_menu_title"));
-        Console.WriteLine(Messages.Get("patch_menu_patch"));
-        Console.WriteLine(Messages.Get("patch_menu_return"));
-    }
-
     protected override void Patch()
     {
         Dictionary<string, List<string>> duplicates = FindDuplicateYmapFiles(ServerPath);
@@ -89,7 +82,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         foreach (string filePath in files)
             try
             {
-                YmapFile ymap = OpenFile(filePath);
+                YmapFile ymap = OpenYmapFile(filePath);
                 ymapFiles.Add(ymap);
                 File.Move(filePath, filePath + ".backup", true);
             }

@@ -226,14 +226,11 @@ namespace CodeWalker.GameFiles
             string pathl = path.ToLowerInvariant();
             if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry)) return entry;
             EntryDict.TryGetValue(pathl, out entry);
-            if (entry == null)
-            {
-                pathl = pathl.Replace("/", "\\");
-                pathl = pathl.Replace("common:", "common.rpf");
-                if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry)) return entry;
-                EntryDict.TryGetValue(pathl, out entry);
-            }
-
+            if (entry != null) return entry;
+            pathl = pathl.Replace("/", "\\");
+            pathl = pathl.Replace("common:", "common.rpf");
+            if (EnableMods && ModEntryDict.TryGetValue(pathl, out entry)) return entry;
+            EntryDict.TryGetValue(pathl, out entry);
             return entry;
         }
 

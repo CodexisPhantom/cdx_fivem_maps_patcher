@@ -31,8 +31,9 @@ public static class Messages
             ["all_backups_deleted"] = "Toutes les sauvegardes supprimées.",
             ["delete_cancelled"] = "Suppression annulée.",
             ["delete_error"] = "Erreur lors de la suppression : {0}",
-            ["patch_menu_patch"] = "[1] Patch ymaps",
-            ["patch_menu_return"] = "[2] Retourner",
+            ["patch_menu_ymaps"] = "[1] Patch les fichiers ymaps",
+            ["patch_menu_ybns"] = "[2] Patch les fichiers ybn",
+            ["patch_menu_return"] = "[3] Retourner",
             ["no_duplicates_found"] = "Aucun fichier .ymap dupliqué trouvé.",
             ["duplicates_found"] = "Fichiers .ymap dupliqués trouvés :"
         },
@@ -63,8 +64,9 @@ public static class Messages
             ["all_backups_deleted"] = "All backups deleted.",
             ["delete_cancelled"] = "Deletion cancelled.",
             ["delete_error"] = "Error while deleting: {0}",
-            ["patch_menu_patch"] = "[1] Patch ymaps",
-            ["patch_menu_return"] = "[2] Return",
+            ["patch_menu_ymaps"] = "[1] Patch ymap files",
+            ["patch_menu_ybns"] = "[2] Patch ybn files",
+            ["patch_menu_return"] = "[3] Return",
             ["no_duplicates_found"] = "No duplicate .ymap files found.",
             ["duplicates_found"] = "Duplicate .ymap files found:"
         }

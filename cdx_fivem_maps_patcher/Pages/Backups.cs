@@ -40,13 +40,41 @@ public class Backups(string path) : Page
 
         string stream = Path.Combine(resource, "stream");
         if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
+        
+        string ymapFolder = Path.Combine(stream, "ymaps");
+        if (!Directory.Exists(ymapFolder)) Directory.CreateDirectory(ymapFolder);
 
         string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
         if (File.Exists(fxmanifestPath))
             File.Copy(fxmanifestPath, resource + Path.DirectorySeparatorChar + "fxmanifest.lua", true);
 
         byte[]? data = ymap.Save();
-        string fileName = Path.Combine(stream, ymap.Name);
+        string fileName = Path.Combine(ymapFolder, ymap.Name);
+
+        if (File.Exists(fileName)) File.Delete(fileName);
+
+        File.Create(fileName).Close();
+        if (data != null) File.WriteAllBytes(fileName, data);
+    }
+    
+    public static void SaveYbn(string path, YbnFile ybn)
+    {
+        string resource = Path.Combine(path, "cdx_fivem_maps_patcher");
+        if (!Directory.Exists(resource))
+            Directory.CreateDirectory(resource);
+
+        string stream = Path.Combine(resource, "stream");
+        if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
+        
+        string ybnFolder = Path.Combine(stream, "ybn");
+        if (!Directory.Exists(ybnFolder)) Directory.CreateDirectory(ybnFolder);
+
+        string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
+        if (File.Exists(fxmanifestPath))
+            File.Copy(fxmanifestPath, resource + Path.DirectorySeparatorChar + "fxmanifest.lua", true);
+
+        byte[]? data = ybn.Save();
+        string fileName = Path.Combine(ybnFolder, ybn.Name);
 
         if (File.Exists(fileName)) File.Delete(fileName);
 

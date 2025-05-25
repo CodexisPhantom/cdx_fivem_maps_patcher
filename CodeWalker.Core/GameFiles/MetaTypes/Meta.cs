@@ -1241,8 +1241,7 @@ namespace CodeWalker.GameFiles
         public override string ToString()
         {
             string str = JenkIndex.TryGetString(Hash);
-            if (!string.IsNullOrEmpty(str)) return str;
-            if (MetaNames.TryGetString(Hash, out str)) return str;
+            if (!string.IsNullOrEmpty(str) || MetaNames.TryGetString(Hash, out str)) return str;
             return GlobalText.GetString(Hash);
         }
 

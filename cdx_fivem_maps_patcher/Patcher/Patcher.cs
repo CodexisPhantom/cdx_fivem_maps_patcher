@@ -19,9 +19,10 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
             switch (input)
             {
                 case "1":
+                case "2":
                     Patch();
                     break;
-                case "2":
+                case "3":
                     return;
                 default:
                     Console.WriteLine(Messages.Get("invalid_entry"));
@@ -30,10 +31,9 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         }
     }
 
-    protected abstract void PrintMenu();
     protected abstract void Patch();
 
-    internal static YmapFile OpenFile(string path)
+    internal static YmapFile OpenYmapFile(string path)
     {
         byte[] data = File.ReadAllBytes(path);
         string name = new FileInfo(path).Name;
@@ -41,6 +41,24 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         YmapFile? ymap = RpfFile.GetFile<YmapFile>(fileEntry, data);
         ymap.FilePath = path;
         return ymap;
+    }
+    
+    internal static YbnFile OpenYbnFile(string path)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        string name = new FileInfo(path).Name;
+        RpfFileEntry fileEntry = CreateFileEntry(name, path, ref data);
+        YbnFile? ybn = RpfFile.GetFile<YbnFile>(fileEntry, data);
+        ybn.FilePath = path;
+        return ybn;
+    }
+    
+    private static void PrintMenu()
+    {
+        Console.WriteLine(Messages.Get("main_menu_title"));
+        Console.WriteLine(Messages.Get("patch_menu_ymaps"));
+        Console.WriteLine(Messages.Get("patch_menu_ybns"));
+        Console.WriteLine(Messages.Get("patch_menu_return"));
     }
 
     private static RpfFileEntry CreateFileEntry(string name, string path, ref byte[] data)
