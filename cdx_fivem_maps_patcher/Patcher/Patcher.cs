@@ -42,7 +42,7 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         ymap.FilePath = path;
         return ymap;
     }
-    
+
     internal static YbnFile OpenYbnFile(string path)
     {
         byte[] data = File.ReadAllBytes(path);
@@ -52,7 +52,7 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         ybn.FilePath = path;
         return ybn;
     }
-    
+
     private static void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));

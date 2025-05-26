@@ -14,7 +14,7 @@ public class YmapDistantLodLightComparer : IEqualityComparer<MetaVECTOR3>
                && Math.Abs(aPos.Y - bPos.Y) < 0.01f
                && Math.Abs(aPos.Z - bPos.Z) < 0.01f;
     }
-    
+
     public int GetHashCode(MetaVECTOR3 obj)
     {
         unchecked

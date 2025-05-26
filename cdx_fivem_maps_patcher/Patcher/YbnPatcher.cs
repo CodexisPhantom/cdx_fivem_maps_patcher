@@ -14,10 +14,11 @@ public class YbnPatcher(GameFileCache gameFileCache, string serverPath) : Patche
             Console.WriteLine(Messages.Get("no_duplicates_found"));
             return;
         }
+
         Console.WriteLine(Messages.Get("duplicates_found"));
         foreach (KeyValuePair<string, List<string>> entry in duplicates) PatchYbn(entry.Key, entry.Value);
     }
-    
+
     private static Dictionary<string, List<string>> FindDuplicateYbnFiles(string directoryPath)
     {
         Dictionary<string, List<string>> nameToFiles = new(StringComparer.OrdinalIgnoreCase);
@@ -27,7 +28,9 @@ public class YbnPatcher(GameFileCache gameFileCache, string serverPath) : Patche
             if (!Directory.Exists(directoryPath))
                 throw new DirectoryNotFoundException($"Directory {directoryPath} does not exist.");
 
-            string[] ymapFiles = Directory.GetFiles(directoryPath, "*.ybn", SearchOption.AllDirectories).Where(f => !f.Contains(Path.DirectorySeparatorChar + "cdx_fivem_maps_patcher" + Path.DirectorySeparatorChar)).ToArray();
+            string[] ymapFiles = Directory.GetFiles(directoryPath, "*.ybn", SearchOption.AllDirectories).Where(f =>
+                    !f.Contains(Path.DirectorySeparatorChar + "cdx_fivem_maps_patcher" + Path.DirectorySeparatorChar))
+                .ToArray();
             if (ymapFiles.Length == 0) return nameToFiles;
 
             foreach (string filePath in ymapFiles)
@@ -62,7 +65,10 @@ public class YbnPatcher(GameFileCache gameFileCache, string serverPath) : Patche
         Console.WriteLine($"Patching {name}...");
         Dictionary<uint, RpfFileEntry> ybnDict = GameFileCache.YbnDict;
 
-        uint ybnHash = (from entry in GameFileCache.YbnDict where entry.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase) select entry.Key).FirstOrDefault();
+        uint ybnHash =
+            (from entry in GameFileCache.YbnDict
+                where entry.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                select entry.Key).FirstOrDefault();
         if (ybnHash == 0) return;
 
         RpfFileEntry ybnEntry = ybnDict[ybnHash];
@@ -83,8 +89,7 @@ public class YbnPatcher(GameFileCache gameFileCache, string serverPath) : Patche
 
         if (ybnFiles.Count == 0) return;
 
-        
-        
+
         Backups.SaveYbn(ServerPath, mainYbn);
     }
 }

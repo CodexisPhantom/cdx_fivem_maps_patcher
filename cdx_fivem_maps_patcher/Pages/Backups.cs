@@ -40,7 +40,7 @@ public class Backups(string path) : Page
 
         string stream = Path.Combine(resource, "stream");
         if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
-        
+
         string ymapFolder = Path.Combine(stream, "ymaps");
         if (!Directory.Exists(ymapFolder)) Directory.CreateDirectory(ymapFolder);
 
@@ -56,7 +56,7 @@ public class Backups(string path) : Page
         File.Create(fileName).Close();
         if (data != null) File.WriteAllBytes(fileName, data);
     }
-    
+
     public static void SaveYbn(string path, YbnFile ybn)
     {
         string resource = Path.Combine(path, "cdx_fivem_maps_patcher");
@@ -65,7 +65,7 @@ public class Backups(string path) : Page
 
         string stream = Path.Combine(resource, "stream");
         if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
-        
+
         string ybnFolder = Path.Combine(stream, "ybn");
         if (!Directory.Exists(ybnFolder)) Directory.CreateDirectory(ybnFolder);
 

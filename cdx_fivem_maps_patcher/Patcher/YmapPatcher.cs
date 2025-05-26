@@ -72,7 +72,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             (from entry in GameFileCache.YmapDict
                 where entry.Value.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
                 select entry.Key).FirstOrDefault();
-        
+
         if (ymapHash == 0) return;
 
         RpfFileEntry ymapEntry = ymapDict[ymapHash];
@@ -94,7 +94,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         if (ymapFiles.Count == 0) return;
 
         Console.WriteLine($"Patching {name}...");
-        
+
         if (mainYmap.AllEntities != null && mainYmap.AllEntities.Length != 0)
         {
             YmapEntityDef[] result = MergeYmapEntities(mainYmap, ymapFiles);
@@ -104,30 +104,33 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
 
         if (mainYmap.BoxOccluders != null && mainYmap.BoxOccluders.Length != 0)
-            mainYmap.BoxOccluders = MergeWithRemovals(mainYmap, ymapFiles, y => y.BoxOccluders, new YmapBoxOccluderComparer());
+            mainYmap.BoxOccluders =
+                MergeWithRemovals(mainYmap, ymapFiles, y => y.BoxOccluders, new YmapBoxOccluderComparer());
 
         if (mainYmap.OccludeModels != null && mainYmap.OccludeModels.Length != 0)
-            mainYmap.OccludeModels = MergeWithRemovals(mainYmap, ymapFiles, y => y.OccludeModels, new YmapOccludeModelComparer());
+            mainYmap.OccludeModels =
+                MergeWithRemovals(mainYmap, ymapFiles, y => y.OccludeModels, new YmapOccludeModelComparer());
 
         if (mainYmap.LODLights is { LodLights: not null } && mainYmap.LODLights.LodLights.Length != 0)
-        {
-            mainYmap.LODLights.LodLights = MergeWithRemovals(mainYmap, ymapFiles, y => y.LODLights.LodLights, new YmapLodLightComparer());
-        }
-        
+            mainYmap.LODLights.LodLights = MergeWithRemovals(mainYmap, ymapFiles, y => y.LODLights.LodLights,
+                new YmapLodLightComparer());
+
         if (mainYmap.DistantLODLights is { positions: not null } && mainYmap.DistantLODLights.positions.Length != 0)
-        {
-            mainYmap.DistantLODLights.positions = MergeWithRemovals(mainYmap, ymapFiles, y => y.DistantLODLights.positions, new YmapDistantLodLightComparer());
-        }
+            mainYmap.DistantLODLights.positions = MergeWithRemovals(mainYmap, ymapFiles,
+                y => y.DistantLODLights.positions, new YmapDistantLodLightComparer());
 
         if (mainYmap.CarGenerators != null && mainYmap.CarGenerators.Length != 0)
-            mainYmap.CarGenerators = MergeWithRemovals(mainYmap, ymapFiles, y => y.CarGenerators, new YmapCarGenComparer());
+            mainYmap.CarGenerators =
+                MergeWithRemovals(mainYmap, ymapFiles, y => y.CarGenerators, new YmapCarGenComparer());
 
         if (mainYmap.GrassInstanceBatches != null && mainYmap.GrassInstanceBatches.Length != 0)
-            mainYmap.GrassInstanceBatches = MergeWithRemovals(mainYmap, ymapFiles, y => y.GrassInstanceBatches, new YmapGrassBatchComparer());
+            mainYmap.GrassInstanceBatches = MergeWithRemovals(mainYmap, ymapFiles, y => y.GrassInstanceBatches,
+                new YmapGrassBatchComparer());
 
         if (mainYmap.TimeCycleModifiers != null && mainYmap.TimeCycleModifiers.Length != 0)
-            mainYmap.TimeCycleModifiers = MergeWithRemovals(mainYmap, ymapFiles, y => y.TimeCycleModifiers, new YmapTimeCycleModifierComparer());
-        
+            mainYmap.TimeCycleModifiers = MergeWithRemovals(mainYmap, ymapFiles, y => y.TimeCycleModifiers,
+                new YmapTimeCycleModifierComparer());
+
         mainYmap.CalcFlags();
         mainYmap.CalcExtents();
         Backups.SaveYmap(ServerPath, mainYmap);
@@ -141,17 +144,15 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
     {
         List<IEnumerable<T>> allPatches = ymapFiles.Select(selector).ToList();
         int patchCount = allPatches.Count;
-        
+
         allPatches = allPatches.Where(patchContent => patchContent != null && patchContent.Any()).ToList();
 
         Dictionary<T, int> appearances = new(comparer);
         foreach (T? item in allPatches.SelectMany(patchContent => new HashSet<T>(patchContent, comparer)))
-        {
             if (appearances.TryGetValue(item, out int count))
                 appearances[item] = count + 1;
             else
                 appearances[item] = 1;
-        }
 
         List<T> final = [];
         Dictionary<T, int>.KeyCollection allItems = appearances.Keys;
@@ -164,255 +165,200 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             select item);
         return final.ToArray();
     }
-    
+
     private static YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
     {
+        // Initialize collections for tracking entities
         Dictionary<uint, YmapEntityDef> entitiesToAdd = [];
         Dictionary<uint, YmapEntityDef> entitiesToRemove = [];
-    
-        Dictionary<uint, YmapEntityDef> mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
-        Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles.SelectMany(patchFile => patchFile.AllEntities ?? []).GroupBy(e => e.CEntityDef.guid).ToDictionary(g => g.Key, g => g.First());
-        
+
+        // Create dictionaries for fast GUID-based lookups
+        Dictionary<uint, YmapEntityDef>
+            mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
+        Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles
+            .SelectMany(patchFile => patchFile.AllEntities ?? [])
+            .GroupBy(e => e.CEntityDef.guid)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Find entities to add (exist in patches but not in main)
         foreach ((uint guid, YmapEntityDef entity) in patchEntities)
-        {
             if (!mainEntities.ContainsKey(guid))
-            {
                 entitiesToAdd[guid] = entity;
-            }
-        }
-    
+
+        // Find entities to remove - Aggressive removal strategy
+        // Remove entity if it's missing from ANY patch file
         foreach ((uint guid, YmapEntityDef entity) in mainEntities)
         {
-            if (!patchEntities.ContainsKey(guid))
+            bool shouldRemove = false;
+
+            // Check each patch file - if entity is missing from any, mark for removal
+            foreach (YmapFile patchFile in ymapFiles)
             {
-                entitiesToRemove[guid] = entity;
+                if (patchFile.AllEntities == null)
+                {
+                    // If patch file has no entities, consider this as "entity not present"
+                    shouldRemove = true;
+                    break;
+                }
+
+                bool foundInThisPatch = patchFile.AllEntities.Any(e => e?.CEntityDef.guid == guid);
+                if (foundInThisPatch) continue;
+                shouldRemove = true;
+                break; // Missing from this patch file, so remove it
             }
+
+            if (shouldRemove) entitiesToRemove[guid] = entity;
         }
-        
-        List<YmapEntityDef> newEntities = [];
-        newEntities.AddRange(from mainEntity in mainYmap.AllEntities let guid = mainEntity.CEntityDef.guid where !entitiesToRemove.ContainsKey(guid) select mainEntity);
-    
+
+        // Build the base entity list (main entities minus removed ones)
+        List<YmapEntityDef> result = [];
+        result.AddRange(from mainEntity in mainYmap.AllEntities
+            let guid = mainEntity.CEntityDef.guid
+            where !entitiesToRemove.ContainsKey(guid)
+            select mainEntity);
+
+        // Add non-removed main entities
+
+        // Add new entities from patches
         foreach ((uint _, YmapEntityDef entity) in entitiesToAdd)
         {
-            entity.Index = newEntities.Count;
-            newEntities.Add(entity);
+            entity.Index = result.Count;
+            result.Add(entity);
         }
-        
-        List<YmapEntityDef> result = [];
 
-        foreach (YmapEntityDef mainEntity in newEntities)
+        // Now apply patches to all entities in the result list
+        HashSet<uint> processedArchetypeChanges = [];
+
+        for (int i = 0; i < result.Count; i++)
         {
-            List<uint> changedNameGuids = [];
-            
-            foreach (YmapFile patchYmap in ymapFiles)
-            {
-                foreach (YmapEntityDef? patchEntity in patchYmap.AllEntities)
-                {
-                    if (patchEntity == null || patchEntity.CEntityDef.guid != mainEntity.CEntityDef.guid) continue;
-                    
-                    YmapEntityDef entity = mainEntity;
-                    
-                    if (!changedNameGuids.Contains(mainEntity.CEntityDef.guid) && patchEntity.CEntityDef.archetypeName != mainEntity.CEntityDef.archetypeName)
-                    {
-                        entity = patchEntity;
-                        changedNameGuids.Add(mainEntity.CEntityDef.guid);
-                    }
-                    
-                    Vector3 mainPosition = mainEntity.Position;
-                    Vector3 patchPosition = patchEntity.Position;
+            YmapEntityDef entity = result[i];
+            uint entityGuid = entity.CEntityDef.guid;
 
-                    if (Math.Abs(mainPosition.X - patchPosition.X) < 0.01f)
-                    {
-                        mainPosition.X = patchPosition.X;
-                        entity.SetPosition(mainPosition);
-                    }
-                    
-                    if (Math.Abs(mainPosition.Y - patchPosition.Y) < 0.01f)
-                    {
-                        mainPosition.Y = patchPosition.Y;
-                        entity.SetPosition(mainPosition);
-                    }
-                    
-                    if (patchPosition.Z < mainPosition.Z)
-                    {
-                        mainPosition.Z = Math.Max(patchPosition.Z, -200.0f);
-                        entity.SetPosition(mainPosition);
-                    }
-                    
-                    Quaternion mainOrientation = mainEntity.Orientation;
-                    Quaternion patchOrientation = patchEntity.Orientation;
-                    
-                    if (Math.Abs(mainOrientation.X - patchOrientation.X) < 0.01f)
-                    {
-                        mainOrientation.X = patchOrientation.X;
-                        entity.SetOrientation(mainOrientation);
-                    }
-                    
-                    if (Math.Abs(mainOrientation.Y - patchOrientation.Y) < 0.01f)
-                    {
-                        mainOrientation.Y = patchOrientation.Y;
-                        entity.SetOrientation(mainOrientation);
-                    }
-                    
-                    if (Math.Abs(mainOrientation.Z - patchOrientation.Z) < 0.01f)
-                    {
-                        mainOrientation.Z = patchOrientation.Z;
-                        entity.SetOrientation(mainOrientation);
-                    }
-                    
-                    if (Math.Abs(mainOrientation.W - patchOrientation.W) < 0.01f)
-                    {
-                        mainOrientation.W = patchOrientation.W;
-                        entity.SetOrientation(mainOrientation);
-                    }
-                    
-                    Vector3 mainScale = mainEntity.Scale;
-                    Vector3 patchScale = patchEntity.Scale;
-                    
-                    if (Math.Abs(mainScale.X - patchScale.X) > 0.01f)
-                    {
-                        mainScale.X = patchScale.X;
-                        entity.SetScale(mainScale);
-                    }
-                    
-                    if (Math.Abs(mainScale.Y - patchScale.Y) > 0.01f)
-                    {
-                        mainScale.Y = patchScale.Y;
-                        entity.SetScale(mainScale);
-                    }
-                    
-                    if (Math.Abs(mainScale.Z - patchScale.Z) > 0.01f)
-                    {
-                        mainScale.Z = patchScale.Z;
-                        entity.SetScale(mainScale);
-                    }
-                    
-                    result.Add(entity);
+            // Process each patch file for this entity
+            foreach (YmapEntityDef? patchEntity in ymapFiles
+                         .Select(patchYmap =>
+                             patchYmap.AllEntities?.FirstOrDefault(e => e?.CEntityDef.guid == entityGuid))
+                         .OfType<YmapEntityDef>())
+            {
+                // Handle archetype name changes (highest priority - replace entire entity)
+                if (patchEntity.CEntityDef.archetypeName != entity.CEntityDef.archetypeName &&
+                    !processedArchetypeChanges.Contains(entityGuid))
+                {
+                    result[i] = patchEntity;
+                    processedArchetypeChanges.Add(entityGuid);
+                    entity = patchEntity; // Update reference for further processing
+                    continue;
                 }
+
+                // Apply property patches with consistent logic
+                entity = ApplyEntityPatches(entity, patchEntity);
             }
+
+            // Update the entity in the result list
+            result[i] = entity;
         }
-        
+
         return result.ToArray();
     }
 
-    private static Vector3 FindBestPosition(Vector3 originalPosition, List<YmapEntityDef> patches)
+    private static YmapEntityDef ApplyEntityPatches(YmapEntityDef mainEntity, YmapEntityDef patchEntity)
     {
-        Vector3 bestPosition = originalPosition;
-        float lowestZ = originalPosition.Z;
-        float maxXYChange = 0f;
-        
-        foreach (YmapEntityDef patch in patches)
-        {
-            Vector3 patchPos = patch.Position;
-            float xyDiff = Math.Abs(patchPos.X - originalPosition.X) + Math.Abs(patchPos.Y - originalPosition.Y);
-            
-            if (patchPos.Z < lowestZ - 0.1f)
-            {
-                bestPosition = patchPos;
-                lowestZ = patchPos.Z;
-                maxXYChange = xyDiff;
-            }
-            else if (Math.Abs(patchPos.Z - lowestZ) < 0.1f && xyDiff > maxXYChange)
-            {
-                bestPosition = patchPos;
-                maxXYChange = xyDiff;
-            }
-        }
-        
-        bestPosition.Z = Math.Max(bestPosition.Z, -200.0f);
-        return bestPosition;
-    }
+        const float tolerance = 0.01f;
 
-    private static void UpdateEntityOrientation(YmapEntityDef target, List<YmapEntityDef> patches)
-    {
-        Quaternion bestOrientation = target.Orientation;
-        float maxChange = 0f;
-        
-        foreach (YmapEntityDef patch in patches)
-        {
-            float change = CalculateQuaternionDifference(target.Orientation, patch.Orientation);
-            if (!(change > maxChange)) continue;
-            maxChange = change;
-            bestOrientation = patch.Orientation;
-        }
-        
-        if (maxChange > 0.001f)
-        {
-            target.SetOrientation(bestOrientation);
-        }
-    }
+        // Apply position patches
+        Vector3 mainPosition = mainEntity.Position;
+        Vector3 patchPosition = patchEntity.Position;
+        bool positionChanged = false;
 
-    private static void UpdateEntityScale(YmapEntityDef target, List<YmapEntityDef> patches)
-    {
-        Vector3 bestScale = target.Scale;
-        float maxChange = 0f;
-        
-        foreach (YmapEntityDef patch in patches)
+        // Consistent logic: Update if values are significantly different
+        if (Math.Abs(mainPosition.X - patchPosition.X) >= tolerance)
         {
-            float change = CalculateVector3Difference(target.Scale, patch.Scale);
-            if (!(change > maxChange)) continue;
-            maxChange = change;
-            bestScale = patch.Scale;
+            mainPosition.X = patchPosition.X;
+            positionChanged = true;
         }
-        
-        if (maxChange > float.Epsilon)
-        {
-            target.SetScale(bestScale);
-        }
-    }
 
-    private static void UpdateEntityDistances(YmapEntityDef target, List<YmapEntityDef> patches)
-    {
-        foreach (YmapEntityDef patch in patches)
+        if (Math.Abs(mainPosition.Y - patchPosition.Y) >= tolerance)
         {
-            if (Math.Abs(patch.Distance - target.Distance) > float.Epsilon)
-            {
-                target.Distance = patch.Distance;
-            }
-            
-            if (Math.Abs(patch.LodDist - target.LodDist) > float.Epsilon)
-            {
-                target.LodDist = patch.LodDist;
-            }
-            
-            if (Math.Abs(patch.ChildLodDist - target.ChildLodDist) > float.Epsilon)
-            {
-                target.ChildLodDist = patch.ChildLodDist;
-            }
+            mainPosition.Y = patchPosition.Y;
+            positionChanged = true;
         }
-    }
 
-    private static void UpdateEntityParent(YmapEntityDef target, List<YmapEntityDef> patches)
-    {
-        foreach (YmapEntityDef patch in patches)
+        // Special Z-coordinate handling: Update if patch is lower (with safety clamp)
+        if (patchPosition.Z < mainPosition.Z)
         {
-            if (patch.Parent == null || (target.Parent != null && target.Parent.Equals(patch.Parent))) continue;
-            target.Parent = patch.Parent;
-            break;
+            mainPosition.Z = Math.Max(patchPosition.Z, -200.0f);
+            positionChanged = true;
         }
-    }
-    
-    private static void UpdateEntityName(YmapEntityDef target, List<YmapEntityDef> patches)
-    {
-        foreach (YmapEntityDef patch in patches)
+
+        if (positionChanged) mainEntity.SetPosition(mainPosition);
+
+        // Apply orientation patches
+        Quaternion mainOrientation = mainEntity.Orientation;
+        Quaternion patchOrientation = patchEntity.Orientation;
+        bool orientationChanged = false;
+
+        if (Math.Abs(mainOrientation.X - patchOrientation.X) >= tolerance)
         {
-            if (patch.CEntityDef.guid == target.CEntityDef.guid)
-            {
-                if (string.IsNullOrEmpty(patch.Name) || target.Name.Equals(patch.Name, StringComparison.OrdinalIgnoreCase)) continue;
-                Console.WriteLine($"Changing name of entity {target.CEntityDef.guid} from '{target.Name}' to '{patch.Name}'");
-                target.CEntityDef = target.CEntityDef with { archetypeName = patch.CEntityDef.archetypeName };
-            }
-            break;
+            mainOrientation.X = patchOrientation.X;
+            orientationChanged = true;
         }
-    }
 
-    private static float CalculateQuaternionDifference(Quaternion a, Quaternion b)
-    {
-        return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Z - b.Z) + Math.Abs(a.W - b.W);
-    }
+        if (Math.Abs(mainOrientation.Y - patchOrientation.Y) >= tolerance)
+        {
+            mainOrientation.Y = patchOrientation.Y;
+            orientationChanged = true;
+        }
 
-    private static float CalculateVector3Difference(Vector3 a, Vector3 b)
-    {
-        return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Z - b.Z);
+        if (Math.Abs(mainOrientation.Z - patchOrientation.Z) >= tolerance)
+        {
+            mainOrientation.Z = patchOrientation.Z;
+            orientationChanged = true;
+        }
+
+        if (Math.Abs(mainOrientation.W - patchOrientation.W) >= tolerance)
+        {
+            mainOrientation.W = patchOrientation.W;
+            orientationChanged = true;
+        }
+
+        if (orientationChanged) mainEntity.SetOrientation(mainOrientation);
+
+        // Apply scale patches
+        Vector3 mainScale = mainEntity.Scale;
+        Vector3 patchScale = patchEntity.Scale;
+        bool scaleChanged = false;
+
+        if (Math.Abs(mainScale.X - patchScale.X) >= tolerance)
+        {
+            mainScale.X = patchScale.X;
+            scaleChanged = true;
+        }
+
+        if (Math.Abs(mainScale.Y - patchScale.Y) >= tolerance)
+        {
+            mainScale.Y = patchScale.Y;
+            scaleChanged = true;
+        }
+
+        if (Math.Abs(mainScale.Z - patchScale.Z) >= tolerance)
+        {
+            mainScale.Z = patchScale.Z;
+            scaleChanged = true;
+        }
+
+        if (scaleChanged) mainEntity.SetScale(mainScale);
+
+        // Apply other property patches
+        if (mainEntity.Parent != patchEntity.Parent) mainEntity.Parent = patchEntity.Parent;
+
+        if (Math.Abs(mainEntity.Distance - patchEntity.Distance) >= tolerance)
+            mainEntity.Distance = patchEntity.Distance;
+
+        if (Math.Abs(mainEntity.LodDist - patchEntity.LodDist) >= tolerance) mainEntity.LodDist = patchEntity.LodDist;
+
+        if (Math.Abs(mainEntity.ChildLodDist - patchEntity.ChildLodDist) >= tolerance)
+            mainEntity.ChildLodDist = patchEntity.ChildLodDist;
+
+        return mainEntity;
     }
 }

@@ -10,11 +10,8 @@ const bool enableMods = false;
 const string dlc = "";
 const string excludeFolders = "";
 
-string
-    gtaPath =
-        "D:\\Games\\Rockstar\\Grand Theft Auto V Legacy"; // PromptPath("Veuillez entrer le chemin d'installation de GTA V : ");
-string serverPath =
-    "D:\\Codexis\\Fivem\\Servers\\QBOX\\resources\\[maps]"; // PromptPath("Veuillez entrer le chemin du server : ");
+string gtaPath = PromptPath(Messages.Get("prompt_gta_path"));
+string serverPath = PromptPath(Messages.Get("prompt_server_path"));
 
 GTA5Keys.LoadFromPath(gtaPath);
 GameFileCache gameFileCache = new(cacheSize, cacheTime, gtaPath, isGen9, dlc, enableMods, excludeFolders);

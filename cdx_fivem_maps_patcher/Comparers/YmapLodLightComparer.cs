@@ -9,16 +9,16 @@ public class YmapLodLightComparer : IEqualityComparer<YmapLODLight>
     {
         if (ReferenceEquals(a, b)) return true;
         if (a is null || b is null) return false;
-        
+
         Vector3 aPos = a.Position;
         Vector3 bPos = b.Position;
-        
+
         Vector3 aSize = a.Scale;
         Vector3 bSize = b.Scale;
-        
+
         Color aColor = a.Colour;
         Color bColor = b.Colour;
-        
+
         Quaternion aRot = a.Orientation;
         Quaternion bRot = b.Orientation;
 
