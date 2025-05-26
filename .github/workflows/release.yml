@@ -5,78 +5,135 @@ on:
     tags:
       - "v*"
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout cdx_fivem_maps_patcher Repo
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          path: cdx_fivem_maps_patcher
+          dotnet-version: '9.x'
 
-      - name: Clone Full CodeWalker Repo (for CodeWalker.Core)
+      - name: Cache CodeWalker Repository
+        id: cache-codewalker
+        uses: actions/cache@v4
+        with:
+          path: CodeWalkerRepo
+          key: codewalker-${{ hashFiles('**/Directory.Build.props') }}-${{ github.run_id }}
+          restore-keys: |
+            codewalker-
+
+      - name: Clone CodeWalker Repository
+        if: steps.cache-codewalker.outputs.cache-hit != 'true'
         run: |
-          git clone --depth=1 https://github.com/dexyfex/CodeWalker.git "${{ github.workspace }}/CodeWalkerRepo"
+          git clone --depth=1 https://github.com/dexyfex/CodeWalker.git CodeWalkerRepo
 
-      - name: Move CodeWalker.Core to Workdirectory
-        run: |
-          move "${{ github.workspace }}\CodeWalkerRepo\CodeWalker.Core" "${{ github.workspace }}"
-
-      - name: Verify CodeWalker.Core Exists
+      - name: Setup CodeWalker.Core
         shell: pwsh
         run: |
-          if (!(Test-Path "${{ github.workspace }}/CodeWalker.Core/CodeWalker.Core.csproj")) {
-            Write-Host "❌ CodeWalker.Core is missing!"
+          if (Test-Path "CodeWalker.Core") {
+            Remove-Item -Recurse -Force "CodeWalker.Core"
+          }
+          Copy-Item -Recurse "CodeWalkerRepo\CodeWalker.Core" "."
+          
+          if (!(Test-Path "CodeWalker.Core\CodeWalker.Core.csproj")) {
+            Write-Host "❌ CodeWalker.Core setup failed!"
             exit 1
+          }
+          Write-Host "✅ CodeWalker.Core setup complete"
+
+      - name: Patch CodeWalker.Core
+        shell: pwsh
+        run: |
+          $file = "CodeWalker.Core\GameFiles\RpfManager.cs"
+          if (!(Test-Path $file)) {
+            Write-Host "❌ RpfManager.cs not found at: $file"
+            exit 1
+          }
+          
+          $content = Get-Content $file -Raw
+          if ($content -match 'System\.Reflection\.Assembly\.GetExecutingAssembly\(\)\.Location') {
+            $content = $content -replace 'var path = System\.Reflection\.Assembly\.GetExecutingAssembly\(\)\.Location;', 'var path = AppContext.BaseDirectory;'
+            Set-Content $file $content -NoNewline
+            Write-Host "✅ Successfully patched RpfManager.cs"
           } else {
-            Write-Host "✅ CodeWalker.Core is present."
+            Write-Host "⚠️ Pattern not found in RpfManager.cs - may already be patched"
           }
 
-      - name: 🔧 Patch CodeWalker.Core to fix Assembly.GetExecutingAssembly().Location
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Dependencies
+        run: |
+          dotnet restore CodeWalker.Core/CodeWalker.Core.csproj
+          dotnet restore cdx_fivem_maps_patcher.csproj
+
+      - name: Build and Publish
+        run: |
+          dotnet publish cdx_fivem_maps_patcher.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:PublishTrimmed=false `
+            --verbosity minimal
+
+      - name: Verify Build Output
         shell: pwsh
         run: |
-          $file = "${{ github.workspace }}/CodeWalker.Core/GameFiles/RpfManager.cs"
-          (Get-Content $file) -replace 'var path = System\.Reflection\.Assembly\.GetExecutingAssembly\(\)\.Location;', 'var path = AppContext.BaseDirectory;' | Set-Content $file
-          Write-Host "✅ Patched RpfManager.cs to use AppContext.BaseDirectory"
+          $publishDir = "bin\Release\net9.0\win-x64\publish"
+          $exePath = "$publishDir\cdx_fivem_maps_patcher.exe"
+          
+          if (!(Test-Path $publishDir)) {
+            Write-Host "❌ Publish directory not found: $publishDir"
+            exit 1
+          }
+          
+          if (!(Test-Path $exePath)) {
+            Write-Host "❌ Executable not found: $exePath"
+            Get-ChildItem $publishDir | Format-Table
+            exit 1
+          }
+          
+          $fileSize = (Get-Item $exePath).Length / 1MB
+          Write-Host "✅ Build successful - Executable size: $([math]::Round($fileSize, 2)) MB"
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Restore NuGet Packages
+      - name: Create Release Package
+        shell: pwsh
         run: |
-          nuget restore "${{ github.workspace }}/CodeWalker.Core/CodeWalker.Core.csproj"
-          nuget restore "${{ github.workspace }}/cdx_fivem_maps_patcher.csproj"
+          $publishDir = "bin\Release\net9.0\win-x64\publish"
+          $zipPath = "cdx_fivem_maps_patcher-$($env:GITHUB_REF_NAME).zip"
+          
+          Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+          
+          if (!(Test-Path $zipPath)) {
+            Write-Host "❌ Failed to create ZIP package"
+            exit 1
+          }
+          
+          $zipSize = (Get-Item $zipPath).Length / 1MB
+          Write-Host "✅ Package created: $zipPath ($([math]::Round($zipSize, 2)) MB)"
 
-      - name: Publish cdx_fivem_maps_patcher (as admin-elevated .exe)
-        run: |
-          cd "${{ github.workspace }}/cdx_fivem_maps_patcher"
-          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
-
-      - name: Package published output as ZIP
-        shell: cmd
-        run: |
-            @echo on
-            set PUBLISH_DIR=${{ github.workspace }}\cdx_fivem_maps_patcher\bin\Release\net9.0\win-x64\publish
-            set OUTPUT_ZIP=${{ github.workspace }}\cdx_fivem_maps_patcher.zip
-            echo "Zipping full publish directory..."
-            powershell Compress-Archive -Path "%PUBLISH_DIR%\*" -DestinationPath "%OUTPUT_ZIP%"
-            if not exist "%OUTPUT_ZIP%" (
-                echo "❌ ERROR: ZIP file was not created!"
-                exit 1
-            ) else (
-                echo "✅ ZIP file created successfully."
-            )
-
-      - name: Debug - List Workspace Contents
-        shell: cmd
-        run: |
-          @echo on
-          dir /s "${{ github.workspace }}"
-
-      - name: Upload Release
+      - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: "${{ github.workspace }}/cdx_fivem_maps_patcher.zip"
+          files: "cdx_fivem_maps_patcher-${{ github.ref_name }}.zip"
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
