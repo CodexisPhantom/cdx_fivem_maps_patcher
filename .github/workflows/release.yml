@@ -77,13 +77,33 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore Dependencies
+        shell: pwsh
         run: |
+          # Restore CodeWalker.Core
           dotnet restore CodeWalker.Core/CodeWalker.Core.csproj
-          dotnet restore cdx_fivem_maps_patcher.csproj
+          
+          # Find and restore main project
+          $projectFiles = Get-ChildItem -Filter "*.csproj" -Exclude "CodeWalker.Core.csproj" -Recurse | Where-Object { $_.Directory.Name -ne "CodeWalker.Core" }
+          
+          if ($projectFiles.Count -eq 0) {
+            Write-Host "❌ No main project file found!"
+            Get-ChildItem -Filter "*.csproj" -Recurse | Format-Table Name, Directory
+            exit 1
+          }
+          
+          $mainProject = $projectFiles[0].FullName
+          Write-Host "✅ Found main project: $($mainProject)"
+          dotnet restore "$mainProject"
 
       - name: Build and Publish
+        shell: pwsh
         run: |
-          dotnet publish cdx_fivem_maps_patcher.csproj `
+          # Find main project file
+          $projectFiles = Get-ChildItem -Filter "*.csproj" -Exclude "CodeWalker.Core.csproj" -Recurse | Where-Object { $_.Directory.Name -ne "CodeWalker.Core" }
+          $mainProject = $projectFiles[0].FullName
+          
+          Write-Host "Publishing project: $mainProject"
+          dotnet publish "$mainProject" `
             -c Release `
             -r win-x64 `
             --self-contained true `
