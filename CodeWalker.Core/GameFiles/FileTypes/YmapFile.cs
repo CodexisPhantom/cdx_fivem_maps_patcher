@@ -873,8 +873,7 @@ namespace CodeWalker.GameFiles
             ent.Ymap = this;
             allents.Add(ent);
             AllEntities = allents.ToArray();
-
-
+            
             if (ent.Parent == null || ent.Parent.Ymap != this)
             {
                 //root entity, add to roots.
