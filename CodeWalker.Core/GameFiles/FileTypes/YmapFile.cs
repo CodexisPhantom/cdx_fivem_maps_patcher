@@ -1631,7 +1631,6 @@ namespace CodeWalker.GameFiles
 
             if (Archetype.Type == MetaName.CMloArchetypeDef)
             {
-                //transform interior entities into world space...
                 MloArchetype mloa = Archetype as MloArchetype;
                 MloInstanceData mloi = MloInstance;
                 MloInstance = new MloInstanceData(this, mloa);
@@ -1654,14 +1653,12 @@ namespace CodeWalker.GameFiles
                     MloInstance.CreateYmapEntities();
                 }
 
-                if (BSRadius == 0.0f) BSRadius = LodDist; //need something so it doesn't get culled...
-                if (BBMin == BBMax)
-                {
-                    BBMin = Position - BSRadius;
-                    BBMax = Position + BSRadius; //it's not ideal
-                    BBCenter = (BBMax + BBMin) * 0.5f;
-                    BBExtent = (BBMax - BBMin) * 0.5f;
-                }
+                if (BSRadius == 0.0f) BSRadius = LodDist;
+                if (BBMin != BBMax) return;
+                BBMin = Position - BSRadius;
+                BBMax = Position + BSRadius;
+                BBCenter = (BBMax + BBMin) * 0.5f;
+                BBExtent = (BBMax - BBMin) * 0.5f;
             }
             else if (IsMlo) // archetype is no longer an mlo
             {
@@ -1955,18 +1952,8 @@ namespace CodeWalker.GameFiles
         public void ChildListToArray()
         {
             if (ChildList == null) return;
-            //if (Children == null)
-            //{
             Children = ChildList.ToArray();
-            ChildrenMerged = Children; //include these by default in merged array
-            //}
-            //else
-            //{
-            //    List<YmapEntityDef> newc = new List<YmapEntityDef>(Children.Length + ChildList.Count);
-            //    newc.AddRange(Children);
-            //    newc.AddRange(ChildList);
-            //    Children = newc.ToArray();
-            //}
+            ChildrenMerged = Children;
             ChildList.Clear();
             ChildList = null;
         }
@@ -2076,13 +2063,6 @@ namespace CodeWalker.GameFiles
             }
 
             Lights = lightInsts;
-
-            //LightHashTest = new uint[25];
-            //for (int i = 0; i < 25; i++)
-            //{
-            //    ints[6] = (uint)(i);
-            //    LightHashTest[i] = ComputeLightHash(ints);
-            //}
         }
 
 
@@ -2123,18 +2103,14 @@ namespace CodeWalker.GameFiles
 
             if (v3 >= 2) v6 += ints[c + 1];
 
-            if (v3 >= 1)
-            {
-                uint v34 = (v6 ^ v5) - BitUtil.RotateLeft(v6, 14);
-                uint v35 = (v34 ^ (v7 + ints[c])) - BitUtil.RotateLeft(v34, 11);
-                uint v36 = (v35 ^ v6) - BitUtil.RotateRight(v35, 7);
-                uint v37 = (v36 ^ v34) - BitUtil.RotateLeft(v36, 16);
-                uint v38 = BitUtil.RotateLeft(v37, 4);
-                uint v39 = (((v35 ^ v37) - v38) ^ v36) - BitUtil.RotateLeft((v35 ^ v37) - v38, 14);
-                return (v39 ^ v37) - BitUtil.RotateRight(v39, 8);
-            }
-
-            return v5;
+            if (v3 < 1) return v5;
+            uint v34 = (v6 ^ v5) - BitUtil.RotateLeft(v6, 14);
+            uint v35 = (v34 ^ (v7 + ints[c])) - BitUtil.RotateLeft(v34, 11);
+            uint v36 = (v35 ^ v6) - BitUtil.RotateRight(v35, 7);
+            uint v37 = (v36 ^ v34) - BitUtil.RotateLeft(v36, 16);
+            uint v38 = BitUtil.RotateLeft(v37, 4);
+            uint v39 = (((v35 ^ v37) - v38) ^ v36) - BitUtil.RotateLeft((v35 ^ v37) - v38, 14);
+            return (v39 ^ v37) - BitUtil.RotateRight(v39, 8);
         }
 
 

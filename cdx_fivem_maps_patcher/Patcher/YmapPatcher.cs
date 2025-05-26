@@ -84,7 +84,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             {
                 YmapFile ymap = OpenYmapFile(filePath);
                 ymapFiles.Add(ymap);
-                File.Move(filePath, filePath + ".backup", true);
+                //File.Move(filePath, filePath + ".backup", true);
             }
             catch (Exception)
             {
@@ -118,13 +118,13 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
 
         if (mainYmap.CarGenerators != null && mainYmap.CarGenerators.Length != 0)
-            mainYmap.CarGenerators = MergeYmapCarGenerators(mainYmap, ymapFiles, new YmapCarGenComparer());
+            mainYmap.CarGenerators = MergeWithRemovals(mainYmap, ymapFiles, y => y.CarGenerators, new YmapCarGenComparer());
 
         if (mainYmap.GrassInstanceBatches != null && mainYmap.GrassInstanceBatches.Length != 0)
-            mainYmap.GrassInstanceBatches = MergeGrassInstanceBatches(mainYmap, ymapFiles, new YmapGrassBatchComparer());
+            mainYmap.GrassInstanceBatches = MergeWithRemovals(mainYmap, ymapFiles, y => y.GrassInstanceBatches, new YmapGrassBatchComparer());
 
         if (mainYmap.TimeCycleModifiers != null && mainYmap.TimeCycleModifiers.Length != 0)
-            mainYmap.TimeCycleModifiers = MergeTimeCycleModifiers(mainYmap, ymapFiles, new YmapTimeCycleModifierComparer());
+            mainYmap.TimeCycleModifiers = MergeWithRemovals(mainYmap, ymapFiles, y => y.TimeCycleModifiers, new YmapTimeCycleModifierComparer());
         
         mainYmap.CalcFlags();
         mainYmap.CalcExtents();
@@ -156,200 +156,57 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         final.AddRange(from item in allItems let explicitlyRemoved = removedItems.Contains(item) && appearances[item] < patchCount where !explicitlyRemoved select item);
         return final.ToArray();
     }
-
-    private static YmapCarGen[] MergeYmapCarGenerators(YmapFile mainYmap, List<YmapFile> ymapFiles,
-        IEqualityComparer<YmapCarGen> comparer)
-    {
-        HashSet<YmapCarGen> patchSet = ymapFiles.SelectMany(f => f.CarGenerators ?? []).ToHashSet(comparer);
-        HashSet<YmapCarGen> mainSet = (mainYmap.CarGenerators ?? []).ToHashSet(comparer);
-        patchSet.UnionWith(mainSet);
-        return patchSet.ToArray();
-    }
-
-    private static YmapGrassInstanceBatch[] MergeGrassInstanceBatches(YmapFile mainYmap,
-        IEnumerable<YmapFile> ymapFiles, IEqualityComparer<YmapGrassInstanceBatch> comparer)
-    {
-        HashSet<YmapGrassInstanceBatch> patchSet =
-            ymapFiles.SelectMany(f => f.GrassInstanceBatches ?? []).ToHashSet(comparer);
-        HashSet<YmapGrassInstanceBatch> mainSet = (mainYmap.GrassInstanceBatches ?? []).ToHashSet(comparer);
-        patchSet.UnionWith(mainSet);
-        return patchSet.ToArray();
-    }
-
-    private static YmapTimeCycleModifier[] MergeTimeCycleModifiers(YmapFile mainYmap, IEnumerable<YmapFile> ymapFiles,
-        IEqualityComparer<YmapTimeCycleModifier> comparer)
-    {
-        HashSet<YmapTimeCycleModifier> patchSet =
-            ymapFiles.SelectMany(f => f.TimeCycleModifiers ?? []).ToHashSet(comparer);
-        HashSet<YmapTimeCycleModifier> mainSet = (mainYmap.TimeCycleModifiers ?? []).ToHashSet(comparer);
-        patchSet.UnionWith(mainSet);
-        return patchSet.ToArray();
-    }
-    
-    // private static YmapEntityDef[] MergeYmapEntities2(YmapFile mainYmap, List<YmapFile> ymapFiles)
-    // {
-    //     Dictionary<uint, YmapEntityDef> entitiesToAdd = [];
-    //     Dictionary<uint, YmapEntityDef> entitiesToRemove = [];
-    //
-    //     Dictionary<uint, YmapEntityDef> mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
-    //     Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles.SelectMany(patchFile => patchFile.AllEntities ?? []).GroupBy(e => e.CEntityDef.guid).ToDictionary(g => g.Key, g => g.First());
-    //     
-    //     foreach ((uint guid, YmapEntityDef entity) in patchEntities)
-    //     {
-    //         if (!mainEntities.ContainsKey(guid))
-    //         {
-    //             entitiesToAdd[guid] = entity;
-    //         }
-    //     }
-    //
-    //     foreach ((uint guid, YmapEntityDef entity) in mainEntities)
-    //     {
-    //         if (!patchEntities.ContainsKey(guid))
-    //         {
-    //             entitiesToRemove[guid] = entity;
-    //         }
-    //     }
-    //     
-    //     List<YmapEntityDef> newEntities = [];
-    //     newEntities.AddRange(from mainEntity in mainYmap.AllEntities let guid = mainEntity.CEntityDef.guid where !entitiesToRemove.ContainsKey(guid) select mainEntity);
-    //
-    //     foreach ((uint _, YmapEntityDef entity) in entitiesToAdd)
-    //     {
-    //         YmapEntityDef newEntity = CloneEntity(entity);
-    //         newEntity.Index = newEntities.Count;
-    //         newEntities.Add(newEntity);
-    //     }
-    //     
-    //     List<YmapEntityDef> result = [];
-    //     
-    //     foreach (YmapFile patchFile in ymapFiles)
-    //     {
-    //         if (patchFile.AllEntities == null) continue;
-    //         foreach (YmapEntityDef entity in patchFile.AllEntities)
-    //         {
-    //             foreach (YmapEntityDef ymapEntityDef in newEntities)
-    //             {
-    //                 
-    //             }
-    //         }
-    //     }
-    //     
-    //     return result.ToArray();
-    // }
     
     private static YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
     {
-        Dictionary<uint, List<YmapEntityDef>> patchEntities = new();
-        Dictionary<uint, YmapEntityDef> mainEntities = (mainYmap.AllEntities ?? []).ToDictionary(e => e.CEntityDef.guid, e => e);
+        Dictionary<uint, YmapEntityDef> entitiesToAdd = [];
+        Dictionary<uint, YmapEntityDef> entitiesToRemove = [];
+    
+        Dictionary<uint, YmapEntityDef> mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
+        Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles.SelectMany(patchFile => patchFile.AllEntities ?? []).GroupBy(e => e.CEntityDef.guid).ToDictionary(g => g.Key, g => g.First());
         
-        foreach (YmapFile patchFile in ymapFiles)
+        foreach ((uint guid, YmapEntityDef entity) in patchEntities)
         {
-            if (patchFile.AllEntities == null) continue;
-            
-            foreach (YmapEntityDef entity in patchFile.AllEntities)
+            if (!mainEntities.ContainsKey(guid))
             {
-                uint guid = entity.CEntityDef.guid;
-                if (!patchEntities.ContainsKey(guid)) patchEntities[guid] = [];
-                patchEntities[guid].Add(entity);
+                entitiesToAdd[guid] = entity;
             }
+        }
+    
+        foreach ((uint guid, YmapEntityDef entity) in mainEntities)
+        {
+            if (!patchEntities.ContainsKey(guid))
+            {
+                entitiesToRemove[guid] = entity;
+            }
+        }
+        
+        List<YmapEntityDef> newEntities = [];
+        newEntities.AddRange(from mainEntity in mainYmap.AllEntities let guid = mainEntity.CEntityDef.guid where !entitiesToRemove.ContainsKey(guid) select mainEntity);
+    
+        foreach ((uint _, YmapEntityDef entity) in entitiesToAdd)
+        {
+            entity.Index = newEntities.Count;
+            newEntities.Add(entity);
         }
         
         List<YmapEntityDef> result = [];
-        HashSet<uint> processedGuids = [];
-        HashSet<uint> removedEntities = FindRemovedEntities(mainEntities, ymapFiles);
-        
-        foreach ((uint guid, List<YmapEntityDef> patches) in patchEntities)
-        {
-            if (removedEntities.Contains(guid)) continue;
-            YmapEntityDef finalEntity;
-            finalEntity = mainEntities.TryGetValue(guid, out YmapEntityDef? mainEntity) ? CreateModifiedEntity(mainEntity, patches) : SelectBestPatchEntity(patches);
-            finalEntity.Index = result.Count;
-            result.Add(finalEntity);
-            processedGuids.Add(guid);
-        }
-        
-        foreach (YmapEntityDef mainEntity in from kvp in mainEntities let guid = kvp.Key let mainEntity = kvp.Value where !processedGuids.Contains(guid) && !removedEntities.Contains(guid) select mainEntity)
-        {
-            mainEntity.Index = result.Count;
-            result.Add(mainEntity);
-        }
 
+        foreach (YmapEntityDef mainEntity in newEntities)
+        {
+            foreach (YmapFile patchYmap in ymapFiles)
+            {
+                Vector3 bestPosition = FindBestPosition(mainEntity.Position, patchYmap.AllEntities.ToList());
+                mainEntity.SetPosition(bestPosition);
+                UpdateEntityOrientation(mainEntity, patchYmap.AllEntities.ToList());
+                UpdateEntityScale(mainEntity, patchYmap.AllEntities.ToList());
+                UpdateEntityDistances(mainEntity, patchYmap.AllEntities.ToList());
+                UpdateEntityParent(mainEntity, patchYmap.AllEntities.ToList());
+                UpdateEntityName(mainEntity, patchYmap.AllEntities.ToList());
+                result.Add(mainEntity);
+            }
+        }
         return result.ToArray();
-    }
-
-    private static HashSet<uint> FindRemovedEntities(Dictionary<uint, YmapEntityDef> mainEntities, List<YmapFile> patchYmaps)
-    {
-        HashSet<uint> presentGuids = [];
-        foreach (YmapFile patch in patchYmaps)
-        {
-            if (patch.AllEntities == null) continue;
-            foreach (YmapEntityDef? entity in patch.AllEntities)
-            {
-                presentGuids.Add(entity.CEntityDef.guid);
-            }
-        }
-
-        HashSet<uint> removedGuids = [];
-        foreach (uint mainGuid in mainEntities.Keys.Where(mainGuid => !presentGuids.Contains(mainGuid)))
-        {
-            removedGuids.Add(mainGuid);
-        }
-
-        return removedGuids;
-    }
-
-    private static YmapEntityDef CreateModifiedEntity(YmapEntityDef mainEntity, List<YmapEntityDef> patches)
-    {
-        YmapEntityDef modifiedEntity = CloneEntity(mainEntity);
-        YmapEntityDef? dummyPatch = FindDummyArchetypePatch(patches);
-        
-        if (dummyPatch != null)
-        {
-            modifiedEntity = CloneEntity(dummyPatch);
-            return modifiedEntity;
-        }
-        
-        Vector3 bestPosition = FindBestPosition(mainEntity.Position, patches);
-        modifiedEntity.SetPosition(bestPosition);
-        
-        UpdateEntityOrientation(modifiedEntity, patches);
-        UpdateEntityScale(modifiedEntity, patches);
-        UpdateEntityDistances(modifiedEntity, patches);
-        UpdateEntityParent(modifiedEntity, patches);
-        
-        return modifiedEntity;
-    }
-
-    private static YmapEntityDef SelectBestPatchEntity(List<YmapEntityDef> patches)
-    {
-        if (patches.Count == 1) return CloneEntity(patches[0]);
-        
-        YmapEntityDef? dummyPatch = FindDummyArchetypePatch(patches);
-        
-        if (dummyPatch != null)
-        {
-            YmapEntityDef resultEnt = CloneEntity(dummyPatch);
-            Vector3 position = resultEnt.Position;
-            position.Z = Math.Max(position.Z, -200.0f);
-            resultEnt.SetPosition(position);
-            return resultEnt;
-        }
-        
-        YmapEntityDef bestPatch = patches[0];
-        
-        foreach (YmapEntityDef patch in patches.Skip(1))
-        {
-            if (patch.Position.Z < bestPatch.Position.Z - 0.1f || Math.Abs(patch.Position.Z - bestPatch.Position.Z) < 0.1f)
-            {
-                bestPatch = patch;
-            }
-        }
-        
-        YmapEntityDef result = CloneEntity(bestPatch);
-        Vector3 pos = result.Position;
-        pos.Z = Math.Max(pos.Z, -200.0f);
-        result.SetPosition(pos);
-        return result;
     }
 
     private static Vector3 FindBestPosition(Vector3 originalPosition, List<YmapEntityDef> patches)
@@ -443,27 +300,24 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
     {
         foreach (YmapEntityDef patch in patches)
         {
-            if (patch.Parent == null || (target.Parent != null && AreParentsEqual(target.Parent, patch.Parent))) continue;
+            if (patch.Parent == null || (target.Parent != null && target.Parent.Equals(patch.Parent))) continue;
             target.Parent = patch.Parent;
             break;
         }
     }
-
-    private static YmapEntityDef CloneEntity(YmapEntityDef original)
-    {
-        return original;
-    }
-
-    private static YmapEntityDef? FindDummyArchetypePatch(List<YmapEntityDef> patches)
+    
+    private static void UpdateEntityName(YmapEntityDef target, List<YmapEntityDef> patches)
     {
         foreach (YmapEntityDef patch in patches)
         {
-            if (patch.Name != null && (patch.Name.Equals("dummy", StringComparison.OrdinalIgnoreCase) || patch.Name.Equals("0", StringComparison.OrdinalIgnoreCase)))
+            if (patch.CEntityDef.guid == target.CEntityDef.guid)
             {
-                return patch;
+                if (string.IsNullOrEmpty(patch.Name) || target.Name.Equals(patch.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                Console.WriteLine($"Changing name of entity {target.CEntityDef.guid} from '{target.Name}' to '{patch.Name}'");
+                target.CEntityDef = target.CEntityDef with { archetypeName = patch.CEntityDef.archetypeName };
             }
+            break;
         }
-        return null;
     }
 
     private static float CalculateQuaternionDifference(Quaternion a, Quaternion b)
@@ -474,10 +328,5 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
     private static float CalculateVector3Difference(Vector3 a, Vector3 b)
     {
         return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y) + Math.Abs(a.Z - b.Z);
-    }
-
-    private static bool AreParentsEqual(object parent1, object parent2)
-    {
-        return parent1.Equals(parent2);
     }
 }
