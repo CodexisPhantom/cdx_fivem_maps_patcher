@@ -1,0 +1,82 @@
+name: Build and Release cdx_fivem_maps_patcher
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout cdx_fivem_maps_patcher Repo
+        uses: actions/checkout@v4
+        with:
+          path: cdx_fivem_maps_patcher
+
+      - name: Clone Full CodeWalker Repo (for CodeWalker.Core)
+        run: |
+          git clone --depth=1 https://github.com/dexyfex/CodeWalker.git "${{ github.workspace }}/CodeWalkerRepo"
+
+      - name: Move CodeWalker.Core to Workdirectory
+        run: |
+          move "${{ github.workspace }}\CodeWalkerRepo\CodeWalker.Core" "${{ github.workspace }}"
+
+      - name: Verify CodeWalker.Core Exists
+        shell: pwsh
+        run: |
+          if (!(Test-Path "${{ github.workspace }}/CodeWalker.Core/CodeWalker.Core.csproj")) {
+            Write-Host "❌ CodeWalker.Core is missing!"
+            exit 1
+          } else {
+            Write-Host "✅ CodeWalker.Core is present."
+          }
+
+      - name: 🔧 Patch CodeWalker.Core to fix Assembly.GetExecutingAssembly().Location
+        shell: pwsh
+        run: |
+          $file = "${{ github.workspace }}/CodeWalker.Core/GameFiles/RpfManager.cs"
+          (Get-Content $file) -replace 'var path = System\.Reflection\.Assembly\.GetExecutingAssembly\(\)\.Location;', 'var path = AppContext.BaseDirectory;' | Set-Content $file
+          Write-Host "✅ Patched RpfManager.cs to use AppContext.BaseDirectory"
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Restore NuGet Packages
+        run: |
+          nuget restore "${{ github.workspace }}/CodeWalker.Core/CodeWalker.Core.csproj"
+          nuget restore "${{ github.workspace }}/cdx_fivem_maps_patcher/cdx_fivem_maps_patcher.csproj"
+
+      - name: Publish cdx_fivem_maps_patcher (as admin-elevated .exe)
+        run: |
+          cd "${{ github.workspace }}/cdx_fivem_maps_patcher"
+          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
+
+      - name: Package published output as ZIP
+        shell: cmd
+        run: |
+            @echo on
+            set PUBLISH_DIR=${{ github.workspace }}\cdx_fivem_maps_patcher\bin\Release\net9.0\win-x64\publish
+            set OUTPUT_ZIP=${{ github.workspace }}\cdx_fivem_maps_patcher.zip
+            echo "Zipping full publish directory..."
+            powershell Compress-Archive -Path "%PUBLISH_DIR%\*" -DestinationPath "%OUTPUT_ZIP%"
+            if not exist "%OUTPUT_ZIP%" (
+                echo "❌ ERROR: ZIP file was not created!"
+                exit 1
+            ) else (
+                echo "✅ ZIP file created successfully."
+            )
+
+      - name: Debug - List Workspace Contents
+        shell: cmd
+        run: |
+          @echo on
+          dir /s "${{ github.workspace }}"
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "${{ github.workspace }}/cdx_fivem_maps_patcher.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
