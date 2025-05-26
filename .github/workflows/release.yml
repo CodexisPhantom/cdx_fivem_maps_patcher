@@ -46,7 +46,7 @@ jobs:
       - name: Restore NuGet Packages
         run: |
           nuget restore "${{ github.workspace }}/CodeWalker.Core/CodeWalker.Core.csproj"
-          nuget restore "${{ github.workspace }}/cdx_fivem_maps_patcher/cdx_fivem_maps_patcher.csproj"
+          nuget restore "${{ github.workspace }}/cdx_fivem_maps_patcher.csproj"
 
       - name: Publish cdx_fivem_maps_patcher (as admin-elevated .exe)
         run: |
