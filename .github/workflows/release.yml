@@ -115,11 +115,18 @@ jobs:
       - name: Verify Build Output
         shell: pwsh
         run: |
-          $publishDir = "bin\Release\net9.0\win-x64\publish"
-          $exePath = "$publishDir\cdx_fivem_maps_patcher.exe"
+          # Find the actual publish directory based on project structure
+          $projectFiles = Get-ChildItem -Filter "*.csproj" -Exclude "CodeWalker.Core.csproj" -Recurse | Where-Object { $_.Directory.Name -ne "CodeWalker.Core" }
+          $projectDir = $projectFiles[0].Directory.FullName
+          $publishDir = Join-Path $projectDir "bin\Release\net9.0\win-x64\publish"
+          $exePath = Join-Path $publishDir "cdx_fivem_maps_patcher.exe"
+          
+          Write-Host "Looking for publish directory at: $publishDir"
           
           if (!(Test-Path $publishDir)) {
             Write-Host "❌ Publish directory not found: $publishDir"
+            Write-Host "Available directories:"
+            Get-ChildItem -Path $projectDir -Recurse -Directory | Where-Object { $_.Name -eq "publish" } | Format-Table FullName
             exit 1
           }
           
@@ -135,7 +142,10 @@ jobs:
       - name: Create Release Package
         shell: pwsh
         run: |
-          $publishDir = "bin\Release\net9.0\win-x64\publish"
+          # Find the actual publish directory
+          $projectFiles = Get-ChildItem -Filter "*.csproj" -Exclude "CodeWalker.Core.csproj" -Recurse | Where-Object { $_.Directory.Name -ne "CodeWalker.Core" }
+          $projectDir = $projectFiles[0].Directory.FullName
+          $publishDir = Join-Path $projectDir "bin\Release\net9.0\win-x64\publish"
           $zipPath = "cdx_fivem_maps_patcher-$($env:GITHUB_REF_NAME).zip"
           
           Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
