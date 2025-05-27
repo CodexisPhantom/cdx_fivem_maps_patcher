@@ -19,10 +19,9 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
             switch (input)
             {
                 case "1":
-                case "2":
                     Patch();
                     break;
-                case "3":
+                case "2":
                     return;
                 default:
                     Console.WriteLine(Messages.Get("invalid_entry"));
@@ -56,8 +55,7 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
     private static void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));
-        Console.WriteLine(Messages.Get("patch_menu_ymaps"));
-        Console.WriteLine(Messages.Get("patch_menu_ybns"));
+        Console.WriteLine(Messages.Get("patch_menu"));
         Console.WriteLine(Messages.Get("patch_menu_return"));
     }
 

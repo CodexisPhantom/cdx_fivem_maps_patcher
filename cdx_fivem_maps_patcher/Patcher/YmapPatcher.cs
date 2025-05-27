@@ -18,7 +18,88 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
 
         Console.WriteLine(Messages.Get("duplicates_found"));
-        foreach (KeyValuePair<string, List<string>> entry in duplicates) PatchYmap(entry.Key, entry.Value);
+        
+        Dictionary<string, List<string>> selectedYmaps = PromptUserForYmapSelection(duplicates);
+        
+        if (selectedYmaps.Count == 0)
+        {
+            Console.WriteLine(Messages.Get("no_ymaps_selected_for_patching"));
+            return;
+        }
+
+        foreach (KeyValuePair<string, List<string>> entry in selectedYmaps) 
+            PatchYmap(entry.Key, entry.Value);
+    }
+
+    private static Dictionary<string, List<string>> PromptUserForYmapSelection(Dictionary<string, List<string>> duplicates)
+    {
+        Dictionary<string, List<string>> selectedYmaps = new(StringComparer.OrdinalIgnoreCase);
+        
+        Console.WriteLine(Messages.Get("found_duplicate_ymap_files_header"));
+        Console.WriteLine(Messages.Get("select_ymaps_to_patch_prompt"));
+
+        List<KeyValuePair<string, List<string>>> duplicatesList = duplicates.ToList();
+        
+        for (int i = 0; i < duplicatesList.Count; i++)
+        {
+            KeyValuePair<string, List<string>> kvp = duplicatesList[i];
+            Console.WriteLine(Messages.Get("ymap_selection_item_format", i + 1, kvp.Key, kvp.Value.Count));
+            
+            foreach (string filePath in kvp.Value)
+            {
+                Console.WriteLine(Messages.Get("ymap_selection_file_path_prefix") + filePath);
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine(Messages.Get("ymap_selection_options_header"));
+        Console.WriteLine(Messages.Get("ymap_selection_option_numbers"));
+        Console.WriteLine(Messages.Get("ymap_selection_option_all"));
+        Console.WriteLine(Messages.Get("ymap_selection_option_none"));
+        Console.Write(Messages.Get("ymap_selection_input_prompt"));
+
+        string? input = Console.ReadLine()?.Trim();
+
+        if (string.IsNullOrEmpty(input) || input.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
+            return selectedYmaps;
+        }
+
+        if (input.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return duplicates;
+        }
+
+        string[] selections = input.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        HashSet<int> validIndices = [];
+
+        foreach (string selection in selections)
+        {
+            if (int.TryParse(selection.Trim(), out int index) && 
+                index >= 1 && index <= duplicatesList.Count)
+            {
+                validIndices.Add(index - 1);
+            }
+            else
+            {
+                Console.WriteLine(Messages.Get("ymap_selection_invalid_warning", selection));
+            }
+        }
+
+        foreach (KeyValuePair<string, List<string>> kvp in validIndices.Select(index => duplicatesList[index]))
+        {
+            selectedYmaps[kvp.Key] = kvp.Value;
+        }
+
+        if (selectedYmaps.Count <= 0) return selectedYmaps;
+        
+        Console.WriteLine(Messages.Get("ymap_selection_selected_count_message", selectedYmaps.Count));
+        foreach (string ymapName in selectedYmaps.Keys)
+        {
+            Console.WriteLine(Messages.Get("ymap_selection_selected_item_prefix") + ymapName);
+        }
+
+        return selectedYmaps;
     }
 
     private static Dictionary<string, List<string>> FindDuplicateYmapFiles(string directoryPath)
@@ -28,7 +109,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         try
         {
             if (!Directory.Exists(directoryPath))
-                throw new DirectoryNotFoundException($"Directory {directoryPath} does not exist.");
+                throw new DirectoryNotFoundException(Messages.Get("directory_not_found_error", directoryPath));
 
             string[] ymapFiles = Directory.GetFiles(directoryPath, "*.ymap", SearchOption.AllDirectories)
                 .Where(f => !f.Contains(Path.DirectorySeparatorChar + "cdx_fivem_maps_patcher" +
@@ -50,7 +131,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
                 }
                 catch (IOException ex)
                 {
-                    Console.WriteLine($"Erreur d'accès au fichier {filePath} : {ex.Message}");
+                    Console.WriteLine(Messages.Get("file_access_error", filePath, ex.Message));
                 }
 
             return nameToFiles
@@ -59,7 +140,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error searching for duplicates: {ex.Message}");
+            Console.WriteLine(Messages.Get("duplicate_search_error", ex.Message));
             return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         }
     }
@@ -93,7 +174,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
 
         if (ymapFiles.Count == 0) return;
 
-        Console.WriteLine($"Patching {name}...");
+        Console.WriteLine(Messages.Get("patching_ymap_message", name));
 
         if (mainYmap.AllEntities != null && mainYmap.AllEntities.Length != 0)
         {
@@ -168,11 +249,9 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
 
     private static YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
     {
-        // Initialize collections for tracking entities
         Dictionary<uint, YmapEntityDef> entitiesToAdd = [];
         Dictionary<uint, YmapEntityDef> entitiesToRemove = [];
 
-        // Create dictionaries for fast GUID-based lookups
         Dictionary<uint, YmapEntityDef>
             mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
         Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles
@@ -180,23 +259,18 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             .GroupBy(e => e.CEntityDef.guid)
             .ToDictionary(g => g.Key, g => g.First());
 
-        // Find entities to add (exist in patches but not in main)
         foreach ((uint guid, YmapEntityDef entity) in patchEntities)
             if (!mainEntities.ContainsKey(guid))
                 entitiesToAdd[guid] = entity;
 
-        // Find entities to remove - Aggressive removal strategy
-        // Remove entity if it's missing from ANY patch file
         foreach ((uint guid, YmapEntityDef entity) in mainEntities)
         {
             bool shouldRemove = false;
 
-            // Check each patch file - if entity is missing from any, mark for removal
             foreach (YmapFile patchFile in ymapFiles)
             {
                 if (patchFile.AllEntities == null)
                 {
-                    // If patch file has no entities, consider this as "entity not present"
                     shouldRemove = true;
                     break;
                 }
@@ -204,29 +278,24 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
                 bool foundInThisPatch = patchFile.AllEntities.Any(e => e?.CEntityDef.guid == guid);
                 if (foundInThisPatch) continue;
                 shouldRemove = true;
-                break; // Missing from this patch file, so remove it
+                break;
             }
 
             if (shouldRemove) entitiesToRemove[guid] = entity;
         }
 
-        // Build the base entity list (main entities minus removed ones)
         List<YmapEntityDef> result = [];
         result.AddRange(from mainEntity in mainYmap.AllEntities
             let guid = mainEntity.CEntityDef.guid
             where !entitiesToRemove.ContainsKey(guid)
             select mainEntity);
 
-        // Add non-removed main entities
-
-        // Add new entities from patches
         foreach ((uint _, YmapEntityDef entity) in entitiesToAdd)
         {
             entity.Index = result.Count;
             result.Add(entity);
         }
 
-        // Now apply patches to all entities in the result list
         HashSet<uint> processedArchetypeChanges = [];
 
         for (int i = 0; i < result.Count; i++)
@@ -234,27 +303,23 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             YmapEntityDef entity = result[i];
             uint entityGuid = entity.CEntityDef.guid;
 
-            // Process each patch file for this entity
             foreach (YmapEntityDef? patchEntity in ymapFiles
                          .Select(patchYmap =>
                              patchYmap.AllEntities?.FirstOrDefault(e => e?.CEntityDef.guid == entityGuid))
                          .OfType<YmapEntityDef>())
             {
-                // Handle archetype name changes (highest priority - replace entire entity)
                 if (patchEntity.CEntityDef.archetypeName != entity.CEntityDef.archetypeName &&
                     !processedArchetypeChanges.Contains(entityGuid))
                 {
                     result[i] = patchEntity;
                     processedArchetypeChanges.Add(entityGuid);
-                    entity = patchEntity; // Update reference for further processing
+                    entity = patchEntity;
                     continue;
                 }
 
-                // Apply property patches with consistent logic
                 entity = ApplyEntityPatches(entity, patchEntity);
             }
 
-            // Update the entity in the result list
             result[i] = entity;
         }
 
@@ -265,12 +330,10 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
     {
         const float tolerance = 0.01f;
 
-        // Apply position patches
         Vector3 mainPosition = mainEntity.Position;
         Vector3 patchPosition = patchEntity.Position;
         bool positionChanged = false;
 
-        // Consistent logic: Update if values are significantly different
         if (Math.Abs(mainPosition.X - patchPosition.X) >= tolerance)
         {
             mainPosition.X = patchPosition.X;
@@ -283,7 +346,6 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             positionChanged = true;
         }
 
-        // Special Z-coordinate handling: Update if patch is lower (with safety clamp)
         if (patchPosition.Z < mainPosition.Z)
         {
             mainPosition.Z = Math.Max(patchPosition.Z, -200.0f);
@@ -292,7 +354,6 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
 
         if (positionChanged) mainEntity.SetPosition(mainPosition);
 
-        // Apply orientation patches
         Quaternion mainOrientation = mainEntity.Orientation;
         Quaternion patchOrientation = patchEntity.Orientation;
         bool orientationChanged = false;

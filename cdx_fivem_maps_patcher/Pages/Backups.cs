@@ -9,134 +9,211 @@ public class Backups(string path) : Page
     {
         while (true)
         {
-            PrintMenu();
+            PrintMainMenu();
             string? input = Console.ReadLine();
             Console.Clear();
             switch (input)
             {
-                case "1":
-                    ShowBackups();
-                    break;
-                case "2":
-                    RemoveBackupMenu();
-                    break;
-                case "3":
-                    RemoveAllBackupMenu();
-                    break;
-                case "4":
-                    return;
-                default:
-                    Console.WriteLine(Messages.Get("invalid_entry"));
-                    break;
+                case "1": ShowTypedBackups(".ymap", "YMAP"); break;
+                case "2": ShowTypedBackups(".ybn", "YBN"); break;
+                case "3": RemoveTypedBackupMenu(".ymap", "YMAP"); break;
+                case "4": RemoveTypedBackupMenu(".ybn", "YBN"); break;
+                case "5": RemoveAllTypedBackups(".ymap", "YMAP"); break;
+                case "6": RemoveAllTypedBackups(".ybn", "YBN"); break;
+                case "7": return;
+                default: Console.WriteLine(Messages.Get("invalid_entry")); break;
             }
         }
     }
 
+    private static void PrintMainMenu()
+    {
+        Console.WriteLine(Messages.Get("backups_menu_title"));
+        Console.WriteLine(Messages.Get("backups_menu_show_ymap"));
+        Console.WriteLine(Messages.Get("backups_menu_show_ybn"));
+        Console.WriteLine(Messages.Get("backups_menu_remove_ymap"));
+        Console.WriteLine(Messages.Get("backups_menu_remove_ybn"));
+        Console.WriteLine(Messages.Get("backups_menu_remove_all_ymap"));
+        Console.WriteLine(Messages.Get("backups_menu_remove_all_ybn"));
+        Console.WriteLine(Messages.Get("backups_menu_return"));
+    }
+
     public static void SaveYmap(string path, YmapFile ymap)
     {
-        string resource = Path.Combine(path, "cdx_fivem_maps_patcher");
-        if (!Directory.Exists(resource))
-            Directory.CreateDirectory(resource);
-
-        string stream = Path.Combine(resource, "stream");
-        if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
-
-        string ymapFolder = Path.Combine(stream, "ymaps");
-        if (!Directory.Exists(ymapFolder)) Directory.CreateDirectory(ymapFolder);
-
-        string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
-        if (File.Exists(fxmanifestPath))
-            File.Copy(fxmanifestPath, resource + Path.DirectorySeparatorChar + "fxmanifest.lua", true);
-
-        byte[]? data = ymap.Save();
-        string fileName = Path.Combine(ymapFolder, ymap.Name);
-
-        if (File.Exists(fileName)) File.Delete(fileName);
-
-        File.Create(fileName).Close();
-        if (data != null) File.WriteAllBytes(fileName, data);
+        SaveMapFile(path, ymap.Name, ymap.Save(), "ymaps");
     }
 
     public static void SaveYbn(string path, YbnFile ybn)
     {
-        string resource = Path.Combine(path, "cdx_fivem_maps_patcher");
-        if (!Directory.Exists(resource))
-            Directory.CreateDirectory(resource);
-
-        string stream = Path.Combine(resource, "stream");
-        if (!Directory.Exists(stream)) Directory.CreateDirectory(stream);
-
-        string ybnFolder = Path.Combine(stream, "ybn");
-        if (!Directory.Exists(ybnFolder)) Directory.CreateDirectory(ybnFolder);
-
-        string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
-        if (File.Exists(fxmanifestPath))
-            File.Copy(fxmanifestPath, resource + Path.DirectorySeparatorChar + "fxmanifest.lua", true);
-
-        byte[]? data = ybn.Save();
-        string fileName = Path.Combine(ybnFolder, ybn.Name);
-
-        if (File.Exists(fileName)) File.Delete(fileName);
-
-        File.Create(fileName).Close();
-        if (data != null) File.WriteAllBytes(fileName, data);
+        SaveMapFile(path, ybn.Name, ybn.Save(), "ybn");
     }
 
-    private static void PrintMenu()
+    /// <summary>
+    /// Creates a backup of a single YBN file by appending .backup extension
+    /// </summary>
+    /// <param name="ybnFilePath">Full path to the YBN file to backup</param>
+    public static void CreateYbnBackup(string ybnFilePath)
     {
-        Console.WriteLine(Messages.Get("main_menu_title"));
-        Console.WriteLine(Messages.Get("backups_menu_list"));
-        Console.WriteLine(Messages.Get("backups_menu_remove"));
-        Console.WriteLine(Messages.Get("backups_menu_remove_all"));
-        Console.WriteLine(Messages.Get("backups_menu_return"));
-    }
-
-    private void ShowBackups()
-    {
-        List<string> backups = GetDistinctBackups();
-        if (backups.Count == 0)
-            Console.WriteLine(Messages.Get("no_backups_found"));
-        else
-            for (int i = 0; i < backups.Count; i++)
-                Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(path, "")}");
-    }
-
-    private void RemoveBackupMenu()
-    {
-        List<string> backups = GetDistinctBackups();
-        if (backups.Count == 0)
+        try
         {
-            Console.WriteLine(Messages.Get("no_backups_to_remove"));
+            if (!File.Exists(ybnFilePath))
+            {
+                Console.WriteLine(Messages.Get("file_not_found_error", ybnFilePath));
+                return;
+            }
+
+            string backupPath = ybnFilePath + ".backup";
+            
+            // Don't create duplicate backups
+            if (File.Exists(backupPath))
+            {
+                Console.WriteLine($"  → Backup already exists for {Path.GetFileName(ybnFilePath)}");
+                return;
+            }
+
+            File.Copy(ybnFilePath, backupPath, true);
+            Console.WriteLine($"  ✓ Created backup: {Path.GetFileName(ybnFilePath)}.backup");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Messages.Get("backup_creation_error", Path.GetFileName(ybnFilePath), ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Creates backups for multiple YBN files with progress reporting
+    /// </summary>
+    /// <param name="ybnFilePaths">List of YBN file paths to backup</param>
+    public static void CreateYbnBackups(List<string> ybnFilePaths)
+    {
+        if (ybnFilePaths == null || ybnFilePaths.Count == 0)
+        {
+            Console.WriteLine(Messages.Get("no_files_to_backup"));
             return;
         }
 
-        Console.WriteLine(Messages.Get("select_backup_to_remove"));
+        Console.WriteLine(Messages.Get("creating_backups_header", ybnFilePaths.Count));
+        
+        int successCount = 0;
+        int failureCount = 0;
+
+        foreach (string filePath in ybnFilePaths)
+        {
+            try
+            {
+                CreateYbnBackup(filePath);
+                successCount++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(Messages.Get("backup_creation_error", Path.GetFileName(filePath), ex.Message));
+                failureCount++;
+            }
+        }
+
+        Console.WriteLine(Messages.Get("backup_summary", successCount, failureCount));
+    }
+
+    /// <summary>
+    /// Restores a YBN file from its backup by removing .backup extension
+    /// </summary>
+    /// <param name="originalPath">Path to the original YBN file (without .backup extension)</param>
+    public static void RestoreYbnFromBackup(string originalPath)
+    {
+        try
+        {
+            string backupPath = originalPath + ".backup";
+            
+            if (!File.Exists(backupPath))
+            {
+                Console.WriteLine(Messages.Get("backup_not_found_error", Path.GetFileName(originalPath)));
+                return;
+            }
+
+            // Remove the current file if it exists
+            if (File.Exists(originalPath))
+            {
+                File.Delete(originalPath);
+            }
+
+            // Restore from backup
+            File.Move(backupPath, originalPath);
+            Console.WriteLine(Messages.Get("backup_restored", Path.GetFileName(originalPath)));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(Messages.Get("backup_restore_error", Path.GetFileName(originalPath), ex.Message));
+        }
+    }
+
+    private static void SaveMapFile(string basePath, string fileName, byte[]? data, string subfolder)
+    {
+        string resourcePath = Path.Combine(basePath, "cdx_fivem_maps_patcher");
+        string streamPath = Path.Combine(resourcePath, "stream");
+        string targetFolder = Path.Combine(streamPath, subfolder);
+
+        Directory.CreateDirectory(targetFolder);
+
+        string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");
+        if (File.Exists(fxmanifestPath))
+            File.Copy(fxmanifestPath, Path.Combine(resourcePath, "fxmanifest.lua"), true);
+
+        string filePath = Path.Combine(targetFolder, fileName);
+        if (File.Exists(filePath)) File.Delete(filePath);
+        File.Create(filePath).Close();
+        if (data != null) File.WriteAllBytes(filePath, data);
+    }
+
+    private void ShowTypedBackups(string extension, string label)
+    {
+        List<string> backups = GetDistinctBackups(extension);
+        if (backups.Count == 0)
+        {
+            Console.WriteLine(Messages.Get("no_backups_found", label));
+            return;
+        }
+
+        Console.WriteLine(Messages.Get("backups_list_header", label));
+        for (int i = 0; i < backups.Count; i++)
+            Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(path, "")}");
+    }
+
+    private void RemoveTypedBackupMenu(string extension, string label)
+    {
+        List<string> backups = GetDistinctBackups(extension);
+        if (backups.Count == 0)
+        {
+            Console.WriteLine(Messages.Get("no_backups_to_remove", label));
+            return;
+        }
+
+        Console.WriteLine(Messages.Get("select_backup_to_remove", label));
         for (int i = 0; i < backups.Count; i++)
             Console.WriteLine($"[{i + 1}] SERVER_PATH{backups[i].Replace(path, "")}");
 
         Console.Write(Messages.Get("backup_number_prompt"));
         if (int.TryParse(Console.ReadLine(), out int choice) && choice > 0 && choice <= backups.Count)
+        {
             try
             {
-                List<string> allbackups = GetAllBackups();
-                string backupToDelete = Path.GetFileName(backups[choice - 1]);
-                List<string> backupsToDelete =
-                    allbackups.Where(backup => Path.GetFileName(backup) == backupToDelete).ToList();
+                string backupName = Path.GetFileName(backups[choice - 1]);
+                List<string> backupsToDelete = GetAllBackups(extension)
+                    .Where(b => Path.GetFileName(b) == backupName)
+                    .ToList();
 
                 Console.WriteLine(Messages.Get("backups_to_delete"));
                 backupsToDelete.ForEach(Console.WriteLine);
                 Console.Write(Messages.Get("confirm_delete"));
                 string? confirmation = Console.ReadLine();
-                if ((Messages.Lang == "fr" && confirmation?.Trim().ToLower() == "o") ||
-                    (Messages.Lang == "en" && confirmation?.Trim().ToLower() == "y"))
+
+                if (IsConfirmed(confirmation))
                 {
                     foreach (string backup in backupsToDelete)
                     {
-                        string originalFile = backup.EndsWith(".backup") ? backup[..^7] : backup;
-                        if (File.Exists(originalFile)) File.Delete(originalFile);
-                        File.Move(backup, originalFile);
+                        string original = backup[..^7]; // Remove ".backup"
+                        if (File.Exists(original)) File.Delete(original);
+                        File.Move(backup, original);
                     }
-
                     Console.WriteLine(Messages.Get("backup_deleted"));
                 }
                 else
@@ -148,32 +225,34 @@ public class Backups(string path) : Page
             {
                 Console.WriteLine(Messages.Get("delete_error", ex.Message));
             }
+        }
         else
+        {
             Console.WriteLine(Messages.Get("delete_cancelled"));
+        }
     }
 
-    private void RemoveAllBackupMenu()
+    private void RemoveAllTypedBackups(string extension, string label)
     {
-        List<string> backups = GetAllBackups();
+        List<string> backups = GetAllBackups(extension);
         if (backups.Count == 0)
         {
-            Console.WriteLine(Messages.Get("no_backups_to_remove"));
+            Console.WriteLine(Messages.Get("no_backups_to_remove", label));
             return;
         }
 
-        Console.WriteLine(Messages.Get("confirm_delete_all"));
+        Console.WriteLine(Messages.Get("confirm_delete_all", label));
         string? confirmation = Console.ReadLine();
-        if ((Messages.Lang == "fr" && confirmation?.Trim().ToLower() == "o") ||
-            (Messages.Lang == "en" && confirmation?.Trim().ToLower() == "y"))
+        if (IsConfirmed(confirmation))
         {
             foreach (string backup in backups)
             {
-                string originalFile = backup.EndsWith(".backup") ? backup[..^7] : backup;
-                if (File.Exists(originalFile)) File.Delete(originalFile);
-                File.Move(backup, originalFile);
+                string original = backup[..^7];
+                if (File.Exists(original)) File.Delete(original);
+                File.Move(backup, original);
             }
 
-            Console.WriteLine(Messages.Get("all_backups_deleted"));
+            Console.WriteLine(Messages.Get("all_backups_deleted", label));
         }
         else
         {
@@ -181,15 +260,17 @@ public class Backups(string path) : Page
         }
     }
 
-    private List<string> GetDistinctBackups()
+    private static bool IsConfirmed(string? input)
+    {
+        input = input?.Trim().ToLower();
+        return (Messages.Lang == "fr" && input == "o") || (Messages.Lang == "en" && input == "y");
+    }
+
+    private List<string> GetAllBackups(string extension)
     {
         try
         {
-            List<string> allbackups = GetAllBackups();
-            return allbackups
-                .GroupBy(Path.GetFileName)
-                .Select(g => g.First())
-                .ToList();
+            return Directory.GetFiles(path, $"*{extension}.backup", SearchOption.AllDirectories).ToList();
         }
         catch
         {
@@ -197,11 +278,14 @@ public class Backups(string path) : Page
         }
     }
 
-    private List<string> GetAllBackups()
+    private List<string> GetDistinctBackups(string extension)
     {
         try
         {
-            return Directory.GetFiles(path, "*.backup", SearchOption.AllDirectories).ToList();
+            return GetAllBackups(extension)
+                .GroupBy(Path.GetFileName)
+                .Select(g => g.First())
+                .ToList();
         }
         catch
         {

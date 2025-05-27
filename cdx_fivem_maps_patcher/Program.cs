@@ -23,7 +23,9 @@ gameFileCache.Init(
 
 Console.Clear();
 Backups backups = new(serverPath);
-Patcher patcher = new YmapPatcher(gameFileCache, serverPath);
+Patcher ymapPatcher = new YmapPatcher(gameFileCache, serverPath);
+Patcher ybnPatcher = new YbnPatcher(gameFileCache, serverPath);
+Translations translations = new();
 
 while (true)
 {
@@ -41,9 +43,15 @@ while (true)
             backups.Show();
             break;
         case "2":
-            patcher.Show();
+            ymapPatcher.Show();
             break;
         case "3":
+            ybnPatcher.Show();
+            break;
+        case "4":
+            translations.Show();
+            break;
+        case "5":
             Console.WriteLine(Messages.Get("goodbye"));
             return;
         default:
@@ -56,7 +64,9 @@ void PrintMainMenu()
 {
     Console.WriteLine(Messages.Get("main_menu_title"));
     Console.WriteLine(Messages.Get("main_menu_backups"));
-    Console.WriteLine(Messages.Get("main_menu_patch"));
+    Console.WriteLine(Messages.Get("main_menu_patch_ymap"));
+    Console.WriteLine(Messages.Get("main_menu_patch_ybn"));
+    Console.WriteLine(Messages.Get("main_menu_translations"));
     Console.WriteLine(Messages.Get("main_menu_quit"));
 }
 
@@ -68,10 +78,10 @@ string PromptPath(string message)
         Console.Write(message);
         path = Console.ReadLine();
         if (Directory.Exists(path)) continue;
-        Console.WriteLine("Chemin invalide. Veuillez réessayer.");
+        Console.WriteLine(Messages.Get("invalid_path"));
         path = null;
     }
 
-    Console.WriteLine($"Chemin utilisé : {path}");
+    Console.WriteLine(Messages.Get("path_used", path));
     return path;
 }
