@@ -64,6 +64,14 @@
 
 ---
 
+## Support
+
+☕️ **Like this project?** Show your support and fuel my creativity by buying me a coffee!
+
+<a href="https://ko-fi.com/codexis" target="_blank"><img src="https://assets-global.website-files.com/5c14e387dab576fe667689cf/64f1a9ddd0246590df69ea0b_kofi_long_button_red%25402x-p-500.png" alt="Support me on Ko-fi" width="250"></a>
+
+---
+
 ## Last information
 
 I will update this tool when I have time and I don't guarantee that all bugs or problems will be fix in short time.
