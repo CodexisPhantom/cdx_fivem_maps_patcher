@@ -262,12 +262,9 @@ namespace CodeWalker.GameFiles
             byte[] data = null;
             RpfFileEntry entry = GetEntry(path) as RpfFileEntry;
             if (entry != null) data = entry.File.ExtractFile(entry);
-            if (data != null)
-            {
-                file = new T();
-                file.Load(data, entry);
-            }
-
+            if (data == null) return file;
+            file = new T();
+            file.Load(data, entry);
             return file;
         }
 

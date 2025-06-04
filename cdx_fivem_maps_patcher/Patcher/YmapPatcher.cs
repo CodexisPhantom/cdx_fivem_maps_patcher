@@ -8,6 +8,24 @@ namespace cdx_fivem_maps_patcher.Patcher;
 
 public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patcher(gameFileCache, serverPath)
 {
+    private List<float> MergePositionX = [];
+    private List<float> MergePositionY = [];
+    private List<float> MergePositionZ = [];
+    
+    private List<float> MergeOrientationX = [];
+    private List<float> MergeOrientationY = [];
+    private List<float> MergeOrientationZ = [];
+    private List<float> MergeOrientationW = [];
+    
+    private List<float> MergeScaleX = [];
+    private List<float> MergeScaleY = [];
+    private List<float> MergeScaleZ = [];
+    
+    private List<float> MergeDistance = [];
+    private List<float> MergeLodDist = [];
+
+    private Archetype? MergeArchetype = new();
+    
     protected override void Patch()
     {
         Dictionary<string, List<string>> duplicates = FindDuplicateYmapFiles(ServerPath);
@@ -31,7 +49,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             PatchYmap(entry.Key, entry.Value);
     }
 
-    private static Dictionary<string, List<string>> PromptUserForYmapSelection(Dictionary<string, List<string>> duplicates)
+    private Dictionary<string, List<string>> PromptUserForYmapSelection(Dictionary<string, List<string>> duplicates)
     {
         Dictionary<string, List<string>> selectedYmaps = new(StringComparer.OrdinalIgnoreCase);
         
@@ -102,7 +120,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         return selectedYmaps;
     }
 
-    private static Dictionary<string, List<string>> FindDuplicateYmapFiles(string directoryPath)
+    private Dictionary<string, List<string>> FindDuplicateYmapFiles(string directoryPath)
     {
         Dictionary<string, List<string>> nameToFiles = new(StringComparer.OrdinalIgnoreCase);
 
@@ -158,12 +176,16 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
 
         RpfFileEntry ymapEntry = ymapDict[ymapHash];
         YmapFile? mainYmap = RpfManager.GetFile<YmapFile>(ymapEntry);
+        mainYmap.InitYmapEntityArchetypes(GameFileCache);
+        mainYmap.EnsureChildYmaps(GameFileCache);
 
         List<YmapFile> ymapFiles = [];
         foreach (string filePath in files)
             try
             {
                 YmapFile ymap = OpenYmapFile(filePath);
+                ymap.InitYmapEntityArchetypes(GameFileCache);
+                ymap.EnsureChildYmaps(GameFileCache);
                 ymapFiles.Add(ymap);
                 File.Move(filePath, filePath + ".backup", true);
             }
@@ -175,7 +197,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         if (ymapFiles.Count == 0) return;
 
         Console.WriteLine(Messages.Get("patching_ymap_message", name));
-
+        
         if (mainYmap.AllEntities != null && mainYmap.AllEntities.Length != 0)
         {
             YmapEntityDef[] result = MergeYmapEntities(mainYmap, ymapFiles);
@@ -185,39 +207,33 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
 
         if (mainYmap.BoxOccluders != null && mainYmap.BoxOccluders.Length != 0)
-            mainYmap.BoxOccluders =
-                MergeWithRemovals(mainYmap, ymapFiles, y => y.BoxOccluders, new YmapBoxOccluderComparer());
+            mainYmap.BoxOccluders = MergeWithRemovals(mainYmap, ymapFiles, y => y.BoxOccluders, new YmapBoxOccluderComparer());
 
         if (mainYmap.OccludeModels != null && mainYmap.OccludeModels.Length != 0)
-            mainYmap.OccludeModels =
-                MergeWithRemovals(mainYmap, ymapFiles, y => y.OccludeModels, new YmapOccludeModelComparer());
+            mainYmap.OccludeModels = MergeWithRemovals(mainYmap, ymapFiles, y => y.OccludeModels, new YmapOccludeModelComparer());
 
         if (mainYmap.LODLights is { LodLights: not null } && mainYmap.LODLights.LodLights.Length != 0)
-            mainYmap.LODLights.LodLights = MergeWithRemovals(mainYmap, ymapFiles, y => y.LODLights.LodLights,
-                new YmapLodLightComparer());
+            mainYmap.LODLights.LodLights = MergeWithRemovals(mainYmap, ymapFiles, y => y.LODLights.LodLights, new YmapLodLightComparer());
 
         if (mainYmap.DistantLODLights is { positions: not null } && mainYmap.DistantLODLights.positions.Length != 0)
-            mainYmap.DistantLODLights.positions = MergeWithRemovals(mainYmap, ymapFiles,
-                y => y.DistantLODLights.positions, new YmapDistantLodLightComparer());
+            mainYmap.DistantLODLights.positions = MergeWithRemovals(mainYmap, ymapFiles, y => y.DistantLODLights.positions, new YmapDistantLodLightComparer());
 
         if (mainYmap.CarGenerators != null && mainYmap.CarGenerators.Length != 0)
-            mainYmap.CarGenerators =
-                MergeWithRemovals(mainYmap, ymapFiles, y => y.CarGenerators, new YmapCarGenComparer());
+            mainYmap.CarGenerators = MergeWithRemovals(mainYmap, ymapFiles, y => y.CarGenerators, new YmapCarGenComparer());
 
         if (mainYmap.GrassInstanceBatches != null && mainYmap.GrassInstanceBatches.Length != 0)
-            mainYmap.GrassInstanceBatches = MergeWithRemovals(mainYmap, ymapFiles, y => y.GrassInstanceBatches,
-                new YmapGrassBatchComparer());
+            mainYmap.GrassInstanceBatches = MergeWithRemovals(mainYmap, ymapFiles, y => y.GrassInstanceBatches, new YmapGrassBatchComparer());
 
         if (mainYmap.TimeCycleModifiers != null && mainYmap.TimeCycleModifiers.Length != 0)
-            mainYmap.TimeCycleModifiers = MergeWithRemovals(mainYmap, ymapFiles, y => y.TimeCycleModifiers,
-                new YmapTimeCycleModifierComparer());
-
+            mainYmap.TimeCycleModifiers = MergeWithRemovals(mainYmap, ymapFiles, y => y.TimeCycleModifiers, new YmapTimeCycleModifierComparer());
+        
         mainYmap.CalcFlags();
         mainYmap.CalcExtents();
+        
         Backups.SaveYmap(ServerPath, mainYmap);
     }
 
-    private static T[] MergeWithRemovals<T>(
+    private T[] MergeWithRemovals<T>(
         YmapFile mainYmap,
         List<YmapFile> ymapFiles,
         Func<YmapFile, IEnumerable<T>> selector,
@@ -247,21 +263,24 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         return final.ToArray();
     }
 
-    private static YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
+    private YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
     {
-        Dictionary<uint, YmapEntityDef> entitiesToAdd = [];
-        Dictionary<uint, YmapEntityDef> entitiesToRemove = [];
+        Console.WriteLine("Merging Ymap Entities...");
 
-        Dictionary<uint, YmapEntityDef>
-            mainEntities = mainYmap.AllEntities.ToDictionary(e => e.CEntityDef.guid, e => e);
+        Dictionary<uint, YmapEntityDef> mainEntities = mainYmap.AllEntities.ToDictionary(e => e._CEntityDef.guid, e => e);
         Dictionary<uint, YmapEntityDef> patchEntities = ymapFiles
             .SelectMany(patchFile => patchFile.AllEntities ?? [])
-            .GroupBy(e => e.CEntityDef.guid)
+            .GroupBy(e => e._CEntityDef.guid)
             .ToDictionary(g => g.Key, g => g.First());
 
+        Console.WriteLine($"Main entities: {mainEntities.Count}, Patch entities: {patchEntities.Count}");
+
         foreach ((uint guid, YmapEntityDef entity) in patchEntities)
-            if (!mainEntities.ContainsKey(guid))
-                entitiesToAdd[guid] = entity;
+        {
+            if (mainEntities.ContainsKey(guid)) continue;
+            Console.WriteLine($"Adding new entity: {guid}");
+            mainYmap.AddEntity(entity);
+        }
 
         foreach ((uint guid, YmapEntityDef entity) in mainEntities)
         {
@@ -272,154 +291,189 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
                 if (patchFile.AllEntities == null)
                 {
                     shouldRemove = true;
+                    Console.WriteLine($"Entity {guid} marked for removal due to null patch entities.");
                     break;
                 }
 
-                bool foundInThisPatch = patchFile.AllEntities.Any(e => e?.CEntityDef.guid == guid);
-                if (foundInThisPatch) continue;
+                bool foundInPatch = patchFile.AllEntities.Any(e => e?._CEntityDef.guid == guid);
+                if (foundInPatch) continue;
+
                 shouldRemove = true;
+                Console.WriteLine($"Entity {guid} not found in patch {patchFile.Name}, marked for removal.");
                 break;
             }
 
-            if (shouldRemove) entitiesToRemove[guid] = entity;
+            if (!shouldRemove) continue;
+            Console.WriteLine($"Removing entity: {guid}");
+            mainYmap.RemoveEntity(entity);
         }
 
-        List<YmapEntityDef> result = [];
-        result.AddRange(from mainEntity in mainYmap.AllEntities
-            let guid = mainEntity.CEntityDef.guid
-            where !entitiesToRemove.ContainsKey(guid)
-            select mainEntity);
-
-        foreach ((uint _, YmapEntityDef entity) in entitiesToAdd)
-        {
-            entity.Index = result.Count;
-            result.Add(entity);
-        }
-
-        HashSet<uint> processedArchetypeChanges = [];
-
+        List<YmapEntityDef> result = mainYmap.AllEntities.ToList();
         for (int i = 0; i < result.Count; i++)
         {
             YmapEntityDef entity = result[i];
-            uint entityGuid = entity.CEntityDef.guid;
-
-            foreach (YmapEntityDef? patchEntity in ymapFiles
-                         .Select(patchYmap =>
-                             patchYmap.AllEntities?.FirstOrDefault(e => e?.CEntityDef.guid == entityGuid))
-                         .OfType<YmapEntityDef>())
+            
+            bool nameChanged = false;
+            uint entityGuid = entity._CEntityDef.guid;
+            
+            MergePositionX.Clear();
+            MergePositionY.Clear();
+            MergePositionZ.Clear();
+        
+            MergeOrientationX.Clear();
+            MergeOrientationY.Clear();
+            MergeOrientationZ.Clear();
+            MergeOrientationW.Clear();
+        
+            MergeScaleX.Clear();
+            MergeScaleY.Clear();
+            MergeScaleZ.Clear();
+        
+            MergeDistance.Clear();
+            MergeLodDist.Clear();
+        
+            MergeArchetype = entity.Archetype;
+            
+            foreach (YmapFile patchYmap in ymapFiles)
             {
-                if (patchEntity.CEntityDef.archetypeName != entity.CEntityDef.archetypeName &&
-                    !processedArchetypeChanges.Contains(entityGuid))
+                if (patchYmap.AllEntities == null || patchYmap.AllEntities.Length == 0)
                 {
-                    result[i] = patchEntity;
-                    processedArchetypeChanges.Add(entityGuid);
-                    entity = patchEntity;
+                    Console.WriteLine($"Patch {patchYmap.Name} has no entities, skipping.");
                     continue;
                 }
-
-                entity = ApplyEntityPatches(entity, patchEntity);
+                
+                foreach (YmapEntityDef patchEntity in patchYmap.AllEntities)
+                {
+                    if (patchEntity == null || patchEntity._CEntityDef.guid != entityGuid) continue;
+                    if (!nameChanged && entity.Name != patchEntity.Name)
+                    {
+                        Console.WriteLine($"Updating entity name: {entity.Name} -> {patchEntity.Name}");
+                        entity._CEntityDef.archetypeName = patchEntity._CEntityDef.archetypeName;
+                        nameChanged = true;
+                    }
+                    ApplyEntityPatches(entity, patchEntity);
+                }
             }
 
+            float patchPositionX = MergePositionX.Count > 0 ? entity.Position.X < 0 ? MergePositionX.Min() : MergePositionX.Max() : entity.Position.X;
+            float patchPositionY = MergePositionY.Count > 0 ? entity.Position.Y < 0 ? MergePositionY.Min() : MergePositionY.Max() : entity.Position.Y;
+            float patchPositionZ = MergePositionZ.Count > 0 ? MergePositionZ.Min() : entity.Position.Z;
+            
+            Console.WriteLine($"Patch position: {entity.Position.X} -> {patchPositionX}, {entity.Position.Y} -> {patchPositionY}, {entity.Position.Z} -> {patchPositionZ}");
+            
+            float patchOrientationX = MergeOrientationX.Count > 0 ? MergeOrientationX.Average() : entity.Orientation.X;
+            float patchOrientationY = MergeOrientationY.Count > 0 ? MergeOrientationY.Average() : entity.Orientation.Y;
+            float patchOrientationZ = MergeOrientationZ.Count > 0 ? MergeOrientationZ.Average() : entity.Orientation.Z;
+            float patchOrientationW = MergeOrientationW.Count > 0 ? MergeOrientationW.Average() : entity.Orientation.W;
+            
+            Console.WriteLine($"Patch orientation: {entity.Orientation.X} -> {patchOrientationX}, {entity.Orientation.Y} -> {patchOrientationY}, {entity.Orientation.Z} -> {patchOrientationZ}, {entity.Orientation.W} -> {patchOrientationW}");
+            
+            float patchScaleX = MergeScaleX.Count > 0 ? MergeScaleX.Average() : entity.Scale.X;
+            float patchScaleY = MergeScaleY.Count > 0 ? MergeScaleY.Average() : entity.Scale.Y;
+            float patchScaleZ = MergeScaleZ.Count > 0 ? MergeScaleZ.Average() : entity.Scale.Z;
+            
+            Console.WriteLine($"Patch scale: {entity.Scale.X} -> {patchScaleX}, {entity.Scale.Y} -> {patchScaleY}, {entity.Scale.Z} -> {patchScaleZ}");
+            
+            float patchDistance = MergeDistance.Count > 0 ? MergeDistance.Average() : entity.Distance;
+            float patchLodDist = MergeLodDist.Count > 0 ? MergeLodDist.Average() : entity.LodDist;
+            
+            Console.WriteLine($"Patch distance: {entity.Distance} -> {patchDistance}, LodDist: {entity.LodDist} -> {patchLodDist}");
+            
+            entity.SetPosition(new Vector3(patchPositionX, patchPositionY, patchPositionZ));
+            entity.SetOrientation(new Quaternion(patchOrientationX, patchOrientationY, patchOrientationZ, patchOrientationW));
+            entity.SetScale(new Vector3(patchScaleX, patchScaleY, patchScaleZ));
+            
+            entity.LodDist = patchLodDist;
+            entity.Distance = patchDistance;
+            entity.Archetype = MergeArchetype;
+            
             result[i] = entity;
         }
 
+        Console.WriteLine("Merge complete.");
         return result.ToArray();
     }
 
-    private static YmapEntityDef ApplyEntityPatches(YmapEntityDef mainEntity, YmapEntityDef patchEntity)
+    private void ApplyEntityPatches(YmapEntityDef mainEntity, YmapEntityDef patchEntity)
     {
-        const float tolerance = 0.01f;
-
+        float tolerance = 0.01f;
+        
         Vector3 mainPosition = mainEntity.Position;
         Vector3 patchPosition = patchEntity.Position;
-        bool positionChanged = false;
 
         if (Math.Abs(mainPosition.X - patchPosition.X) >= tolerance)
         {
-            mainPosition.X = patchPosition.X;
-            positionChanged = true;
+            MergePositionX.Add(patchPosition.X);
         }
 
         if (Math.Abs(mainPosition.Y - patchPosition.Y) >= tolerance)
         {
-            mainPosition.Y = patchPosition.Y;
-            positionChanged = true;
+            MergePositionY.Add(patchPosition.Y);
         }
 
         if (patchPosition.Z < mainPosition.Z)
         {
-            mainPosition.Z = Math.Max(patchPosition.Z, -200.0f);
-            positionChanged = true;
+            if (patchPosition.Z < -200.0f)
+            {
+                MergePositionZ.Add(-200.0f);
+            }
+            else
+            {
+                MergePositionZ.Add(patchPosition.Z);
+            }
         }
 
-        if (positionChanged) mainEntity.SetPosition(mainPosition);
-
+        tolerance = 0.1f;
         Quaternion mainOrientation = mainEntity.Orientation;
         Quaternion patchOrientation = patchEntity.Orientation;
-        bool orientationChanged = false;
 
         if (Math.Abs(mainOrientation.X - patchOrientation.X) >= tolerance)
         {
-            mainOrientation.X = patchOrientation.X;
-            orientationChanged = true;
+            MergeOrientationX.Add(patchOrientation.X);
         }
 
         if (Math.Abs(mainOrientation.Y - patchOrientation.Y) >= tolerance)
         {
-            mainOrientation.Y = patchOrientation.Y;
-            orientationChanged = true;
+            MergeOrientationY.Add(patchOrientation.Y);
         }
 
         if (Math.Abs(mainOrientation.Z - patchOrientation.Z) >= tolerance)
         {
-            mainOrientation.Z = patchOrientation.Z;
-            orientationChanged = true;
+            MergeOrientationZ.Add(patchOrientation.Z);
         }
 
         if (Math.Abs(mainOrientation.W - patchOrientation.W) >= tolerance)
         {
-            mainOrientation.W = patchOrientation.W;
-            orientationChanged = true;
+            MergeOrientationW.Add(patchOrientation.W);
         }
 
-        if (orientationChanged) mainEntity.SetOrientation(mainOrientation);
-
-        // Apply scale patches
+        tolerance = 0.01f;
         Vector3 mainScale = mainEntity.Scale;
         Vector3 patchScale = patchEntity.Scale;
-        bool scaleChanged = false;
 
         if (Math.Abs(mainScale.X - patchScale.X) >= tolerance)
         {
-            mainScale.X = patchScale.X;
-            scaleChanged = true;
+            MergeScaleX.Add(patchScale.X);
         }
 
         if (Math.Abs(mainScale.Y - patchScale.Y) >= tolerance)
         {
-            mainScale.Y = patchScale.Y;
-            scaleChanged = true;
+            MergeScaleY.Add(patchScale.Y);
         }
 
         if (Math.Abs(mainScale.Z - patchScale.Z) >= tolerance)
         {
-            mainScale.Z = patchScale.Z;
-            scaleChanged = true;
+            MergeScaleZ.Add(patchScale.Z);
         }
 
-        if (scaleChanged) mainEntity.SetScale(mainScale);
-
-        // Apply other property patches
-        if (mainEntity.Parent != patchEntity.Parent) mainEntity.Parent = patchEntity.Parent;
-
         if (Math.Abs(mainEntity.Distance - patchEntity.Distance) >= tolerance)
-            mainEntity.Distance = patchEntity.Distance;
+        {
+            MergeDistance.Add(patchEntity.Distance);
+        }
 
-        if (Math.Abs(mainEntity.LodDist - patchEntity.LodDist) >= tolerance) mainEntity.LodDist = patchEntity.LodDist;
-
-        if (Math.Abs(mainEntity.ChildLodDist - patchEntity.ChildLodDist) >= tolerance)
-            mainEntity.ChildLodDist = patchEntity.ChildLodDist;
-
-        return mainEntity;
+        if (Math.Abs(mainEntity.LodDist - patchEntity.LodDist) >= tolerance)
+        {
+            MergeLodDist.Add(patchEntity.LodDist);
+        }
     }
 }

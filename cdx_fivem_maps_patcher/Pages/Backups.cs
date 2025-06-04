@@ -48,10 +48,6 @@ public class Backups(string path) : Page
         SaveMapFile(path, ybn.Name, ybn.Save(), "ybn");
     }
 
-    /// <summary>
-    /// Creates a backup of a single YBN file by appending .backup extension
-    /// </summary>
-    /// <param name="ybnFilePath">Full path to the YBN file to backup</param>
     public static void CreateYbnBackup(string ybnFilePath)
     {
         try
@@ -64,7 +60,6 @@ public class Backups(string path) : Page
 
             string backupPath = ybnFilePath + ".backup";
             
-            // Don't create duplicate backups
             if (File.Exists(backupPath))
             {
                 Console.WriteLine($"  → Backup already exists for {Path.GetFileName(ybnFilePath)}");
@@ -80,10 +75,6 @@ public class Backups(string path) : Page
         }
     }
 
-    /// <summary>
-    /// Creates backups for multiple YBN files with progress reporting
-    /// </summary>
-    /// <param name="ybnFilePaths">List of YBN file paths to backup</param>
     public static void CreateYbnBackups(List<string> ybnFilePaths)
     {
         if (ybnFilePaths == null || ybnFilePaths.Count == 0)
@@ -114,44 +105,12 @@ public class Backups(string path) : Page
         Console.WriteLine(Messages.Get("backup_summary", successCount, failureCount));
     }
 
-    /// <summary>
-    /// Restores a YBN file from its backup by removing .backup extension
-    /// </summary>
-    /// <param name="originalPath">Path to the original YBN file (without .backup extension)</param>
-    public static void RestoreYbnFromBackup(string originalPath)
-    {
-        try
-        {
-            string backupPath = originalPath + ".backup";
-            
-            if (!File.Exists(backupPath))
-            {
-                Console.WriteLine(Messages.Get("backup_not_found_error", Path.GetFileName(originalPath)));
-                return;
-            }
-
-            // Remove the current file if it exists
-            if (File.Exists(originalPath))
-            {
-                File.Delete(originalPath);
-            }
-
-            // Restore from backup
-            File.Move(backupPath, originalPath);
-            Console.WriteLine(Messages.Get("backup_restored", Path.GetFileName(originalPath)));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(Messages.Get("backup_restore_error", Path.GetFileName(originalPath), ex.Message));
-        }
-    }
-
     private static void SaveMapFile(string basePath, string fileName, byte[]? data, string subfolder)
     {
         string resourcePath = Path.Combine(basePath, "cdx_fivem_maps_patcher");
         string streamPath = Path.Combine(resourcePath, "stream");
         string targetFolder = Path.Combine(streamPath, subfolder);
-
+        
         Directory.CreateDirectory(targetFolder);
 
         string fxmanifestPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "fxmanifest.lua");

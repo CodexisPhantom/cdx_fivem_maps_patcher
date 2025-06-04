@@ -38,7 +38,7 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         string name = new FileInfo(path).Name;
         RpfFileEntry fileEntry = CreateFileEntry(name, path, ref data);
         YmapFile? ymap = RpfFile.GetFile<YmapFile>(fileEntry, data);
-        ymap.FilePath = path;
+        ymap.SetFilePath(path);
         return ymap;
     }
 

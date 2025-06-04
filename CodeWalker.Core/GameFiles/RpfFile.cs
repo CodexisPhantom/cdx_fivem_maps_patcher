@@ -529,56 +529,39 @@ namespace CodeWalker.GameFiles
         public byte[] ExtractFileResource(RpfResourceFileEntry entry, BinaryReader br)
         {
             br.BaseStream.Position = StartPos + (long)entry.FileOffset * 512;
+            
+            if (entry.FileSize <= 0) return null;
+            const uint offset = 0x10;
+            uint totlen = entry.FileSize - offset;
 
+            byte[] tbytes = new byte[totlen];
+                
+            br.BaseStream.Position += offset;
+            br.Read(tbytes, 0, (int)totlen);
 
-            if (entry.FileSize > 0)
+            byte[] decr = tbytes;
+            if (entry.IsEncrypted)
             {
-                uint offset = 0x10;
-                uint totlen = entry.FileSize - offset;
-
-                byte[] tbytes = new byte[totlen];
-
-
-                br.BaseStream.Position += offset;
-                //byte[] hbytes = br.ReadBytes(16); //what are these 16 bytes actually used for?
-                //if (entry.FileSize > 0xFFFFFF)
-                //{ //(for huge files, the full file size is packed in 4 of these bytes... seriously wtf)
-                //    var filesize = (hbytes[7] << 0) | (hbytes[14] << 8) | (hbytes[5] << 16) | (hbytes[2] << 24);
-                //}
-
-
-                br.Read(tbytes, 0, (int)totlen);
-
-                byte[] decr = tbytes;
-                if (entry.IsEncrypted)
-                {
-                    if (IsAESEncrypted)
-                        decr = GTACrypto.DecryptAES(tbytes);
-                    else //if (IsNGEncrypted) //assume the archive is set to NG encryption if not AES... (comment: fix for openIV modded files)
-                        decr = GTACrypto.DecryptNG(tbytes, entry.Name, entry.FileSize);
-                    //else
-                    //{ }
-                }
-
-                byte[] deflated = DecompressBytes(decr);
-
-                byte[] data = null;
-
-                if (deflated != null)
-                {
-                    data = deflated;
-                }
-                else
-                {
-                    entry.FileSize -= offset;
-                    data = decr;
-                }
-
-
-                return data;
+                if (IsAESEncrypted)
+                    decr = GTACrypto.DecryptAES(tbytes);
+                else //if (IsNGEncrypted) //assume the archive is set to NG encryption if not AES... (comment: fix for openIV modded files)
+                    decr = GTACrypto.DecryptNG(tbytes, entry.Name, entry.FileSize);
             }
 
-            return null;
+            byte[] deflated = DecompressBytes(decr);
+            byte[] data = null;
+
+            if (deflated != null)
+            {
+                data = deflated;
+            }
+            else
+            {
+                entry.FileSize -= offset;
+                data = decr;
+            }
+            
+            return data;
         }
 
         public static T GetFile<T>(RpfEntry e) where T : class, PackedFile, new()
@@ -587,11 +570,9 @@ namespace CodeWalker.GameFiles
             byte[] data = null;
             RpfFileEntry entry = e as RpfFileEntry;
             if (entry != null) data = entry.File.ExtractFile(entry);
-            if (data != null)
-            {
-                file = new T();
-                file.Load(data, entry);
-            }
+            if (data == null) return file;
+            file = new T();
+            file.Load(data, entry);
 
             return file;
         }
@@ -600,28 +581,21 @@ namespace CodeWalker.GameFiles
         {
             T file = null;
             RpfFileEntry entry = e as RpfFileEntry;
-            if (data != null)
-            {
-                if (entry == null) entry = CreateResourceFileEntry(ref data, 0);
-                file = new T();
-                file.Load(data, entry);
-            }
-
+            if (data == null) return file;
+            if (entry == null) entry = CreateResourceFileEntry(ref data, 0);
+            file = new T();
+            file.Load(data, entry);
             return file;
         }
-
-
+        
         public static T GetResourceFile<T>(byte[] data) where T : class, PackedFile, new()
         {
             T file = null;
             RpfFileEntry entry = CreateResourceFileEntry(ref data, 0);
-            if (data != null && entry != null)
-            {
-                data = ResourceBuilder.Decompress(data);
-                file = new T();
-                file.Load(data, entry);
-            }
-
+            if (data == null || entry == null) return file;
+            data = ResourceBuilder.Decompress(data);
+            file = new T();
+            file.Load(data, entry);
             return file;
         }
 
