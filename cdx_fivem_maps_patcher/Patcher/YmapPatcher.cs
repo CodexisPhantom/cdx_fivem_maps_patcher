@@ -419,13 +419,17 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
                 foreach (YmapEntityDef patchEntity in patchYmap.AllEntities)
                 {
                     if (patchEntity == null || patchEntity._CEntityDef.guid != entityGuid) continue;
-                    if (!nameChanged && entity.Name != patchEntity.Name)
+                    switch (nameChanged)
                     {
-                        Console.WriteLine($"Updating entity name: {entity.Name} -> {patchEntity.Name}");
-                        entity._CEntityDef.archetypeName = patchEntity._CEntityDef.archetypeName;
-                        nameChanged = true;
+                        case false when entity.Name != patchEntity.Name:
+                            Console.WriteLine($"{patchYmap.FilePath} is updating entity name: {entity.Name} -> {patchEntity.Name}");
+                            entity = patchEntity;
+                            nameChanged = true;
+                            continue;
+                        case false:
+                            ApplyEntityPatches(entity, patchEntity);
+                            break;
                     }
-                    ApplyEntityPatches(entity, patchEntity);
                 }
             }
 
