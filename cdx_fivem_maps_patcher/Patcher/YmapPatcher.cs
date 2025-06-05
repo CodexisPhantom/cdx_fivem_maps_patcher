@@ -189,9 +189,9 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
                 ymapFiles.Add(ymap);
                 File.Move(filePath, filePath + ".backup", true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //Console.WriteLine($"Error patching {filePath}: {ex.Message}");
+                Console.WriteLine($"Error patching {filePath}: {ex.Message}");
             }
 
         if (ymapFiles.Count == 0) return;
@@ -207,10 +207,10 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
         }
 
         if (mainYmap.BoxOccluders != null && mainYmap.BoxOccluders.Length != 0)
-            mainYmap.BoxOccluders = MergeWithRemovals(mainYmap, ymapFiles, y => y.BoxOccluders, new YmapBoxOccluderComparer());
+            mainYmap.BoxOccluders = MergeBoxOccluders(mainYmap, ymapFiles);
 
         if (mainYmap.OccludeModels != null && mainYmap.OccludeModels.Length != 0)
-            mainYmap.OccludeModels = MergeWithRemovals(mainYmap, ymapFiles, y => y.OccludeModels, new YmapOccludeModelComparer());
+            mainYmap.OccludeModels = MergeOccludeModels(mainYmap, ymapFiles);
 
         if (mainYmap.LODLights is { LodLights: not null } && mainYmap.LODLights.LodLights.Length != 0)
             mainYmap.LODLights.LodLights = MergeWithRemovals(mainYmap, ymapFiles, y => y.LODLights.LodLights, new YmapLodLightComparer());
@@ -261,6 +261,80 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
             where !explicitlyRemoved
             select item);
         return final.ToArray();
+    }
+    
+    private YmapBoxOccluder[] MergeBoxOccluders(YmapFile mainYmap, List<YmapFile> patchYmaps)
+    {
+        YmapBoxOccluderComparer comparer = new();
+        HashSet<YmapBoxOccluder> mainOccluders = new(mainYmap.BoxOccluders ?? [], comparer);
+        
+        Console.WriteLine($"Starting with {mainOccluders.Count} BoxOccluders from main ymap");
+        
+        foreach (YmapFile patchYmap in patchYmaps)
+        {
+            HashSet<YmapBoxOccluder> patchOccluders = new(patchYmap.BoxOccluders ?? [], comparer);
+            Console.WriteLine($"Patch '{patchYmap.Name}' has {patchOccluders.Count} BoxOccluders");
+            
+            List<YmapBoxOccluder> toRemove = [];
+            toRemove.AddRange(mainOccluders.Where(mainOccluder => !patchOccluders.Contains(mainOccluder)));
+
+            foreach (YmapBoxOccluder occluder in toRemove)
+            {
+                mainOccluders.Remove(occluder);
+            }
+            
+            Console.WriteLine($"Removed {toRemove.Count} BoxOccluders not found in patch '{patchYmap.FilePath}'");
+            Console.WriteLine($"Remaining: {mainOccluders.Count} BoxOccluders");
+        }
+        
+        YmapBoxOccluder[] finalResult = mainOccluders.ToArray();
+        for (int i = 0; i < finalResult.Length; i++)
+        {
+            finalResult[i].Index = i;
+            finalResult[i].Ymap = mainYmap;
+        }
+        
+        Console.WriteLine($"Final BoxOccluders count: {finalResult.Length}");
+        
+        return finalResult;
+    }
+
+    private YmapOccludeModel[] MergeOccludeModels(YmapFile mainYmap, List<YmapFile> patchYmaps)
+    {
+        YmapOccludeModelComparer comparer = new();
+        HashSet<YmapOccludeModel> mainModels = new(mainYmap.OccludeModels ?? [], comparer);
+        
+        Console.WriteLine($"Starting with {mainModels.Count} OccludeModels from main ymap");
+        
+        foreach (YmapFile patchYmap in patchYmaps)
+        {
+            HashSet<YmapOccludeModel> patchModels = new(
+                patchYmap.OccludeModels ?? [], comparer);
+            
+            Console.WriteLine($"Patch '{patchYmap.Name}' has {patchModels.Count} OccludeModels");
+            
+            List<YmapOccludeModel> toRemove = [];
+            toRemove.AddRange(mainModels.Where(mainModel => !patchModels.Contains(mainModel)));
+
+            foreach (YmapOccludeModel model in toRemove)
+            {
+                mainModels.Remove(model);
+            }
+            
+            Console.WriteLine($"Removed {toRemove.Count} OccludeModels not found in patch '{patchYmap.FilePath}'");
+            Console.WriteLine($"Remaining: {mainModels.Count} OccludeModels");
+        }
+        
+        YmapOccludeModel[] finalResult = mainModels.ToArray();
+        for (int i = 0; i < finalResult.Length; i++)
+        {
+            finalResult[i].Index = i;
+            finalResult[i].Ymap = mainYmap;
+        }
+        
+        Console.WriteLine($"Final OccludeModels count: {finalResult.Length}");
+        
+        return finalResult;
     }
 
     private YmapEntityDef[] MergeYmapEntities(YmapFile mainYmap, List<YmapFile> ymapFiles)
@@ -413,14 +487,7 @@ public class YmapPatcher(GameFileCache gameFileCache, string serverPath) : Patch
 
         if (patchPosition.Z < mainPosition.Z)
         {
-            if (patchPosition.Z < -200.0f)
-            {
-                MergePositionZ.Add(-200.0f);
-            }
-            else
-            {
-                MergePositionZ.Add(patchPosition.Z);
-            }
+            MergePositionZ.Add(patchPosition.Z);
         }
 
         tolerance = 0.1f;
