@@ -31,10 +31,13 @@ public class Backups(string path) : Page
         Console.WriteLine(Messages.Get("backups_menu_title"));
         Console.WriteLine(Messages.Get("backups_menu_show_ymap"));
         Console.WriteLine(Messages.Get("backups_menu_show_ybn"));
+        Console.WriteLine("[3] Show YDR backups");
         Console.WriteLine(Messages.Get("backups_menu_remove_ymap"));
         Console.WriteLine(Messages.Get("backups_menu_remove_ybn"));
+        Console.WriteLine("[6] Remove YDR backup");
         Console.WriteLine(Messages.Get("backups_menu_remove_all_ymap"));
         Console.WriteLine(Messages.Get("backups_menu_remove_all_ybn"));
+        Console.WriteLine("[9] Remove all YDR backups");
         Console.WriteLine(Messages.Get("backups_menu_return"));
     }
 
@@ -47,8 +50,13 @@ public class Backups(string path) : Page
     {
         SaveMapFile(path, ybn.Name, ybn.Save(), "ybn");
     }
+    
+    public static void SaveYdr(string path, YdrFile ydr)
+    {
+        SaveMapFile(path, ydr.Name, ydr.Save(), "ydr");
+    }
 
-    public static void CreateYbnBackup(string ybnFilePath)
+    private static void CreateYbnBackup(string ybnFilePath)
     {
         try
         {
@@ -75,34 +83,31 @@ public class Backups(string path) : Page
         }
     }
 
-    public static void CreateYbnBackups(List<string> ybnFilePaths)
+    private static void CreateYdrBackup(string ydrFilePath)
     {
-        if (ybnFilePaths == null || ybnFilePaths.Count == 0)
+        try
         {
-            Console.WriteLine(Messages.Get("no_files_to_backup"));
-            return;
-        }
+            if (!File.Exists(ydrFilePath))
+            {
+                Console.WriteLine(Messages.Get("file_not_found_error", ydrFilePath));
+                return;
+            }
 
-        Console.WriteLine(Messages.Get("creating_backups_header", ybnFilePaths.Count));
+            string backupPath = ydrFilePath + ".backup";
         
-        int successCount = 0;
-        int failureCount = 0;
+            if (File.Exists(backupPath))
+            {
+                Console.WriteLine($"  → Backup already exists for {Path.GetFileName(ydrFilePath)}");
+                return;
+            }
 
-        foreach (string filePath in ybnFilePaths)
-        {
-            try
-            {
-                CreateYbnBackup(filePath);
-                successCount++;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(Messages.Get("backup_creation_error", Path.GetFileName(filePath), ex.Message));
-                failureCount++;
-            }
+            File.Copy(ydrFilePath, backupPath, true);
+            Console.WriteLine($"  ✓ Created backup: {Path.GetFileName(ydrFilePath)}.backup");
         }
-
-        Console.WriteLine(Messages.Get("backup_summary", successCount, failureCount));
+        catch (Exception ex)
+        {
+            Console.WriteLine(Messages.Get("backup_creation_error", Path.GetFileName(ydrFilePath), ex.Message));
+        }
     }
 
     private static void SaveMapFile(string basePath, string fileName, byte[]? data, string subfolder)

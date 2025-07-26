@@ -52,6 +52,16 @@ public abstract class Patcher(GameFileCache gameFileCache, string serverPath) : 
         return ybn;
     }
 
+    internal static YdrFile OpenYdrFile(string path)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        string name = new FileInfo(path).Name;
+        RpfFileEntry fileEntry = CreateFileEntry(name, path, ref data);
+        YdrFile? ydr = RpfFile.GetFile<YdrFile>(fileEntry, data);
+        ydr.FilePath = path;
+        return ydr;
+    }
+
     private static void PrintMenu()
     {
         Console.WriteLine(Messages.Get("main_menu_title"));

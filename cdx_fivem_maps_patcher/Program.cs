@@ -10,12 +10,14 @@ const bool enableMods = false;
 const string dlc = "";
 const string excludeFolders = "";
 
-string gtaPath = PromptPath(Messages.Get("prompt_gta_path"));
-string serverPath = PromptPath(Messages.Get("prompt_server_path"));
+string gtaPath = "E:\\Games\\Rockstar\\Grand Theft Auto V Legacy"; //PromptPath(Messages.Get("prompt_gta_path"));
+string serverPath = "E:\\Projects\\Starling\\Fivem\\Server\\resources\\[streamings]"; //PromptPath(Messages.Get("prompt_server_path"));
 
 GTA5Keys.LoadFromPath(gtaPath);
-GameFileCache gameFileCache = new(cacheSize, cacheTime, gtaPath, isGen9, dlc, enableMods, excludeFolders);
-gameFileCache.EnableDlc = true;
+GameFileCache gameFileCache = new(cacheSize, cacheTime, gtaPath, isGen9, dlc, enableMods, excludeFolders)
+    {
+        EnableDlc = true
+    };
 gameFileCache.Init(
     message => Console.WriteLine($"[GameFileCache] {message}"),
     error => Console.Error.WriteLine($"[GameFileCache ERROR] {error}")
@@ -25,6 +27,7 @@ Console.Clear();
 Backups backups = new(serverPath);
 Patcher ymapPatcher = new YmapPatcher(gameFileCache, serverPath);
 Patcher ybnPatcher = new YbnPatcher(gameFileCache, serverPath);
+Patcher ydrPatcher = new YdrPatcher(gameFileCache, serverPath);
 Translations translations = new();
 
 while (true)
@@ -49,9 +52,12 @@ while (true)
             ybnPatcher.Show();
             break;
         case "4":
-            translations.Show();
+            ydrPatcher.Show();
             break;
         case "5":
+            translations.Show();
+            break;
+        case "6":
             Console.WriteLine(Messages.Get("goodbye"));
             return;
         default:
@@ -66,6 +72,7 @@ void PrintMainMenu()
     Console.WriteLine(Messages.Get("main_menu_backups"));
     Console.WriteLine(Messages.Get("main_menu_patch_ymap"));
     Console.WriteLine(Messages.Get("main_menu_patch_ybn"));
+    Console.WriteLine(Messages.Get("main_menu_patch_ydr"));
     Console.WriteLine(Messages.Get("main_menu_translations"));
     Console.WriteLine(Messages.Get("main_menu_quit"));
 }
