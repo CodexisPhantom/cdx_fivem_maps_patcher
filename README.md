@@ -64,6 +64,12 @@
 
 ---
 
+## Credits
+
+1. [The Ambitioneers](https://ambitioneers.tebex.io/)
+
+---
+
 ## Support
 
 ☕️ **Like this project?** Show your support and fuel my creativity by buying me a coffee!
